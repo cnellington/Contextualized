@@ -23,6 +23,7 @@ class Dataloader:
 
     def simulate(self, n):
         # Generate k covariance matrices with n samples each
+        N = self.k * n
         means = []
         covs = []
         for _ in range(self.k):
@@ -35,20 +36,16 @@ class Dataloader:
         pca = PCA(n_components=self.c)
         pca.fit(context_full)
 
-        samples = []
-        contexts = []
-        labels = []
-        for mean, cov in zip(means, covs):
-            sample = np.random.multivariate_normal(mean, cov, n).tolist()
-            context = np.repeat(pca.transform([cov.flatten()]), n, axis=0).tolist()
-            label = np.repeat(cov, n, axis=0).tolist()
-            samples += sample
-            contexts += context
-            labels += label
-        print(contexts)
-        print(samples)
-        print(labels)
-        return contexts, samples, labels
+        samples = np.zeros((N, self.p))
+        contexts = np.zeros((N, self.c))
+        cov_labels = np.zeros((N, self.p, self.p))
+        task_ids = np.zeros(N)
+        for task_id, (mean, cov) in enumerate(zip(means, covs)):
+            samples[task_id*n:(task_id+1)*n] = np.random.multivariate_normal(mean, cov, n)
+            contexts[task_id*n:(task_id+1)*n]= np.repeat(pca.transform([cov.flatten()]), n, axis=0)
+            cov_labels[task_id*n:(task_id+1)*n] = np.repeat([cov], n, axis=0)
+            task_ids[task_id*n:(task_id+1)*n] = np.ones(n) * task_id
+        return contexts, samples, cov_labels, task_ids
 
 
 if __name__ == "__main__":
