@@ -13,12 +13,13 @@ class ContextualCorrelator(torch.nn.Module):
     g(t_i, t_j) = softmax(dense(t_i, t_j))
     """
 
-    def __init__(self, context_shape, final_dense_size=10):
+    def __init__(self, context_shape, task_shape, num_archetypes=2, final_dense_size=10):
         super(ContextualCorrelator, self).__init__()
         self.context_encoder_in_shape = (context_shape[-1], 1)
         self.context_encoder_out_shape = (final_dense_size,)
-#         task_encoder_in_shape = (task_shape[-1] * 2, 1)
-#         task_encoder_out_shape = (final_dense_size,)
+        task_encoder_in_shape = (task_shape[-1] * 2, 1)
+        task_encoder_out_shape = (final_dense_size,)
+
         self.linear1 = torch.nn.Linear(context_shape[-1], final_dense_size)
         self.linear2 = torch.nn.Linear(final_dense_size, 1)
         self.flatten = torch.nn.Flatten(0, 1)

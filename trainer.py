@@ -19,14 +19,16 @@ def main():
     C = torch.tensor(C, dtype=dtype, device=device)
     X_in = np.hstack((Xi, Xj))
     X_in = torch.tensor(X_in, dtype=dtype, device=device)
+    T_in = np.hstack((Ti, Tj))
+    T_in = torch.tensor(T_in, dtype=dtype, device=device)
     Xi = torch.tensor(Xi, dtype=dtype, device=device)
     Xj = torch.tensor(Xj, dtype=dtype, device=device)
     
-    cc = ContextualCorrelator(C.shape)
+    cc = ContextualCorrelator(C.shape, T_in.shape)
     cc.train()
     lr = 1e-3
     opt = torch.optim.Adam(cc.parameters(), lr=lr)
-    for _ in range(10000):
+    for _ in range(100):
         beta_pred = cc(C)
         loss_val = loss(beta_pred, Xi, Xj)
         opt.zero_grad()

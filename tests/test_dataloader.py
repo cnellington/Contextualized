@@ -1,6 +1,6 @@
 import unittest
-import dataloader
 import numpy as np
+from experiments.simulation import dataloader
 
 
 class TestDataloader(unittest.TestCase):
