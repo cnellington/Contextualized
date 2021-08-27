@@ -20,8 +20,9 @@ class TestCorrelator(unittest.TestCase):
         super(TestCorrelator, self).__init__(*args, **kwargs)
 
     def test_convergence(self):
-        dl = dataloader.Dataloader(2, 2, 2)
-        C, X, Cov, dist_ids = dl.simulate(100)
+        k, p, c, c_n, k_arch = 4, 4, 4, 100, 4
+        dl = dataloader.Dataloader(k, p, c)
+        C, X, Cov, dist_ids = dl.simulate(c_n)
         C, Ti, Tj, Xi, Xj, sample_ids = dl.split_tasks(C, X)
         C = torch.tensor(C, dtype=dtype, device=device)
         Xi = torch.tensor(Xi, dtype=dtype, device=device)
@@ -29,15 +30,16 @@ class TestCorrelator(unittest.TestCase):
         T_in = np.hstack((Ti, Tj))
         T_in = torch.tensor(T_in, dtype=dtype, device=device)
 
-        cc = ContextualCorrelator(C.shape, T_in.shape)
+        cc = ContextualCorrelator(C.shape, T_in.shape, num_archetypes=k_arch)
         cc.train()
         lr = 1e-3
         opt = torch.optim.Adam(cc.parameters(), lr=lr)
         loss_vals = []
         for _ in range(100):
-            beta_pred = cc(C)
+            beta_pred = cc(C, T_in)
             loss_val = loss(beta_pred, Xi, Xj)
             loss_detached = float(loss_val.detach().numpy().mean())
+            print(loss_detached)
             loss_vals.append(loss_detached)
             opt.zero_grad()
             loss_val.sum().backward()
