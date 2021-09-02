@@ -1,3 +1,4 @@
+import time
 import unittest
 import numpy as np
 import torch
@@ -10,7 +11,7 @@ device = torch.device('cpu')
 
 
 def loss(beta, xi, xj):
-    loss_val = (beta.unsqueeze(-1) * xi - xj).pow(2)
+    loss_val = (beta.unsqueeze(-1) * xi - xj).pow(2).sum()
     return loss_val
 
 
@@ -20,7 +21,7 @@ class TestCorrelator(unittest.TestCase):
         super(TestCorrelator, self).__init__(*args, **kwargs)
 
     def test_convergence(self):
-        k, p, c, c_n, k_arch = 4, 4, 4, 100, 4
+        k, p, c, c_n, k_arch = 4, 8, 4, 100, 2
         dl = dataloader.Dataloader(k, p, c)
         C, X, Cov, dist_ids = dl.simulate(c_n)
         C, Ti, Tj, Xi, Xj, sample_ids = dl.split_tasks(C, X)
@@ -35,15 +36,19 @@ class TestCorrelator(unittest.TestCase):
         lr = 1e-3
         opt = torch.optim.Adam(cc.parameters(), lr=lr)
         loss_vals = []
-        for _ in range(100):
+        for _ in range(10):
+            start = time.time()
             beta_pred = cc(C, T_in)
             loss_val = loss(beta_pred, Xi, Xj)
-            loss_detached = float(loss_val.detach().numpy().mean())
-            print(loss_detached)
+            loss_detached = float(loss_val.detach().numpy())
             loss_vals.append(loss_detached)
             opt.zero_grad()
-            loss_val.sum().backward()
+            print('forward', time.time() - start)
+            start = time.time()
+            loss_val.backward()
+            print('backward', time.time() - start)
             opt.step()
+            print()
         
         learn_count = 0
         for i in range(1, len(loss_vals)):
