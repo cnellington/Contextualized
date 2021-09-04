@@ -1,4 +1,5 @@
 import numpy as np
+from sklearn.decomposition import PCA
 import torch
 
 
@@ -52,6 +53,51 @@ class SimulationDataset(Dataset):
     Simulation dataset
     """
     def gen_samples(self, k_n):
-        # todo
-        raise NotImplementedError
+        n = self.k * k_n
         
+        # Generate k p-variate gaussians
+        means = []
+        covs = []
+        for _ in range(self.k):
+            mean = np.zeros(self.p)
+            cov = np.random.rand(self.p, self.p)
+            cov = cov @ cov.T
+            covs.append(cov)
+            means.append(mean)
+        context_full = np.copy(covs).reshape(self.k, self.p ** 2)
+        pca = PCA(n_components=self.c)
+        pca.fit(context_full)
+
+        samples = np.zeros((n, self.p))
+        contexts = np.zeros((n, self.c))
+        cov_labels = np.zeros((n, self.p, self.p))
+        distribution_ids = np.zeros(n)
+        for distribution_id, (mean, cov) in enumerate(zip(means, covs)):
+            samples[distribution_id*k_n:(distribution_id+1)*k_n] = np.random.multivariate_normal(mean, cov, k_n)
+            contexts[distribution_id*k_n:(distribution_id+1)*k_n]= np.repeat(pca.transform([cov.flatten()]), k_n, axis=0)
+            cov_labels[distribution_id*k_n:(distribution_id+1)*k_n] = np.repeat([cov], k_n, axis=0)
+            distribution_ids[distribution_id*k_n:(distribution_id+1)*k_n] = np.ones(k_n) * distribution_id
+
+#         return contexts, samples, cov_labels, distribution_ids
+        C = contexts
+        X = samples
+        self.X = X
+        self.C = C
+        N = n * self.p ** 2
+        C_all = np.repeat(C, self.p ** 2, axis=0)
+        sample_ids = np.repeat(np.arange(C.shape[0]).astype(int), self.p ** 2)
+        Xi = np.zeros((N, 1))
+        Xj = np.zeros((N, 1))
+        Ti = np.zeros((N, 1))
+        Tj = np.zeros((N, 1))
+        m = 0
+        for k in range(n):
+            for i in range(self.p):
+                for j in range(self.p):
+                    Xi[m, 0] = X[self.k, i]
+                    Xj[m, 0] = X[self.k, j]
+                    Ti[m, 0] = i
+                    Tj[m, 0] = j
+                    m += 1
+        return C_all, Ti, Tj, Xi, Xj, sample_ids
+
