@@ -7,23 +7,24 @@ class Dataset(object):
     """
     Superclass for experiment datasets
     """
-    def __init__(self, p, k, c, seed=1):
+    def __init__(self, p, k, c, seed=1, dtype=torch.float):
         self.seed = seed
-        np.random.seed(self.seed)
+        self.dtype = dtype
         self.p = p
         self.k = k
         self.c = c
         self.X = None
         self.C = None
         self.T = None
+        np.random.seed(self.seed)
 
     def gen_samples(self, k_n):
         """
         Generate n samples for each of the k archetypes
         """
-        self.X = torch.zeros(self.k * k_n * self.p**2, 2)
-        self.T = torch.zeros(self.k * k_n * self.p**2, 2)
-        self.C = torch.zeros(self.k * k_n * self.p**2, self.c)
+        self.X = torch.zeros(self.k * k_n * self.p**2, 2, dtype=self.dtype)
+        self.T = torch.zeros(self.k * k_n * self.p**2, 2, dtype=self.dtype)
+        self.C = torch.zeros(self.k * k_n * self.p**2, self.c, dtype=self.dtype)
         return self.X, self.T, self.C
     
     def load_batch_data(self, batch_size, shuffle=True, device=None):
@@ -35,17 +36,19 @@ class Dataset(object):
                 X = X[idx]
             for i in range(0, n, batch_size):
                 num_samples = min(n - i, batch_size)
-                samples = X[i:i + num_samples]
+                X_batch = X[i:i + num_samples]
+                T_batch = T[i:i + num_samples]
+                C_batch = C[i:i + num_samples]
                 if device is None:
-                    yield samples.detach()
+                    yield X_batch.detach(), T_batch.detach(), C_batch.detach()
                 else:
-                    yield samples.to(device)
+                    yield X_batch.to(device), T_batch.to(device), C_batch.to(device)
 
     def load_data(self, batch_size=32, device=None):
         idx = torch.randperm(self.X.shape[0])[:batch_size]
         if device is None:
-            return self.X[idx]
-        return self.X[idx].to(device)
+            return self.X[idx].detach(), self.T[idx].detach(), self.C[idx].detach()
+        return self.X[idx].to(device), self.T[idx].to(device), self.C[idx].to(device)
 
 
 class SimulationDataset(Dataset):
@@ -54,7 +57,6 @@ class SimulationDataset(Dataset):
     """
     def gen_samples(self, k_n):
         n = self.k * k_n
-        
         # Generate k p-variate gaussians
         means = []
         covs = []
@@ -81,11 +83,11 @@ class SimulationDataset(Dataset):
 #         return contexts, samples, cov_labels, distribution_ids
         C = contexts
         X = samples
-        self.X = X
-        self.C = C
         N = n * self.p ** 2
         C_all = np.repeat(C, self.p ** 2, axis=0)
+        self.C = torch.tensor(C_all, dtype=self.dtype)
         sample_ids = np.repeat(np.arange(C.shape[0]).astype(int), self.p ** 2)
+        self.sample_ids = sample_ids
         Xi = np.zeros((N, 1))
         Xj = np.zeros((N, 1))
         Ti = np.zeros((N, 1))
@@ -99,5 +101,9 @@ class SimulationDataset(Dataset):
                     Ti[m, 0] = i
                     Tj[m, 0] = j
                     m += 1
-        return C_all, Ti, Tj, Xi, Xj, sample_ids
+        X = np.hstack((Xi, Xj))
+        T = np.hstack((Ti, Tj))
+        self.X = torch.tensor(X, dtype=self.dtype)
+        self.T = torch.tensor(T, dtype=self.dtype)
+        return self.X, self.T, self.C
 
