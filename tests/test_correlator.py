@@ -18,7 +18,7 @@ class TestCorrelator(unittest.TestCase):
     def test_convergence(self):
         k, p, c, k_n, k_arch = 4, 8, 4, 10, 2
         db = SimulationDataset(p, k, c)
-        X, T, C = db.gen_samples(k_n)
+        X, T, C, B = db.gen_samples(k_n)
 
         model = ContextualCorrelator(C.shape, T.shape, num_archetypes=k_arch)
         init_loss = MSE(model(C, T), X[:,0], X[:,1]).detach().numpy()
