@@ -23,21 +23,33 @@ class Dataset(object):
         self.build()
 
     def build(self):
+        """
+        Set up the data generation constants
+        """
         self.sigmas = np.zeros(self.k, self.p, self.p)
         self.mus = np.zeros(self.k, self.p)
         self.contexts = np.zeros(self.k, self.c)
 
     def gen_samples(self, k_n):
         """
-        Generate n samples for each of the k archetypes
+        Sample each of the k archetypes k_n times
         """
         self.X = torch.zeros(self.k * k_n * self.p**2, 2, dtype=self.dtype)
         self.T = torch.zeros(self.k * k_n * self.p**2, 2, dtype=self.dtype)
         self.C = torch.zeros(self.k * k_n * self.p**2, self.c, dtype=self.dtype)
         self.B = torch.zeros(self.k * k_n * self.p**2, 1, dtype=self.dtype)
         return self.X, self.T, self.C, self.B
+
+    def train_test_split(test_size):
+        """
+        Split the samples into train and test
+        """
+        # todo: add idx and increment for batching, add get_test
     
     def load_batch_data(self, batch_size, shuffle=True, device=None):
+        """
+        Batched data loading for standard training flows
+        """
         n = self.X.shape[0]
         X = self.X
         while True:
@@ -55,6 +67,9 @@ class Dataset(object):
                     yield X_batch.to(device), T_batch.to(device), C_batch.to(device)
 
     def load_data(self, batch_size=32, device=None):
+        """
+        Load batch_size samples chosen at random from the samples
+        """
         idx = torch.randperm(self.X.shape[0])[:batch_size]
         if device is None:
             return self.X[idx].detach(), self.T[idx].detach(), self.C[idx].detach()
@@ -91,15 +106,6 @@ class SimulationDataset(Dataset):
             mu, sigma = self.mus[i], self.sigmas[i]
             sample = np.random.multivariate_normal(mu, sigma, k_n)
             X_sampled[i * k_n:(i + 1) * k_n] = sample
-#         samples = np.zeros((n, self.p))
-#         contexts = np.zeros((n, self.c))
-#         cov_labels = np.zeros((n, self.p, self.p))
-#         distribution_ids = np.zeros(n)
-#         for distribution_id, (mean, cov) in enumerate(zip(means, covs)):
-#             samples[distribution_id*k_n:(distribution_id+1)*k_n] = np.random.multivariate_normal(mean, cov, k_n)
-#             contexts[distribution_id*k_n:(distribution_id+1)*k_n]= np.repeat(pca.transform([cov.flatten()]), k_n, axis=0)
-#             cov_labels[distribution_id*k_n:(distribution_id+1)*k_n] = np.repeat([cov], k_n, axis=0)
-#             distribution_ids[distribution_id*k_n:(distribution_id+1)*k_n] = np.ones(k_n) * distribution_id
 
         # Take the cartesian product of the samples and tasks to generate a full dataset
         N = M * self.p ** 2
@@ -122,30 +128,4 @@ class SimulationDataset(Dataset):
         self.C = torch.tensor(self.C, dtype=self.dtype)
         self.B = torch.tensor(self.B, dtype=self.dtype)
         return self.X, self.T, self.C, self.B
-
-
-#         C = contexts
-#         X = samples
-#         C_all = np.repeat(C, self.p ** 2, axis=0)
-#         self.C = torch.tensor(C_all, dtype=self.dtype)
-#         sample_ids = np.repeat(np.arange(C.shape[0]).astype(int), self.p ** 2)
-#         self.sample_ids = sample_ids
-#         Xi = np.zeros((N, 1))
-#         Xj = np.zeros((N, 1))
-#         Ti = np.zeros((N, 1))
-#         Tj = np.zeros((N, 1))
-#         m = 0
-#         for k in range(n):
-#             for i in range(self.p):
-#                 for j in range(self.p):
-#                     Xi[m, 0] = X[self.k, i]
-#                     Xj[m, 0] = X[self.k, j]
-#                     Ti[m, 0] = i
-#                     Tj[m, 0] = j
-#                     m += 1
-#         X = np.hstack((Xi, Xj))
-#         T = np.hstack((Ti, Tj))
-#         self.X = torch.tensor(X, dtype=self.dtype)
-#         self.T = torch.tensor(T, dtype=self.dtype)
-#         return self.X, self.T, self.C
 
