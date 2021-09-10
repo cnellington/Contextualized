@@ -5,62 +5,88 @@ import torch
 
 class Dataset(object):
     """
-    Superclass for experiment datasets
+    General dataset
+    TODO: create T from X[train]
     """
-    def __init__(self, p, k, c, seed=1, dtype=torch.float):
-        self.seed = seed
-        self.dtype = dtype
-        self.p = p
-        self.k = k
-        self.c = c
-        self.sigmas = None
-        self.mus = None
-        self.contexts = None 
-        self.X = None
-        self.C = None
-        self.T = None
+    def __init__(self, C, X, testsplit=0.2, taskdims='full', seed=None, dtype=torch.float):
+        self.seed = seed if seed is not None else np.random.randint(1e9)
         np.random.seed(self.seed)
-        self.build()
+        self.dtype = dtype
+        self.testsplit = testsplit
+        self.n, self.p = self.X.shape
+        self.c = self.C.shape[-1] 
+        self.t = self.p if taskdims == 'full' else taskdims
+        self.batch_i = 0
+        # Build full dataset
+        self._build(X, C)
 
-    def build(self):
+    def _build(self, X, C):
         """
-        Set up the data generation constants
+        Build the dataset
         """
-        self.sigmas = np.zeros(self.k, self.p, self.p)
-        self.mus = np.zeros(self.k, self.p)
-        self.contexts = np.zeros(self.k, self.c)
+        # Train/test split
+        self.N = self.n * self.p ** 2
+        testsize = int(self.N * self.testsplit)
+        shuffle_idx = torch.randperm(self.N)
+        self.train_idx = shuffle_idx[:-testsize]
+        self.test_idx = shuffle_idx[-testsize:]
+       
+        # Get task representations
+        self.task_transformer = PCA(self.t)
+        self.reverse_idx = np.zeros((self.N, 3))  # (i, j, k)
+        self.X = np.zeros((self.N, 2))  # (Xi[j], Xi[k])
+        self.T = np.zeros((self.N, 2 * t))  # (Ti[j], Ti[k])
+
+        for n in range(N):
+            t_i = (n // self.p) % self.p
+            t_j = n % self.p
+            m = n // self.p ** 2
+            k = n // (k_n * self.p ** 2)
+            x_i = X_sampled[m, t_i]
+            x_j = X_sampled[m, t_j]
+            self.X[n] = [x_i, x_j]
+            self.T[n] = [t_i, t_j]
+            self.B[n] = self.sigmas[k, t_i, t_j] / self.sigmas[k, t_i, t_i]  # Cov(i, j) / Var(i)
+        self.X = torch.tensor(self.X, dtype=self.dtype)
+        self.T = torch.tensor(self.T, dtype=self.dtype)
+        self.C = torch.tensor(self.C, dtype=self.dtype)
 
     def gen_samples(self, k_n):
         """
+        Generate from k distributions or load pre-defined samples
         Sample each of the k archetypes k_n times
         """
         self.X = torch.zeros(self.k * k_n * self.p**2, 2, dtype=self.dtype)
         self.T = torch.zeros(self.k * k_n * self.p**2, 2, dtype=self.dtype)
         self.C = torch.zeros(self.k * k_n * self.p**2, self.c, dtype=self.dtype)
         self.B = torch.zeros(self.k * k_n * self.p**2, 1, dtype=self.dtype)
-        return self.X, self.T, self.C, self.B
-
-    def train_test_split(test_size):
-        """
-        Split the samples into train and test
-        """
+        return self.X, self.T, self.C
         # todo: add idx and increment for batching, add get_test
+        # todo: normalize X? Generate context/tasks according to trainset
+
+    def get_test(self):
+        """
+        Return the test set from train_test_split
+        """
+        return self.X[self.test_idx], self.T[self.test_idx], self.C[self.test_idx]
     
     def load_batch_data(self, batch_size, shuffle=True, device=None):
         """
         Batched data loading for standard training flows
         """
-        n = self.X.shape[0]
-        X = self.X
+        X_train = self.X[self.train_idx]
+        T_train = self.T[self.train_idx]
+        C_train = self.C[self.train_idx]
+        X_epoch = X_train[self.batch_idx]
+        T_epoch = T_train[self.batch_idx]
+        C_epoch = C_train[self.batch_idx]
+        n = self.train_idx.shape[0]
         while True:
-            if shuffle:
-                idx = torch.randperm(n)
-                X = X[idx]
             for i in range(0, n, batch_size):
                 num_samples = min(n - i, batch_size)
-                X_batch = X[i:i + num_samples]
-                T_batch = T[i:i + num_samples]
-                C_batch = C[i:i + num_samples]
+                X_batch = X_epoch[i:i + num_samples]
+                T_batch = T_epoch[i:i + num_samples]
+                C_batch = C_epoch[i:i + num_samples]
                 if device is None:
                     yield X_batch.detach(), T_batch.detach(), C_batch.detach()
                 else:
@@ -70,16 +96,42 @@ class Dataset(object):
         """
         Load batch_size samples chosen at random from the samples
         """
+        X_batch = (self.X[train_idx])[batch_idx]
+        T_batch = (self.T[train_idx])[batch_idx]
+        C_batch = (self.C[train_idx])[batch_idx]
+
         idx = torch.randperm(self.X.shape[0])[:batch_size]
         if device is None:
             return self.X[idx].detach(), self.T[idx].detach(), self.C[idx].detach()
         return self.X[idx].to(device), self.T[idx].to(device), self.C[idx].to(device)
 
 
-class SimulationDataset(Dataset):
+class SimulationDataset:
     """
     Simulation dataset
     """
+    def __init__(self, p, k, c, testsize=0.2, seed=None, dtype=torch.float):
+        self.seed = seed if seed is not None else np.random.randint(1e9)
+        np.random.seed(self.seed)
+        self.dtype = dtype
+        # Distribution generation parameters
+        self.p = p
+        self.k = k
+        self.c = c
+        self.testsize = testsize
+        self.train_idx = None
+        self.test_idx = None
+        # Distribution parameters
+        self.sigmas = None
+        self.mus = None
+        self.contexts = None
+        # Sampling
+        self.X = None
+        self.C = None
+        self.T = None
+        self.batch_i = 0
+        self.build()
+
     def build(self):
         """
         Generate parameters for k p-variate gaussians with context
@@ -129,3 +181,11 @@ class SimulationDataset(Dataset):
         self.B = torch.tensor(self.B, dtype=self.dtype)
         return self.X, self.T, self.C, self.B
 
+    def load_data(self, batch_size=32, device=None):
+        """
+        Load batch_size samples chosen at random from the samples
+        """
+        idx = torch.randperm(self.X.shape[0])[:batch_size]
+        if device is None:
+            return self.X[idx].detach(), self.T[idx].detach(), self.C[idx].detach()
+        return self.X[idx].to(device), self.T[idx].to(device), self.C[idx].to(device)
