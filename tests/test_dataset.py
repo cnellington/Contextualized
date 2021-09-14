@@ -1,13 +1,13 @@
 import unittest
 import numpy as np
 import torch
-from model.dataset import Dataset, SimulationDataset
+from model.dataset import Dataset, SimulationDataset, GaussianSimulator
 
 
-class TestDataloader(unittest.TestCase):
+class TestSimulator(unittest.TestCase):
 
     def __init__(self, *args, **kwargs):
-        super(TestDataloader, self).__init__(*args, **kwargs)
+        super(TestSimulator, self).__init__(*args, **kwargs)
         self.p = 10
         self.c = 5
         self.k = 5
@@ -73,6 +73,24 @@ class TestDataloader(unittest.TestCase):
 #             assert (self.context[sample_id] == c).all()
 #             assert self.samples[sample_id, int(ti)] == xi
 #             assert self.samples[sample_id, int(tj)] == xj
+
+
+class TestGaussianSimulator(unittest.TestCase):
+
+    def __init__(self, *args, **kwargs):
+        super(TestGaussianSimulator, self).__init__(*args, **kwargs)
+        self.p = 10
+        self.c = 5
+        self.k = 5
+        self.sim = GaussianSimulator(self.p, self.k, self.c)
+    
+    def test_empirical_cov(self):
+        k_n = int(1e5)
+        X, C = self.sim.gen_samples(k_n)
+        for i in range(self.k):
+            X_sample = X[i * k_n:(i+1) * k_n]
+            empirical_cov = 1 / (k_n - 1) * X_sample.T @ X_sample
+            assert np.allclose(empirical_cov, self.sim.sigmas[i], atol=1e-1)
 
 
 if __name__ == '__main__':
