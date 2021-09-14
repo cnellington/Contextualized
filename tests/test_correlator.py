@@ -2,13 +2,9 @@ import time
 import unittest
 import numpy as np
 import torch
-from model.dataset import SimulationDataset
-from model.correlator import ContextualCorrelator
-from model.trainer import Trainer, MSE
-
-
-dtype = torch.float
-device = torch.device('cpu')
+from model.dataset import GaussianSimulator, Dataset
+from model.correlator import ContextualRegressor
+from model.trainer import Trainer, MSE, DTYPE, DEVICE 
 
 
 class TestCorrelator(unittest.TestCase):
@@ -16,17 +12,26 @@ class TestCorrelator(unittest.TestCase):
         super(TestCorrelator, self).__init__(*args, **kwargs)
 
     def test_convergence(self):
-        k, p, c, k_n, k_arch = 4, 8, 4, 10, 2
-        db = SimulationDataset(p, k, c)
-        X, T, C, B = db.gen_samples(k_n)
-
-        model = ContextualCorrelator(C.shape, T.shape, num_archetypes=k_arch)
-        init_loss = MSE(model(C, T), X[:,0], X[:,1]).detach().numpy()
-        optimizer = torch.optim.Adam
-        trainer = Trainer(model, optimizer, db)
-        trainer.train(10)
-        stop_loss = MSE(model(C, T), X[:,0], X[:,1]).detach().numpy()
-        assert stop_loss < init_loss
+        k, p, c, k_n = 4, 8, 4, 10
+        k_arch = k * p ** 2
+        epochs = 10
+        runs = 10
+        converges = np.zeros(runs)
+        for i in range(10):
+            sim = GaussianSimulator(p, k, c)
+            C, X = sim.gen_samples(k_n)
+            db = Dataset(C, X)
+            C_test, T_test, X_test = db.get_test()
+            model = ContextualRegressor(db.C.shape, db.T.shape, num_archetypes=k_arch)
+            betas, mus = model(C_test, T_test)
+            init_loss = MSE(betas, mus, X_test[:,0], X_test[:,1]).detach().item()
+            optimizer = torch.optim.Adam
+            trainer = Trainer(model, optimizer, db)
+            trainer.train(epochs)
+            betas, mus = model(C_test, T_test)
+            stop_loss = MSE(betas, mus, X_test[:,0], X_test[:,1]).detach().item()
+            converges[i] = stop_loss < init_loss
+        assert converges.all()
 
 
 if __name__ == '__main__':
