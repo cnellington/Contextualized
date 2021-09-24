@@ -55,13 +55,14 @@ class Dataset:
     """
     Dataset
     """
-    def __init__(self, C, X, testsplit=0.2, seed=1, dtype=torch.float):
+    def __init__(self, C, X, Y, testsplit=0.2, seed=1, dtype=torch.float):
         self.seed = seed
         np.random.seed(self.seed)
         self.dtype = dtype
-        self.n, self.p = X.shape
+        self.n, self.x_p = X.shape
+        _, self.y_p = Y.shape
         self.c = C.shape[-1] 
-        self.N = self.n * self.p ** 2
+        self.N = self.n * self.x_p * self.y_p
         # Train/test split
         split = int(self.N * testsplit)
         idx = torch.randperm(self.N)
@@ -70,9 +71,9 @@ class Dataset:
         self.batch_i = 0
         self.epoch = 0
         # Transform into task pair dataset
-        self._build(C, X)
+        self._build(C, X, Y)
 
-    def _build(self, C, X):
+    def _build(self, C, X, Y):
         """
         Build the task pairs
         """
@@ -81,30 +82,33 @@ class Dataset:
 #         C_train = C[self.train_idx]
 #         X = (X - torch.mean(X_train, 0)) / torch.std(X_train, 0)
 #         C = (C - torch.mean(C_train, 0)) / torch.std(C_train, 0)
-        self.C = np.repeat(C, self.p ** 2, axis=0)
-        self.T = np.zeros((self.N, 2 * self.p))
-        self.X = np.zeros((self.N, 2))
+        self.C = np.repeat(C, self.x_p * self.y_p, axis=0)
+        self.T = np.zeros((self.N, self.x_p + self.y_p))
+        self.X = np.zeros(self.N)
+        self.Y = np.zeros(self.N)
         for n in range(self.N):
-            t_i = (n // self.p) % self.p
-            t_j = n % self.p
-            m = n // self.p ** 2
+            t_i = (n // self.y_p) % self.x_p
+            t_j = n % self.y_p
+            m = n // (self.x_p * self.y_p)
             # k = n // (k_n * self.p ** 2)
             x_i = X[m, t_i]
-            x_j = X[m, t_j]
-            self.X[n] = [x_i, x_j]
-            taskpair = np.zeros(self.p * 2)
+            y_j = Y[m, t_j]
+            self.X[n] = x_i
+            self.Y[n] = y_j
+            taskpair = np.zeros(self.x_p + self.y_p)
             taskpair[t_i] = 1
-            taskpair[self.p + t_j] = 1
+            taskpair[self.x_p + t_j] = 1
             self.T[n] = taskpair
         self.C = torch.tensor(self.C, dtype=self.dtype)
         self.T = torch.tensor(self.T, dtype=self.dtype)
         self.X = torch.tensor(self.X, dtype=self.dtype)
+        self.Y = torch.tensor(self.Y, dtype=self.dtype)
 
     def get_test(self):
         """
         Return the test set from train_test_split
         """
-        return self.C[self.test_idx], self.T[self.test_idx], self.X[self.test_idx]
+        return self.C[self.test_idx], self.T[self.test_idx], self.X[self.test_idx], self.Y[self.test_idx]
     
     def load_data(self, batch_size=32, device=None):
         """
@@ -121,7 +125,8 @@ class Dataset:
         C_batch = self.C[batch_idx]
         T_batch = self.T[batch_idx]
         X_batch = self.X[batch_idx]
+        Y_batch = self.Y[batch_idx]
         if device is None:
-            return C_batch.detach(), T_batch.detach(), X_batch.detach()
-        return C_batch.to(device), T_batch.to(device), X_batch.to(device)
+            return C_batch.detach(), T_batch.detach(), X_batch.detach(), Y_batch.detach()
+        return C_batch.to(device), T_batch.to(device), X_batch.to(device), Y_batch.to(device)
 
