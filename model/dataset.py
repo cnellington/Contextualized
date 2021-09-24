@@ -113,7 +113,7 @@ class Dataset:
         """
         batch_end = min(self.N, self.batch_i + batch_size)
         batch_idx = self.train_idx[self.batch_i:batch_end]
-        if batch_end == self.N:
+        if batch_end >= self.N:
             self.batch_i = 0
             self.epoch += 1
         else:
