@@ -51,60 +51,34 @@ class GaussianSimulator:
         return C, X
 
 
+def onehot_task(t_i, k):
+    task_rep = np.zeros(k)
+    task_rep[t_i] = 1
+    return task_rep
+
+
 class Dataset:
     """
     Dataset
     """
-    def __init__(self, C, X, Y, to_task=None, testsplit=0.2, seed=1, dtype=torch.float):
+    def __init__(self, C, X, Y, to_task=onehot_task, testsplit=0.2, seed=1, dtype=torch.float):
         self.seed = seed
         np.random.seed(self.seed)
         self.dtype = dtype
+        self.to_task = to_task
         self.C, self.X, self.Y = C, X, Y
         self.N, self.p_x = X.shape
         _, self.p_y = Y.shape
         self.c = C.shape[-1] 
         # Train/test split
         split = int(self.N * testsplit)
-        idx = torch.randperm(self.N)
+        idx = np.random.permutation(self.N)
         self.train_idx = idx[:-split]
         self.test_idx = idx[-split:]
         self.batch_i = 0
         self.epoch = 0
-#         # Transform into task pair dataset
-#         self._build(C, X, Y)
 
-#     def _build(self, C, X, Y):
-#         """
-#         Build the task pairs
-#         """
-# #         # TODO: Normalize C and X
-# #         X_train = X[self.train_idx]
-# #         C_train = C[self.train_idx]
-# #         X = (X - torch.mean(X_train, 0)) / torch.std(X_train, 0)
-# #         C = (C - torch.mean(C_train, 0)) / torch.std(C_train, 0)
-#         self.C = np.repeat(C, self.x_p * self.y_p, axis=0)
-#         self.T = np.zeros((self.N, self.x_p + self.y_p))
-#         self.X = np.zeros(self.N)
-#         self.Y = np.zeros(self.N)
-#         for n in range(self.N):
-#             t_i = (n // self.y_p) % self.x_p
-#             t_j = n % self.y_p
-#             m = n // (self.x_p * self.y_p)
-#             # k = n // (k_n * self.p ** 2)
-#             x_i = X[m, t_i]
-#             y_j = Y[m, t_j]
-#             self.X[n] = x_i
-#             self.Y[n] = y_j
-#             taskpair = np.zeros(self.x_p + self.y_p)
-#             taskpair[t_i] = 1
-#             taskpair[self.x_p + t_j] = 1
-#             self.T[n] = taskpair
-#         self.C = torch.tensor(self.C, dtype=self.dtype)
-#         self.T = torch.tensor(self.T, dtype=self.dtype)
-#         self.X = torch.tensor(self.X, dtype=self.dtype)
-#         self.Y = torch.tensor(self.Y, dtype=self.dtype)
-
-    def pairwise(self, C, X, Y, to_task=None):
+    def pairwise(self, C, X, Y):
         """
         Load a pairwise dataset of C, T, X, Y from full dataset C, X, Y, to_task()
         """
@@ -124,9 +98,9 @@ class Dataset:
             y_j = Y[m, t_j]
             X_pairwise[n] = x_i
             Y_pairwise[n] = y_j
-            taskpair = np.zeros(p_x + p_y)
-            taskpair[t_i] = 1
-            taskpair[p_x + t_j] = 1
+            task_x = self.to_task(t_i, p_x)
+            task_y = self.to_task(t_j, p_y)
+            taskpair = np.concatenate((task_x, task_y))
             T_pairwise[n] = taskpair
         C_pairwise = torch.tensor(C_pairwise, dtype=self.dtype)
         T_pairwise = torch.tensor(T_pairwise, dtype=self.dtype)
