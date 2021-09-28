@@ -1,4 +1,5 @@
 import unittest
+import pdb
 import numpy as np
 import torch
 from model.dataset import Dataset, GaussianSimulator
@@ -25,53 +26,68 @@ class TestDataset(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestDataset, self).__init__(*args, **kwargs)
         self.dtype = torch.float
-        self.x_p = 7
-        self.y_p = 3
+        self.p_x = 7
+        self.p_y = 3
         self.c = 5
         self.k = 5
         self.k_n = 10
-        self.sim = GaussianSimulator(self.x_p + self.y_p, self.k, self.c)
+        self.sim = GaussianSimulator(self.p_x + self.p_y, self.k, self.c)
         self.C_full, XY_full = self.sim.gen_samples(self.k_n)
-        self.X_full = XY_full[:,:self.x_p]
-        self.Y_full = XY_full[:,self.x_p:]
+        self.X_full = XY_full[:,:self.p_x]
+        self.Y_full = XY_full[:,self.p_x:]
         self.db = Dataset(self.C_full, self.X_full, self.Y_full, dtype=self.dtype)
 
     def test_taskpairs(self):
-        N = self.k * self.k_n * self.x_p * self.y_p
-        assert self.db.X.shape == (N,)
-        assert self.db.Y.shape == (N,)
-        assert self.db.T.shape == (N, self.x_p + self.y_p)
-        assert self.db.C.shape == (N, self.c)
+        N = self.k * self.k_n * self.p_x * self.p_y
+        C, T, X, Y = self.db.pairwise(self.C_full, self.X_full, self.Y_full)
+        assert X.shape == (N,)
+        assert Y.shape == (N,)
+        assert T.shape == (N, self.p_x + self.p_y)
+        assert C.shape == (N, self.c)
         n = 0
         for k in range(self.k):
             for m in range(self.k_n):
-                for i in range(self.x_p):
-                    for j in range(self.y_p):
+                for i in range(self.p_x):
+                    for j in range(self.p_y):
                         C_tensor = torch.tensor(self.sim.contexts[k], dtype=self.dtype)
                         m_full = k * self.k_n + m
                         X_full_tensor = torch.tensor(self.X_full[m_full], dtype=self.dtype)
                         Y_full_tensor = torch.tensor(self.Y_full[m_full], dtype=self.dtype)
-                        assert (self.db.C[n] == C_tensor).all()
-                        assert self.db.T[n, i] == 1
-                        assert self.db.T[n, self.x_p + j] == 1
-                        assert (self.db.X[n] == X_full_tensor[i]).item()
-                        assert (self.db.Y[n] == Y_full_tensor[j]).item()
+                        assert (C[n] == C_tensor).all()
+                        assert T[n, i] == 1
+                        assert T[n, self.p_x + j] == 1
+                        assert (X[n] == X_full_tensor[i]).item()
+                        assert (Y[n] == Y_full_tensor[j]).item()
                         n += 1
 
     def test_batching(self):
         # TODO test batching over multiple epochs
-        X_train = self.db.X[self.db.train_idx].detach().numpy()
-        Y_train = self.db.Y[self.db.train_idx].detach().numpy()
-        X_epoch = []
-        Y_epoch = []
+        train_idx = self.db.train_idx
+        C_train, T_train, X_train, Y_train = self.db.pairwise(self.C_full[train_idx], self.X_full[train_idx], self.Y_full[train_idx])
+        C_train = C_train.detach().numpy()
+        T_train = T_train.detach().numpy()
+        X_train = X_train.detach().numpy()
+        Y_train = Y_train.detach().numpy()
+        C_epoch, T_epoch, X_epoch, Y_epoch = [], [], [], []
         while len(X_epoch) < len(X_train):
-            _, _, X_batch, Y_batch = self.db.load_data()
+            C_batch, T_batch, X_batch, Y_batch = self.db.load_data()
+            C_batch = C_batch.numpy().tolist()
+            T_batch = T_batch.numpy().tolist()
             X_batch = X_batch.numpy().tolist()
             Y_batch = Y_batch.numpy().tolist()
+            C_epoch += C_batch
+            T_epoch += T_batch
             X_epoch += X_batch
             Y_epoch += Y_batch
-        X_epoch = np.array(X_epoch)
+        dtype = C_train.dtype
+        C_epoch = np.array(C_epoch, dtype=dtype)
+        T_epoch = np.array(T_epoch, dtype=dtype)
+        X_epoch = np.array(X_epoch, dtype=dtype)
+        Y_epoch = np.array(Y_epoch, dtype=dtype)
+        assert (C_train == C_epoch).all()
+        assert (T_train == T_epoch).all()
         assert (X_train == X_epoch).all()
+        assert (Y_train == Y_epoch).all()
         
 
 if __name__ == '__main__':
