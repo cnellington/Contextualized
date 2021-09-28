@@ -22,7 +22,7 @@ class TestCorrelator(unittest.TestCase):
             C, X = sim.gen_samples(k_n)
             db = Dataset(C, X, X)
             C_test, T_test, X_test, Y_test = db.get_test()
-            model = ContextualRegressor(db.C.shape, db.T.shape, num_archetypes=k_arch)
+            model = ContextualRegressor(C_test.shape, T_test.shape, num_archetypes=k_arch)
             betas, mus = model(C_test, T_test)
             init_loss = MSE(betas, mus, X_test, Y_test).detach().item()
             optimizer = torch.optim.Adam
