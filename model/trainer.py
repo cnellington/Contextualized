@@ -17,11 +17,13 @@ class Trainer:
         self.optimizer = optimizer
         self.db = database
 
-    def train(self, epochs, batch_size=32, lr=1e-3):
+    def train(self, epochs, batch_size=32, lr=1e-3, verbose=False):
         self.model.train()
         opt = self.optimizer(self.model.parameters(), lr=lr)
         while self.db.epoch < epochs:
             C, T, X, Y = self.db.load_data(batch_size=batch_size, device=DEVICE)
+            if len(C) == 0: # TODO: For some reason, multiple batches in a row are empty at the end of an epoch.
+                continue
             betas, mus = self.model(C, T)
             loss = MSE(betas, mus, X, Y)
             opt.zero_grad()
