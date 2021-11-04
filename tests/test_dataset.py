@@ -88,6 +88,15 @@ class TestDataset(unittest.TestCase):
         assert (T_train == T_epoch).all()
         assert (X_train == X_epoch).all()
         assert (Y_train == Y_epoch).all()
+
+    def test_get_test(self):
+        _, _, X_full, _ = self.db.get_test()
+        _, _, X_small, _ = self.db.get_test(batch_size=10)
+        _, _, X_end, _ = self.db.get_test(batch_size=10, batch_start=-10)
+        for x in X_small:
+            assert x in X_full
+        for x in X_end:
+            assert x in X_full
         
 
 if __name__ == '__main__':
