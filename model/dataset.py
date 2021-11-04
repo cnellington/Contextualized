@@ -71,10 +71,10 @@ class Dataset:
         _, self.p_y = Y.shape
         self.c = C.shape[-1] 
         # Train/test split
-        split = int(self.N * testsplit)
+        self.split = int(self.N * testsplit)
         idx = np.random.permutation(self.N)
-        self.train_idx = idx[:-split]
-        self.test_idx = idx[-split:]
+        self.train_idx = idx[:-self.split]
+        self.test_idx = idx[-self.split:]
         self.batch_i = 0
         self.epoch = 0
 
@@ -108,11 +108,22 @@ class Dataset:
         Y_pairwise = torch.tensor(Y_pairwise, dtype=self.dtype)
         return C_pairwise, T_pairwise, X_pairwise, Y_pairwise
 
-    def get_test(self):
+    def get_test(self, batch_size=None, batch_start=None):
         """
-        Return the test set from train_test_split
+        Return a batch from the test set
+        batch_size = None gives the full test set
+        batch_start = None gives a random subset of batch_size elements
+        batch_start = i gives the elements specified by test_idx[batch_start:batch_start+batch_size]
         """
-        return self.pairwise(self.C[self.test_idx], self.X[self.test_idx], self.Y[self.test_idx])
+        batch_idx = None
+        if batch_size is None:
+            batch_idx = self.test_idx
+        elif batch_start is None:
+            batch_idx = np.random.choice(self.test_idx, size=batch_size, replace=False)
+        else:
+            batch_end = min(self.split, batch_start + batch_size)
+            batch_idx = self.test_idx[batch_start:batch_end]
+        return self.pairwise(self.C[batch_idx], self.X[batch_idx], self.Y[batch_idx])
     
     def load_data(self, batch_size=32, device=None):
         """
