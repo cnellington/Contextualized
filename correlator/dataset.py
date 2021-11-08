@@ -69,6 +69,8 @@ class Dataset:
         elif batch_start is None:
             batch_idx = np.random.choice(self.train_idx, size=batch_size, replace=False)
         else:
+            if batch_start < 0:
+                batch_start += self.N
             batch_end = min(self.N, batch_start + batch_size)
             batch_idx = self.train_idx[batch_start:batch_end]
         return to_pairwise(self.C[batch_idx], self.X[batch_idx], self.Y[batch_idx])
