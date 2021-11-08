@@ -1,11 +1,22 @@
 import time
 import numpy as np
+from tqdm import tqdm
 import torch
 import torch.nn as nn
 from torch.nn.parameter import Parameter
 
+from correlator.dataset import Dataset
 
-class ContextualRegressor(nn.Module):
+DTYPE = torch.float 
+DEVICE = torch.device('cpu') 
+
+
+def MSE(beta, mu, x, y):
+    residual = beta.squeeze() * x + mu.squeeze() - y
+    return residual.pow(2).mean()
+
+
+class ContextualRegressorModule(nn.Module):
     """
     rho(c) = beta(c) * beta'(c)
     beta(c) = sigma(A @ f(c) + b)
@@ -17,7 +28,7 @@ class ContextualRegressor(nn.Module):
     """
 
     def __init__(self, context_shape, task_shape, num_archetypes=2, encoder_width=25, final_dense_size=10):
-        super(ContextualRegressor, self).__init__()
+        super(ContextualRegressorModule, self).__init__()
         self.context_encoder_in_shape = (context_shape[-1], 1)
         self.context_encoder_out_shape = (final_dense_size,)
         task_encoder_in_shape = (task_shape[-1] * 2, 1)
@@ -59,4 +70,32 @@ class ContextualRegressor(nn.Module):
         beta = torch.bmm(W_beta, Z)
         mu = torch.bmm(W_mu, Z)
         return self.flatten(beta), self.flatten(mu)
+
+
+class ContextualCorrelator:
+    def __init__(self, context_shape, task_shape, num_archetypes=2, encoder_width=25, final_dense_size=10):
+        self.model = ContextualRegressorModule(context_shape, task_shape, 
+                        num_archetypes=num_archetypes,
+                        encoder_width=encoder_width,
+                        final_dense_size=final_dense_size)
+
+    def fit(self, C, X, Y, epochs, batch_size, optimizer=torch.optim.Adam, lr=1e-3, es_patience=None):
+        self.model.train()
+        opt = optimizer(self.model.parameters(), lr=lr)
+        db = Dataset(C, X, Y)
+        # todo: log nondecreasing loss for early stopping
+        for _ in tqdm(range(epochs)):
+            for batch_start in tqdm(range(0, len(X) + batch_size - 1, batch_size)):
+                C, T, X, Y = db.load_data(batch_start=batch_start, batch_size=batch_size) 
+                betas, mus = self.model(C, T)
+                loss = MSE(betas, mus, X, Y)
+                opt.zero_grad()
+                loss.backward()
+                opt.step()
+
+    def predict_beta(self, C, T=None):
+        pass
+
+    def predict_rho(self, C, T=None):
+        pass
 
