@@ -79,19 +79,26 @@ class ContextualCorrelator:
                         encoder_width=encoder_width,
                         final_dense_size=final_dense_size)
 
+    def get_mse(self, C, X, Y):
+        C, T, X, Y = Dataset(C, X, Y).load_data()
+        betas, mus = self.model(C, T)
+        mse = MSE(betas, mus, X, Y)
+        return mse.detach().item()
+
     def fit(self, C, X, Y, epochs, batch_size, optimizer=torch.optim.Adam, lr=1e-3, es_patience=None):
         self.model.train()
         opt = optimizer(self.model.parameters(), lr=lr)
         db = Dataset(C, X, Y)
         # todo: log nondecreasing loss for early stopping
         for _ in tqdm(range(epochs)):
-            for batch_start in tqdm(range(0, len(X) + batch_size - 1, batch_size)):
+            for batch_start in range(0, len(X) + batch_size - 1, batch_size):
                 C, T, X, Y = db.load_data(batch_start=batch_start, batch_size=batch_size) 
                 betas, mus = self.model(C, T)
                 loss = MSE(betas, mus, X, Y)
                 opt.zero_grad()
                 loss.backward()
                 opt.step()
+        self.model.eval()
 
     def predict_beta(self, C, T=None):
         pass
