@@ -30,6 +30,19 @@ class TestCorrelator(unittest.TestCase):
             converges[i] = stop_loss < init_loss
         assert converges.all()
 
+    def test_predict(self):
+        k, p, c, k_n = 4, 8, 4, 10
+        k_arch = k * p ** 2
+        sim = GaussianSimulator(p, k, c)
+        C_train, X_train = sim.gen_samples(k_n)
+        C_test, X_test = sim.gen_samples(k_n)
+        task_shape = (X_train.shape[-1] * 2,)
+        model = ContextualCorrelator(C_train.shape, task_shape, num_archetypes=k_arch)
+        model.fit(C_train, X_train, X_train, epochs=50, batch_size=1)
+        betas, mus = model.predict_regression(C_test)
+        rhos = model.predict_correlation(C_test)
+        assert (rhos == np.transpose(rhos, axes=(0, 2, 1))).all()
+
 
 if __name__ == '__main__':
     unittest.main()
