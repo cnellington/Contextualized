@@ -105,6 +105,10 @@ class ContextualCorrelator:
         self.model.eval()
 
     def predict_regression(self, C):
+        """
+        Predict a (p_x, p_y) matrix of regression coefficients and offsets for each context
+        beta[i,j] and mu[i,j] solve the regression problem y_j = beta[i,j] * x_i + mu[i,j]
+        """
         n = C.shape[0]
         X_temp = np.zeros((n, self._px))
         Y_temp = np.zeros((n, self._py))
@@ -115,6 +119,9 @@ class ContextualCorrelator:
         return betas, mus
 
     def predict_correlation(self, C):
+        """
+        Predict a (p_x, p_y) matrix of squared Pearson's correlation coefficients for each context
+        """
         betas, mus = self.predict_regression(C)
         betas_T = np.transpose(betas, axes=(0, 2, 1))
         rho = betas * betas_T

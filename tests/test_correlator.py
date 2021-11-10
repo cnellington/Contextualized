@@ -31,17 +31,23 @@ class TestCorrelator(unittest.TestCase):
         assert converges.all()
 
     def test_predict(self):
-        k, p, c, k_n = 4, 8, 4, 10
-        k_arch = k * p ** 2
+        k, p, c, k_n = 1, 3, 1, 10000
+        k_arch = 2 * k * p ** 2
         sim = GaussianSimulator(p, k, c)
+        true_sigma = sim.sigmas[0]
+        true_vars_tiled = np.tile(true_sigma.diagonal(), (p, 1)).T
+        true_betas = true_sigma / np.sqrt(true_vars_tiled)  # beta[i,j] = beta_{i-->j}
+        true_rhos = np.power(true_sigma, 2) / (true_vars_tiled * true_vars_tiled.T)
         C_train, X_train = sim.gen_samples(k_n)
-        C_test, X_test = sim.gen_samples(k_n)
+        C_test, X_test = sim.gen_samples(1)
         task_shape = (X_train.shape[-1] * 2,)
         model = ContextualCorrelator(C_train.shape, task_shape, num_archetypes=k_arch)
-        model.fit(C_train, X_train, X_train, epochs=50, batch_size=1)
+        model.fit(C_train, X_train, X_train, epochs=100, batch_size=1)
         betas, mus = model.predict_regression(C_test)
         rhos = model.predict_correlation(C_test)
         assert (rhos == np.transpose(rhos, axes=(0, 2, 1))).all()
+        # todo: require exact convergence in the single archetype case
+        # assert np.allclose(rhos[0] == true_rhos, atol=1e-3)
 
 
 if __name__ == '__main__':

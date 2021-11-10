@@ -44,8 +44,8 @@ class Dataset:
     """
     Dataset
     """
-    def __init__(self, C, X, Y, task_fn=onehot_task, seed=1, dtype=torch.float):
-        self.seed = seed
+    def __init__(self, C, X, Y, task_fn=onehot_task, seed=None, dtype=torch.float):
+        self.seed = seed if seed is not None else np.random.randint(1e9)
         np.random.seed(self.seed)
         self.dtype = dtype
         self.task_fn = task_fn
