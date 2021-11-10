@@ -2,9 +2,10 @@ import time
 import unittest
 import numpy as np
 import torch
-from model.dataset import GaussianSimulator, Dataset
-from model.correlator import ContextualRegressor
-from model.trainer import Trainer, MSE, DTYPE, DEVICE 
+
+from correlator.correlator import ContextualCorrelator, MSE, DTYPE, DEVICE
+from correlator.dataset import Dataset
+from correlator.helpers.simulation import GaussianSimulator
 
 
 class TestCorrelator(unittest.TestCase):
@@ -19,19 +20,34 @@ class TestCorrelator(unittest.TestCase):
         converges = np.zeros(runs)
         for i in range(10):
             sim = GaussianSimulator(p, k, c)
-            C, X = sim.gen_samples(k_n)
-            db = Dataset(C, X, X)
-            C_test, T_test, X_test, Y_test = db.get_test()
-            model = ContextualRegressor(C_test.shape, T_test.shape, num_archetypes=k_arch)
-            betas, mus = model(C_test, T_test)
-            init_loss = MSE(betas, mus, X_test, Y_test).detach().item()
-            optimizer = torch.optim.Adam
-            trainer = Trainer(model, optimizer, db)
-            trainer.train(epochs)
-            betas, mus = model(C_test, T_test)
-            stop_loss = MSE(betas, mus, X_test, Y_test).detach().item()
+            C_train, X_train = sim.gen_samples(k_n)
+            C_test, X_test = sim.gen_samples(k_n)
+            task_shape = (X_train.shape[-1] * 2,)
+            model = ContextualCorrelator(C_train.shape, task_shape, num_archetypes=k_arch)
+            init_loss = model.get_mse(C_test, X_test, X_test)
+            model.fit(C_train, X_train, X_train, epochs=50, batch_size=1)
+            stop_loss = model.get_mse(C_test, X_test, X_test)
             converges[i] = stop_loss < init_loss
         assert converges.all()
+
+    def test_predict(self):
+        k, p, c, k_n = 1, 3, 1, 10000
+        k_arch = 2 * k * p ** 2
+        sim = GaussianSimulator(p, k, c)
+        true_sigma = sim.sigmas[0]
+        true_vars_tiled = np.tile(true_sigma.diagonal(), (p, 1)).T
+        true_betas = true_sigma / np.sqrt(true_vars_tiled)  # beta[i,j] = beta_{i-->j}
+        true_rhos = np.power(true_sigma, 2) / (true_vars_tiled * true_vars_tiled.T)
+        C_train, X_train = sim.gen_samples(k_n)
+        C_test, X_test = sim.gen_samples(1)
+        task_shape = (X_train.shape[-1] * 2,)
+        model = ContextualCorrelator(C_train.shape, task_shape, num_archetypes=k_arch)
+        model.fit(C_train, X_train, X_train, epochs=100, batch_size=1)
+        betas, mus = model.predict_regression(C_test)
+        rhos = model.predict_correlation(C_test)
+        assert (rhos == np.transpose(rhos, axes=(0, 2, 1))).all()
+        # todo: require exact convergence in the single archetype case
+        # assert np.allclose(rhos[0] == true_rhos, atol=1e-3)
 
 
 if __name__ == '__main__':

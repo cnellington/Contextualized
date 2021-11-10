@@ -2,7 +2,9 @@ import unittest
 import pdb
 import numpy as np
 import torch
-from model.dataset import Dataset, GaussianSimulator
+
+from correlator.dataset import Dataset, to_pairwise
+from correlator.helpers.simulation import GaussianSimulator
 
 
 class TestGaussianSimulator(unittest.TestCase):
@@ -39,7 +41,7 @@ class TestDataset(unittest.TestCase):
 
     def test_taskpairs(self):
         N = self.k * self.k_n * self.p_x * self.p_y
-        C, T, X, Y = self.db.pairwise(self.C_full, self.X_full, self.Y_full)
+        C, T, X, Y = to_pairwise(self.C_full, self.X_full, self.Y_full)
         assert X.shape == (N,)
         assert Y.shape == (N,)
         assert T.shape == (N, self.p_x + self.p_y)
@@ -60,43 +62,13 @@ class TestDataset(unittest.TestCase):
                         assert (Y[n] == Y_full_tensor[j]).item()
                         n += 1
 
-    def test_batching(self):
-        # TODO test batching over multiple epochs
-        train_idx = self.db.train_idx
-        C_train, T_train, X_train, Y_train = self.db.pairwise(self.C_full[train_idx], self.X_full[train_idx], self.Y_full[train_idx])
-        C_train = C_train.detach().numpy()
-        T_train = T_train.detach().numpy()
-        X_train = X_train.detach().numpy()
-        Y_train = Y_train.detach().numpy()
-        C_epoch, T_epoch, X_epoch, Y_epoch = [], [], [], []
-        while len(X_epoch) < len(X_train):
-            C_batch, T_batch, X_batch, Y_batch = self.db.load_data()
-            C_batch = C_batch.numpy().tolist()
-            T_batch = T_batch.numpy().tolist()
-            X_batch = X_batch.numpy().tolist()
-            Y_batch = Y_batch.numpy().tolist()
-            C_epoch += C_batch
-            T_epoch += T_batch
-            X_epoch += X_batch
-            Y_epoch += Y_batch
-        dtype = C_train.dtype
-        C_epoch = np.array(C_epoch, dtype=dtype)
-        T_epoch = np.array(T_epoch, dtype=dtype)
-        X_epoch = np.array(X_epoch, dtype=dtype)
-        Y_epoch = np.array(Y_epoch, dtype=dtype)
-        assert (C_train == C_epoch).all()
-        assert (T_train == T_epoch).all()
-        assert (X_train == X_epoch).all()
-        assert (Y_train == Y_epoch).all()
-
-    def test_get_test(self):
-        _, _, X_full, _ = self.db.get_test()
-        _, _, X_small, _ = self.db.get_test(batch_size=10)
-        _, _, X_end, _ = self.db.get_test(batch_size=10, batch_start=-10)
+    def test_load_data(self):
+        _, _, X_full, _ = self.db.load_data()
+        _, _, X_small, _ = self.db.load_data(batch_size=10)
+        _, _, X_end, _ = self.db.load_data(batch_size=10, batch_start=-10)
         for x in X_small:
             assert x in X_full
-        for x in X_end:
-            assert x in X_full
+        assert (X_full[-10 * self.p_x * self.p_y:].numpy() == X_end.numpy()).all()
         
 
 if __name__ == '__main__':
