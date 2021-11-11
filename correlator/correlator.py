@@ -39,7 +39,7 @@ class ContextualRegressorModule(nn.Module):
             nn.Linear(context_shape[-1], encoder_width), 
             nn.ReLU(),
             nn.Linear(encoder_width, final_dense_size), 
-            nn.ReLU(), 
+#             nn.ReLU(), 
         )
         self.beta_task_encoder = nn.Sequential(
             nn.Linear(task_shape[-1], encoder_width), 
