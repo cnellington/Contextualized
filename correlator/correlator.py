@@ -28,27 +28,28 @@ class ContextualRegressorModule(nn.Module):
     g(t_i, t_j) = softmax(dense(t_i, t_j))
     """
 
-    def __init__(self, context_shape, task_shape, num_archetypes=2, encoder_width=25, final_dense_size=10):
+    def __init__(self, context_dim, x_dim, y_dim, num_archetypes=10, encoder_width=25, final_dense_size=10):
         super(ContextualRegressorModule, self).__init__()
-        self.context_encoder_in_shape = (context_shape[-1], 1)
+        self.context_encoder_in_shape = (context_dim, 1)
         self.context_encoder_out_shape = (final_dense_size,)
-        task_encoder_in_shape = (task_shape[-1] * 2, 1)
+        taskpair_dim = max(x_dim, y_dim) * 2
+        task_encoder_in_shape = (taskpair_dim, 1)
         task_encoder_out_shape = (final_dense_size,)
         
         self.context_encoder = nn.Sequential(
-            nn.Linear(context_shape[-1], encoder_width), 
+            nn.Linear(context_dim, encoder_width), 
             nn.ReLU(),
             nn.Linear(encoder_width, final_dense_size), 
-#             nn.ReLU(), 
+            nn.ReLU(), 
         )
         self.beta_task_encoder = nn.Sequential(
-            nn.Linear(task_shape[-1], encoder_width), 
+            nn.Linear(taskpair_dim, encoder_width), 
             nn.ReLU(),
             nn.Linear(encoder_width, num_archetypes),
             nn.Softmax(dim=1), 
         )
         self.mu_task_encoder = nn.Sequential(
-            nn.Linear(task_shape[-1], encoder_width), 
+            nn.Linear(taskpair_dim, encoder_width), 
             nn.ReLU(),
             nn.Linear(encoder_width, num_archetypes),
             nn.Softmax(dim=1), 
@@ -74,13 +75,13 @@ class ContextualRegressorModule(nn.Module):
 
 
 class ContextualCorrelator:
-    def __init__(self, context_shape, task_shape, num_archetypes=2, encoder_width=25, final_dense_size=10):
-        self.model = ContextualRegressorModule(context_shape, task_shape, 
+    def __init__(self, context_dim, x_dim, y_dim, num_archetypes=10, encoder_width=25, final_dense_size=10):
+        self.model = ContextualRegressorModule(context_dim, x_dim, y_dim,  
                         num_archetypes=num_archetypes,
                         encoder_width=encoder_width,
                         final_dense_size=final_dense_size)
-        self._px = None
-        self._py = None
+        self.x_dim = x_dim
+        self.y_dim = y_dim
 
     def get_mse(self, C, X, Y):
         C, T, X, Y = Dataset(C, X, Y).load_data()
@@ -89,7 +90,6 @@ class ContextualCorrelator:
         return mse.detach().item()
 
     def fit(self, C, X, Y, epochs, batch_size, optimizer=torch.optim.Adam, lr=1e-3, es_patience=None):
-        self._px, self._py = X.shape[-1], Y.shape[-1]
         self.model.train()
         opt = optimizer(self.model.parameters(), lr=lr)
         db = Dataset(C, X, Y)
@@ -110,12 +110,12 @@ class ContextualCorrelator:
         beta[i,j] and mu[i,j] solve the regression problem y_j = beta[i,j] * x_i + mu[i,j]
         """
         n = C.shape[0]
-        X_temp = np.zeros((n, self._px))
-        Y_temp = np.zeros((n, self._py))
+        X_temp = np.zeros((n, self.x_dim))
+        Y_temp = np.zeros((n, self.y_dim))
         C, T, _, _ = to_pairwise(C, X_temp, Y_temp)
         betas, mus = self.model(C, T)
-        betas = betas.detach().numpy().reshape((n, self._px, self._py))
-        mus = mus.detach().numpy().reshape((n, self._px, self._py))
+        betas = betas.detach().numpy().reshape((n, self.x_dim, self.y_dim))
+        mus = mus.detach().numpy().reshape((n, self.x_dim, self.y_dim))
         return betas, mus
 
     def predict_correlation(self, C):

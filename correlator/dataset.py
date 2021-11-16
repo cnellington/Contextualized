@@ -15,9 +15,10 @@ def to_pairwise(C, X, Y, task_fn=onehot_task, dtype=torch.float):
     """
     n, p_x = X.shape
     _, p_y = Y.shape
+    p_t = max(p_x, p_y)
     N = n * p_x * p_y
     C_pairwise = np.repeat(C, p_x * p_y, axis=0)
-    T_pairwise = np.zeros((N, p_x + p_y))
+    T_pairwise = np.zeros((N, p_t * 2))
     X_pairwise = np.zeros(N)
     Y_pairwise = np.zeros(N)
     for n in range(N):
@@ -29,8 +30,8 @@ def to_pairwise(C, X, Y, task_fn=onehot_task, dtype=torch.float):
         y_j = Y[m, t_j]
         X_pairwise[n] = x_i
         Y_pairwise[n] = y_j
-        task_x = task_fn(t_i, p_x)
-        task_y = task_fn(t_j, p_y)
+        task_x = task_fn(t_i, p_t)
+        task_y = task_fn(t_j, p_t)
         taskpair = np.concatenate((task_x, task_y))
         T_pairwise[n] = taskpair
     C_pairwise = torch.tensor(C_pairwise, dtype=dtype)
@@ -74,21 +75,4 @@ class Dataset:
             batch_end = min(self.N, batch_start + batch_size)
             batch_idx = self.train_idx[batch_start:batch_end]
         return to_pairwise(self.C[batch_idx], self.X[batch_idx], self.Y[batch_idx])
-    
-#     def load_data(self, batch_size=32, device=None):
-#         """
-#         Load batch_size samples from the training set
-#         A single epoch should see training samples exactly once
-#         """
-#         batch_end = min(self.N, self.batch_i + batch_size)
-#         batch_idx = self.train_idx[self.batch_i:batch_end]
-#         if batch_end >= self.N:
-#             self.batch_i = 0
-#             self.epoch += 1
-#         else:
-#             self.batch_i += batch_size
-#         C_batch, T_batch, X_batch, Y_batch = self.pairwise(self.C[batch_idx], self.X[batch_idx], self.Y[batch_idx])
-#         if device is None:
-#             return C_batch.detach(), T_batch.detach(), X_batch.detach(), Y_batch.detach()
-#         return C_batch.to(device), T_batch.to(device), X_batch.to(device), Y_batch.to(device)
 
