@@ -44,7 +44,7 @@ class TestDataset(unittest.TestCase):
         C, T, X, Y = to_pairwise(self.C_full, self.X_full, self.Y_full)
         assert X.shape == (N,)
         assert Y.shape == (N,)
-        assert T.shape == (N, self.p_x + self.p_y)
+        assert T.shape == (N, max(self.p_x, self.p_y) * 2)
         assert C.shape == (N, self.c)
         n = 0
         for k in range(self.k):

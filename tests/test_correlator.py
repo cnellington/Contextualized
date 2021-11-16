@@ -22,8 +22,8 @@ class TestCorrelator(unittest.TestCase):
             sim = GaussianSimulator(p, k, c)
             C_train, X_train = sim.gen_samples(k_n)
             C_test, X_test = sim.gen_samples(k_n)
-            task_shape = (X_train.shape[-1] * 2,)
-            model = ContextualCorrelator(C_train.shape, task_shape, num_archetypes=k_arch)
+            c_dim, x_dim, y_dim = C_train.shape[-1], X_train.shape[-1], X_train.shape[-1]
+            model = ContextualCorrelator(c_dim, x_dim, y_dim, num_archetypes=k_arch)
             init_loss = model.get_mse(C_test, X_test, X_test)
             model.fit(C_train, X_train, X_train, epochs=50, batch_size=1)
             stop_loss = model.get_mse(C_test, X_test, X_test)
@@ -36,15 +36,23 @@ class TestCorrelator(unittest.TestCase):
         sim = GaussianSimulator(p, k, c)
         true_sigma = sim.sigmas[0]
         true_vars_tiled = np.tile(true_sigma.diagonal(), (p, 1)).T
-        true_betas = true_sigma / np.sqrt(true_vars_tiled)  # beta[i,j] = beta_{i-->j}
+        true_betas = true_sigma / true_vars_tiled  # beta[i,j] = beta_{i-->j}
         true_rhos = np.power(true_sigma, 2) / (true_vars_tiled * true_vars_tiled.T)
         C_train, X_train = sim.gen_samples(k_n)
         C_test, X_test = sim.gen_samples(1)
-        task_shape = (X_train.shape[-1] * 2,)
-        model = ContextualCorrelator(C_train.shape, task_shape, num_archetypes=k_arch)
+        c_dim, x_dim, y_dim = C_train.shape[-1], X_train.shape[-1], X_train.shape[-1]
+        model = ContextualCorrelator(c_dim, x_dim, y_dim, num_archetypes=k_arch)
         model.fit(C_train, X_train, X_train, epochs=100, batch_size=1)
         betas, mus = model.predict_regression(C_test)
         rhos = model.predict_correlation(C_test)
+        print(rhos)
+        print()
+        print(true_rhos)
+        print()
+        print()
+        print(betas)
+        print()
+        print(true_betas)
         assert (rhos == np.transpose(rhos, axes=(0, 2, 1))).all()
         # todo: require exact convergence in the single archetype case
         # assert np.allclose(rhos[0] == true_rhos, atol=1e-3)
