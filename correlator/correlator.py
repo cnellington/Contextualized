@@ -144,24 +144,24 @@ class ContextualCorrelator:
         mus = mus.detach().numpy().reshape((n, self.x_dim, self.y_dim, 1))
         return betas, mus
 
-    def predict_regression(self, C, bootstrap_mean=True):
+    def predict_regression(self, C, all_bootstraps=False):
         betas, mus = self._predict_regression(self.models[0], C)
         for model in self.models[1:]:
             betas_i, mus_i = self._predict_regression(model, C)
             betas = np.concatenate((betas, betas_i), axis=-1)
             mus = np.concatenate((mus, mus_i), axis=-1)
-        if bootstrap_mean:
-            return betas.mean(axis=-1), mus.mean(axis=-1)
-        return betas, mus
+        if all_bootstraps:
+            return betas, mus
+        return betas.mean(axis=-1), mus.mean(axis=-1)
 
-    def predict_correlation(self, C, bootstrap_mean=True):
+    def predict_correlation(self, C, all_bootstraps=False):
         """
         Predict a (p_x, p_y) matrix of squared Pearson's correlation coefficients for each context
         """
-        betas, mus = self.predict_regression(C, bootstrap_mean=False)
+        betas, mus = self.predict_regression(C, all_bootstraps=True)
         betas_T = np.transpose(betas, axes=(0, 2, 1, 3))
         rho = betas * betas_T
-        if bootstrap_mean:
-            return rho.mean(axis=-1)
-        return rho
+        if all_bootstraps:
+            return rho
+        return rho.mean(axis=-1)
 
