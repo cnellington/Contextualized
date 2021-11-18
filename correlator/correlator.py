@@ -75,11 +75,21 @@ class ContextualRegressorModule(nn.Module):
 
 
 class ContextualCorrelator:
-    def __init__(self, context_dim, x_dim, y_dim, num_archetypes=10, encoder_width=25, final_dense_size=10):
-        self.model = ContextualRegressorModule(context_dim, x_dim, y_dim,  
-                        num_archetypes=num_archetypes,
-                        encoder_width=encoder_width,
-                        final_dense_size=final_dense_size)
+    def __init__(self, context_dim, x_dim, y_dim, num_archetypes=10, encoder_width=25, final_dense_size=10, bootstraps=None):
+        module_params = {
+            'context_dim': context_dim,
+            'x_dim': x_dim, 
+            'y_dim': y_dim,
+            'num_archetypes': num_archetypes,
+            'encoder_width': encoder_width,
+            'final_dense_size': final_dense_size,
+        }
+        if bootstraps is None:
+            self.model = ContextualRegressorModule(**module_params)
+            self.models = [self.model]
+        else:
+            self.model = None
+            self.models = [ContextualRegressorModule(**module_params) for _ in range(bootstraps)]
         self.x_dim = x_dim
         self.y_dim = y_dim
 
@@ -89,22 +99,38 @@ class ContextualCorrelator:
         mse = MSE(betas, mus, X, Y)
         return mse.detach().item()
 
-    def fit(self, C, X, Y, epochs, batch_size, optimizer=torch.optim.Adam, lr=1e-3, es_patience=None):
-        self.model.train()
-        opt = optimizer(self.model.parameters(), lr=lr)
+    def _fit(self, model, C, X, Y, epochs, batch_size, optimizer=torch.optim.Adam, lr=1e-3, es_patience=None):
+        model.train()
+        opt = optimizer(model.parameters(), lr=lr)
         db = Dataset(C, X, Y)
         # todo: log nondecreasing loss for early stopping
         for _ in tqdm(range(epochs)):
             for batch_start in range(0, len(X) + batch_size - 1, batch_size):
                 C, T, X, Y = db.load_data(batch_start=batch_start, batch_size=batch_size) 
-                betas, mus = self.model(C, T)
+                betas, mus = model(C, T)
                 loss = MSE(betas, mus, X, Y)
                 opt.zero_grad()
                 loss.backward()
                 opt.step()
-        self.model.eval()
+        model.eval()
 
-    def predict_regression(self, C):
+    def fit(self, C, X, Y, epochs, batch_size, optimizer=torch.optim.Adam, lr=1e-3, es_patience=None):
+        fit_params = {
+            'C': C, 'X': X, 'Y': Y, 'epochs': epochs, 'batch_size': batch_size, 
+            'optimizer': optimizer, 'lr': lr, 'es_patience': es_patience
+        }
+        if self.model:
+            fit_params['model'] = self.model
+            self._fit(**fit_params)
+        else:
+            for model in self.models:
+                boot_idx = np.random.choice(np.arange(len(X)), size=len(X), replace=True)
+                fit_params.update({
+                    'model': model, 'C': C[boot_idx], 'X': X[boot_idx], 'Y': Y[boot_idx],
+                })
+                self._fit(**fit_params)
+
+    def _predict_regression(self, model, C):
         """
         Predict a (p_x, p_y) matrix of regression coefficients and offsets for each context
         beta[i,j] and mu[i,j] solve the regression problem y_j = beta[i,j] * x_i + mu[i,j]
@@ -113,17 +139,29 @@ class ContextualCorrelator:
         X_temp = np.zeros((n, self.x_dim))
         Y_temp = np.zeros((n, self.y_dim))
         C, T, _, _ = to_pairwise(C, X_temp, Y_temp)
-        betas, mus = self.model(C, T)
-        betas = betas.detach().numpy().reshape((n, self.x_dim, self.y_dim))
-        mus = mus.detach().numpy().reshape((n, self.x_dim, self.y_dim))
+        betas, mus = model(C, T)
+        betas = betas.detach().numpy().reshape((n, self.x_dim, self.y_dim, 1))
+        mus = mus.detach().numpy().reshape((n, self.x_dim, self.y_dim, 1))
         return betas, mus
 
-    def predict_correlation(self, C):
+    def predict_regression(self, C, all_bootstraps=False):
+        betas, mus = self._predict_regression(self.models[0], C)
+        for model in self.models[1:]:
+            betas_i, mus_i = self._predict_regression(model, C)
+            betas = np.concatenate((betas, betas_i), axis=-1)
+            mus = np.concatenate((mus, mus_i), axis=-1)
+        if all_bootstraps:
+            return betas, mus
+        return betas.mean(axis=-1), mus.mean(axis=-1)
+
+    def predict_correlation(self, C, all_bootstraps=False):
         """
         Predict a (p_x, p_y) matrix of squared Pearson's correlation coefficients for each context
         """
-        betas, mus = self.predict_regression(C)
-        betas_T = np.transpose(betas, axes=(0, 2, 1))
+        betas, mus = self.predict_regression(C, all_bootstraps=True)
+        betas_T = np.transpose(betas, axes=(0, 2, 1, 3))
         rho = betas * betas_T
-        return rho
+        if all_bootstraps:
+            return rho
+        return rho.mean(axis=-1)
 
