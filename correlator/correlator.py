@@ -9,7 +9,7 @@ from correlator.dataset import Dataset, to_pairwise
 
 
 DTYPE = torch.float 
-DEVICE = torch.device('cpu') 
+DEVICE = torch.device('cuda') 
 
 
 def MSE(beta, mu, x, y):
@@ -103,15 +103,21 @@ class ContextualCorrelator:
         model.train()
         opt = optimizer(model.parameters(), lr=lr)
         db = Dataset(C, X, Y)
+        progress_bar = tqdm(range(epochs))
         # todo: log nondecreasing loss for early stopping
-        for _ in tqdm(range(epochs)):
+        for epoch in progress_bar:
             for batch_start in range(0, len(X) + batch_size - 1, batch_size):
-                C, T, X, Y = db.load_data(batch_start=batch_start, batch_size=batch_size) 
-                betas, mus = model(C, T)
-                loss = MSE(betas, mus, X, Y)
+                C_paired, T_paired, X_paired, Y_paired = db.load_data(batch_start=batch_start, batch_size=batch_size) 
+                betas, mus = model(C_paired, T_paired)
+                loss = MSE(betas, mus, X_paired, Y_paired)
                 opt.zero_grad()
                 loss.backward()
                 opt.step()
+                progress_bar.set_description(f'[Train MSE: {loss.item():.4f}] [Sample: {batch_start}/{len(X)}] Epoch')
+#                 progress_bar.set_description('[epoch: {epoch}/{epochs}] [sample: {batch_start}/{samples}] [mse: {mse:.4f}]'.format(
+#                     epoch=epoch, epochs=epochs, batch_start=batch_start, samples=len(X), mse=loss.item(), 
+#                 ))
+        progress_bar.update(epochs)
         model.eval()
 
     def fit(self, C, X, Y, epochs, batch_size, optimizer=torch.optim.Adam, lr=1e-3, es_patience=None):
