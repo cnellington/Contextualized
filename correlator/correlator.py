@@ -9,7 +9,7 @@ from correlator.dataset import Dataset, to_pairwise
 
 
 DTYPE = torch.float 
-DEVICE = torch.device('cuda') 
+DEVICE = torch.device('cpu') 
 
 
 def MSE(beta, mu, x, y):
@@ -99,10 +99,13 @@ class ContextualCorrelator:
         mse = MSE(betas, mus, X, Y)
         return mse.detach().item()
 
-    def _fit(self, model, C, X, Y, epochs, batch_size, optimizer=torch.optim.Adam, lr=1e-3, es_patience=None):
+    def _fit(self, model, C, X, Y, epochs, batch_size, optimizer=torch.optim.Adam, lr=1e-3, validation_set=None, es_patience=None):
         model.train()
         opt = optimizer(model.parameters(), lr=lr)
         db = Dataset(C, X, Y)
+        if validation_set is not None:
+            Cval, Xval, Yval = validation_set
+            val_db = Dataset(Cval, Xval, Yval)
         progress_bar = tqdm(range(epochs))
         # todo: log nondecreasing loss for early stopping
         for epoch in progress_bar:
@@ -113,17 +116,21 @@ class ContextualCorrelator:
                 opt.zero_grad()
                 loss.backward()
                 opt.step()
-                progress_bar.set_description(f'[Train MSE: {loss.item():.4f}] [Sample: {batch_start}/{len(X)}] Epoch')
-#                 progress_bar.set_description('[epoch: {epoch}/{epochs}] [sample: {batch_start}/{samples}] [mse: {mse:.4f}]'.format(
-#                     epoch=epoch, epochs=epochs, batch_start=batch_start, samples=len(X), mse=loss.item(), 
-#                 ))
-        progress_bar.update(epochs)
+                train_desc = f'[Train MSE: {loss.item():.4f}] [Sample: {batch_start}/{len(X)}] Epoch'
+                if validation_set is not None:
+                    # Validation sample loss
+                    Cval_paired, Tval_paired, Xval_paired, Yval_paired = val_db.load_data(batch_size=batch_size)
+                    val_betas, val_mus = model(Cval_paired, Tval_paired)
+                    val_loss = MSE(val_betas, val_mus, Xval_paired, Yval_paired)
+                    train_desc = f"[Val MSE: {val_loss.item():.4f}] " + train_desc
+                progress_bar.set_description(train_desc)
         model.eval()
 
-    def fit(self, C, X, Y, epochs, batch_size, optimizer=torch.optim.Adam, lr=1e-3, es_patience=None):
+    def fit(self, C, X, Y, epochs, batch_size, optimizer=torch.optim.Adam, lr=1e-3, validation_set=None, es_patience=None):
         fit_params = {
             'C': C, 'X': X, 'Y': Y, 'epochs': epochs, 'batch_size': batch_size, 
-            'optimizer': optimizer, 'lr': lr, 'es_patience': es_patience
+            'optimizer': optimizer, 'lr': lr, 
+            'validation_set': validation_set, 'es_patience': es_patience,
         }
         if self.model:
             fit_params['model'] = self.model
