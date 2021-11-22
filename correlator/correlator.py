@@ -99,7 +99,7 @@ class ContextualCorrelator:
         mse = MSE(betas, mus, X, Y)
         return mse.detach().item()
 
-    def _fit(self, model, C, X, Y, epochs, batch_size, optimizer=torch.optim.Adam, lr=1e-3, validation_set=None, es_patience=None):
+    def _fit(self, model, C, X, Y, epochs, batch_size, optimizer=torch.optim.Adam, lr=1e-3, validation_set=None, es_patience=None, es_epoch=0):
         model.train()
         opt = optimizer(model.parameters(), lr=lr)
         db = Dataset(C, X, Y)
@@ -107,9 +107,10 @@ class ContextualCorrelator:
             Cval, Xval, Yval = validation_set
             val_db = Dataset(Cval, Xval, Yval)
         progress_bar = tqdm(range(epochs))
-        # todo: log nondecreasing loss for early stopping
+        min_loss = np.inf
+        es_count = 0
         for epoch in progress_bar:
-            for batch_start in range(0, len(X) + batch_size - 1, batch_size):
+            for batch_start in range(0, len(X), batch_size):
                 C_paired, T_paired, X_paired, Y_paired = db.load_data(batch_start=batch_start, batch_size=batch_size) 
                 betas, mus = model(C_paired, T_paired)
                 loss = MSE(betas, mus, X_paired, Y_paired)
@@ -117,31 +118,39 @@ class ContextualCorrelator:
                 loss.backward()
                 opt.step()
                 train_desc = f'[Train MSE: {loss.item():.4f}] [Sample: {batch_start}/{len(X)}] Epoch'
-                if validation_set is not None:
-                    # Validation sample loss
+                if validation_set is not None:  # Validation set loss
                     Cval_paired, Tval_paired, Xval_paired, Yval_paired = val_db.load_data(batch_size=batch_size)
                     val_betas, val_mus = model(Cval_paired, Tval_paired)
-                    val_loss = MSE(val_betas, val_mus, Xval_paired, Yval_paired)
-                    train_desc = f"[Val MSE: {val_loss.item():.4f}] " + train_desc
+                    val_loss = MSE(val_betas, val_mus, Xval_paired, Yval_paired).item()
+                    if es_patience is not None and epoch >= es_epoch:  # Early stopping
+                        if val_loss < min_loss:
+                            min_loss = val_loss
+                            es_count = 0
+                        else:
+                            es_count += 1
+                    train_desc = f"[Val MSE: {val_loss:.4f}] " + train_desc
                 progress_bar.set_description(train_desc)
+                if es_patience is not None and es_count > es_patience:
+                    model.eval()
+                    return
         model.eval()
 
-    def fit(self, C, X, Y, epochs, batch_size, optimizer=torch.optim.Adam, lr=1e-3, validation_set=None, es_patience=None):
-        fit_params = {
-            'C': C, 'X': X, 'Y': Y, 'epochs': epochs, 'batch_size': batch_size, 
+    def fit(self, C, X, Y, epochs, batch_size, optimizer=torch.optim.Adam, lr=1e-3, validation_set=None, es_patience=None, es_epoch=0):
+        kwargs = {
+            'C': C, 'X': X, 'Y': Y, 'epochs': epochs, 'batch_size': batch_size,
             'optimizer': optimizer, 'lr': lr, 
-            'validation_set': validation_set, 'es_patience': es_patience,
+            'validation_set': validation_set, 'es_epoch': es_epoch, 'es_patience': es_patience,
         }
         if self.model:
-            fit_params['model'] = self.model
-            self._fit(**fit_params)
+            kwargs['model'] = self.model
+            self._fit(**kwargs)
         else:
             for model in self.models:
                 boot_idx = np.random.choice(np.arange(len(X)), size=len(X), replace=True)
-                fit_params.update({
+                kwargs.update({
                     'model': model, 'C': C[boot_idx], 'X': X[boot_idx], 'Y': Y[boot_idx],
                 })
-                self._fit(**fit_params)
+                self._fit(**kwargs)
 
     def _predict_regression(self, model, C):
         """
