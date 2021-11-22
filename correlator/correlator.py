@@ -136,21 +136,21 @@ class ContextualCorrelator:
         model.eval()
 
     def fit(self, C, X, Y, epochs, batch_size, optimizer=torch.optim.Adam, lr=1e-3, validation_set=None, es_patience=None, es_epoch=0):
-        kwargs = {
+        fit_params = {
             'C': C, 'X': X, 'Y': Y, 'epochs': epochs, 'batch_size': batch_size,
             'optimizer': optimizer, 'lr': lr, 
             'validation_set': validation_set, 'es_epoch': es_epoch, 'es_patience': es_patience,
         }
         if self.model:
-            kwargs['model'] = self.model
-            self._fit(**kwargs)
+            fit_params['model'] = self.model
+            self._fit(**fit_params)
         else:
             for model in self.models:
                 boot_idx = np.random.choice(np.arange(len(X)), size=len(X), replace=True)
-                kwargs.update({
+                fit_params.update({
                     'model': model, 'C': C[boot_idx], 'X': X[boot_idx], 'Y': Y[boot_idx],
                 })
-                self._fit(**kwargs)
+                self._fit(**fit_params)
 
     def _predict_regression(self, model, C):
         """
