@@ -13,7 +13,7 @@ class TestCorrelator(unittest.TestCase):
         super(TestCorrelator, self).__init__(*args, **kwargs)
 
     def test_convergence(self):
-        k, p, c, k_n = 4, 8, 4, 10
+        k, p, c, k_n = 100, 4, 4, 1
         k_arch = k * p ** 2
         epochs = 10
         runs = 10
@@ -25,7 +25,7 @@ class TestCorrelator(unittest.TestCase):
             c_dim, x_dim, y_dim = C_train.shape[-1], X_train.shape[-1], X_train.shape[-1]
             model = ContextualCorrelator(c_dim, x_dim, y_dim, num_archetypes=k_arch)
             init_loss = model.get_mse(C_test, X_test, X_test)
-            model.fit(C_train, X_train, X_train, epochs=50, batch_size=1)
+            model.fit(C_train, X_train, X_train, epochs=epochs, batch_size=10)
             stop_loss = model.get_mse(C_test, X_test, X_test)
             converges[i] = stop_loss < init_loss
         assert converges.all()
@@ -42,7 +42,7 @@ class TestCorrelator(unittest.TestCase):
         C_test, X_test = sim.gen_samples(1)
         c_dim, x_dim, y_dim = C_train.shape[-1], X_train.shape[-1], X_train.shape[-1]
         model = ContextualCorrelator(c_dim, x_dim, y_dim, num_archetypes=k_arch)
-        model.fit(C_train, X_train, X_train, epochs=100, batch_size=1)
+        model.fit(C_train, X_train, X_train, epochs=100, batch_size=1, validation_set=(C_test, X_test, X_test), es_patience=100, es_epoch=0)
         betas, mus = model.predict_regression(C_test)
         rhos = model.predict_correlation(C_test)
 #         print(rhos)
@@ -70,7 +70,7 @@ class TestCorrelator(unittest.TestCase):
         C_test, X_test = sim.gen_samples(1)
         c_dim, x_dim, y_dim = C_train.shape[-1], X_train.shape[-1], X_train.shape[-1]
         model = ContextualCorrelator(c_dim, x_dim, y_dim, num_archetypes=k_arch, bootstraps=bootstraps)
-        model.fit(C_train, X_train, X_train, epochs=100, batch_size=1)
+        model.fit(C_train, X_train, X_train, epochs=100, batch_size=1, validation_set=(C_test, X_test, X_test), es_patience=100, es_epoch=5)
         betas, mus = model.predict_regression(C_test)
         rhos = model.predict_correlation(C_test)
 #         print(rhos)
