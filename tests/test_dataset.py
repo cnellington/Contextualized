@@ -17,11 +17,16 @@ class TestGaussianSimulator(unittest.TestCase):
     
     def test_empirical_cov(self):
         k_n = int(1e5)
-        C, X = self.sim.gen_samples(k_n)
+        _, X = self.sim.gen_samples(k_n)
         for i in range(self.k):
             X_sample = X[i * k_n:(i+1) * k_n]
             empirical_cov = 1 / (k_n - 1) * X_sample.T @ X_sample
             assert np.allclose(empirical_cov, self.sim.sigmas[i], atol=1e-1)
+
+    def test_contexts(self):
+        sim = GaussianSimulator(self.p, self.k, self.c, ctype='self')
+        assert sim.c == self.p * (self.p + 1)
+        sim = GaussianSimulator(self.p, self.k, self.c, ctype='pca')
 
 
 class TestDataset(unittest.TestCase):
