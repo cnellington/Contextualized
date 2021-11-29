@@ -28,7 +28,7 @@ class ContextualRegressorModule(nn.Module):
     g(t_i, t_j) = softmax(dense(t_i, t_j))
     """
 
-    def __init__(self, context_dim, x_dim, y_dim, num_archetypes=None, encoder_width=25, encoder_layers=4, final_dense_size=10):
+    def __init__(self, context_dim, x_dim, y_dim, num_archetypes=None, encoder_width=25, encoder_layers=2, final_dense_size=10):
         super(ContextualRegressorModule, self).__init__()
         self.context_encoder_in_shape = (context_dim, 1)
         self.context_encoder_out_shape = (final_dense_size,)
@@ -56,19 +56,6 @@ class ContextualRegressorModule(nn.Module):
         self.mu_task_encoder = nn.Sequential(*mu_task_encoder_layers)
         self.flatten = nn.Flatten(0, 1)
         
-#         self.beta_task_encoder = nn.Sequential(
-#             nn.Linear(taskpair_dim, encoder_width), 
-#             nn.ReLU(),
-#             nn.Linear(encoder_width, num_archetypes),
-#             nn.Softmax(dim=1), 
-#         )
-#         self.mu_task_encoder = nn.Sequential(
-#             nn.Linear(taskpair_dim, encoder_width), 
-#             nn.ReLU(),
-#             nn.Linear(encoder_width, num_archetypes),
-#             nn.Softmax(dim=1), 
-#         )
-
     def forward(self, c, t):
         Z = self.context_encoder(c).unsqueeze(-1)
         W_beta, W_mu = None, None
