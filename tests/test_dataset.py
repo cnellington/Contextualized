@@ -17,7 +17,7 @@ class TestGaussianSimulator(unittest.TestCase):
     
     def test_empirical_cov(self):
         k_n = int(1e5)
-        C, X = self.sim.gen_samples(k_n)
+        _, X = self.sim.gen_samples(k_n)
         for i in range(self.k):
             X_sample = X[i * k_n:(i+1) * k_n]
             empirical_cov = 1 / (k_n - 1) * X_sample.T @ X_sample
