@@ -28,47 +28,61 @@ class ContextualRegressorModule(nn.Module):
     g(t_i, t_j) = softmax(dense(t_i, t_j))
     """
 
-    def __init__(self, context_dim, x_dim, y_dim, num_archetypes=10, encoder_width=25, final_dense_size=10):
+    def __init__(self, context_dim, x_dim, y_dim, num_archetypes=None, encoder_width=25, encoder_layers=4, final_dense_size=10):
         super(ContextualRegressorModule, self).__init__()
         self.context_encoder_in_shape = (context_dim, 1)
         self.context_encoder_out_shape = (final_dense_size,)
         taskpair_dim = max(x_dim, y_dim) * 2
         task_encoder_in_shape = (taskpair_dim, 1)
         task_encoder_out_shape = (final_dense_size,)
+        self.use_archetypes = num_archetypes is not None
+
+        default_layers = lambda: [layer for _ in range(0, encoder_layers - 2) for layer in (nn.Linear(encoder_width, encoder_width), nn.ReLU())] \
+            + [nn.Linear(encoder_width, final_dense_size), nn.ReLU()] 
+        context_encoder_layers = [nn.Linear(context_dim, encoder_width), nn.ReLU()] + default_layers()
+        beta_task_encoder_layers = [nn.Linear(taskpair_dim, encoder_width), nn.ReLU()] + default_layers()
+        mu_task_encoder_layers = [nn.Linear(taskpair_dim, encoder_width), nn.ReLU()] + default_layers()
         
-        self.context_encoder = nn.Sequential(
-            nn.Linear(context_dim, encoder_width), 
-            nn.ReLU(),
-            nn.Linear(encoder_width, final_dense_size), 
-            nn.ReLU(), 
-        )
-        self.beta_task_encoder = nn.Sequential(
-            nn.Linear(taskpair_dim, encoder_width), 
-            nn.ReLU(),
-            nn.Linear(encoder_width, num_archetypes),
-            nn.Softmax(dim=1), 
-        )
-        self.mu_task_encoder = nn.Sequential(
-            nn.Linear(taskpair_dim, encoder_width), 
-            nn.ReLU(),
-            nn.Linear(encoder_width, num_archetypes),
-            nn.Softmax(dim=1), 
-        )
-        init_beta_archetypes = torch.rand(num_archetypes, final_dense_size)
-        init_mu_archetypes = torch.rand(num_archetypes, final_dense_size)
-        self.beta_archetypes = nn.parameter.Parameter(init_beta_archetypes, requires_grad=True)
-        self.mu_archetypes = nn.parameter.Parameter(init_mu_archetypes, requires_grad=True)
+        if self.use_archetypes:
+            beta_task_encoder_layers = beta_task_encoder_layers[:-2] + [nn.Linear(encoder_width, num_archetypes), nn.Softmax(dim=1)]
+            mu_task_encoder_layers = mu_task_encoder_layers[:-2] + [nn.Linear(encoder_width, num_archetypes), nn.Softmax(dim=1)]
+            init_beta_archetypes = torch.rand(num_archetypes, final_dense_size)
+            init_mu_archetypes = torch.rand(num_archetypes, final_dense_size)
+            self.beta_archetypes = nn.parameter.Parameter(init_beta_archetypes, requires_grad=True)
+            self.mu_archetypes = nn.parameter.Parameter(init_mu_archetypes, requires_grad=True)
+        
+        self.context_encoder = nn.Sequential(*context_encoder_layers)
+        self.beta_task_encoder = nn.Sequential(*beta_task_encoder_layers)
+        self.mu_task_encoder = nn.Sequential(*mu_task_encoder_layers)
         self.flatten = nn.Flatten(0, 1)
+        
+#         self.beta_task_encoder = nn.Sequential(
+#             nn.Linear(taskpair_dim, encoder_width), 
+#             nn.ReLU(),
+#             nn.Linear(encoder_width, num_archetypes),
+#             nn.Softmax(dim=1), 
+#         )
+#         self.mu_task_encoder = nn.Sequential(
+#             nn.Linear(taskpair_dim, encoder_width), 
+#             nn.ReLU(),
+#             nn.Linear(encoder_width, num_archetypes),
+#             nn.Softmax(dim=1), 
+#         )
 
     def forward(self, c, t):
         Z = self.context_encoder(c).unsqueeze(-1)
-        A_beta = self.beta_task_encoder(t).unsqueeze(1)
-        A_mu = self.mu_task_encoder(t).unsqueeze(1)
-        batch_size = A_beta.shape[0]
-        batch_beta_archetypes = self.beta_archetypes.unsqueeze(0).repeat(batch_size, 1, 1)
-        batch_mu_archetypes = self.mu_archetypes.unsqueeze(0).repeat(batch_size, 1, 1)
-        W_beta = torch.bmm(A_beta, batch_beta_archetypes)
-        W_mu = torch.bmm(A_mu, batch_mu_archetypes)
+        W_beta, W_mu = None, None
+        if self.use_archetypes:
+            A_beta = self.beta_task_encoder(t).unsqueeze(1)
+            A_mu = self.mu_task_encoder(t).unsqueeze(1)
+            batch_size = A_beta.shape[0]
+            batch_beta_archetypes = self.beta_archetypes.unsqueeze(0).repeat(batch_size, 1, 1)
+            batch_mu_archetypes = self.mu_archetypes.unsqueeze(0).repeat(batch_size, 1, 1)
+            W_beta = torch.bmm(A_beta, batch_beta_archetypes)
+            W_mu = torch.bmm(A_mu, batch_mu_archetypes)
+        else:
+            W_beta = self.beta_task_encoder(t).unsqueeze(1)
+            W_mu = self.mu_task_encoder(t).unsqueeze(1)
         beta = torch.bmm(W_beta, Z)
         mu = torch.bmm(W_mu, Z)
         return self.flatten(beta), self.flatten(mu)

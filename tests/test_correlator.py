@@ -13,25 +13,36 @@ class TestCorrelator(unittest.TestCase):
         super(TestCorrelator, self).__init__(*args, **kwargs)
 
     def test_convergence(self):
-        k, p, c, k_n = 100, 4, 4, 1
+        k, p, c, k_n = 10, 4, 4, 10
         k_arch = k * p ** 2
-        epochs = 10
-        runs = 10
-        converges = np.zeros(runs)
-        for i in range(10):
+        epochs = 5
+        runs = 5
+        # Test with archetypes
+        arch_converges = np.zeros(runs)
+        noarch_converges = np.zeros(runs)
+        for i in range(runs):
             sim = GaussianSimulator(p, k, c)
             C_train, X_train = sim.gen_samples(k_n)
             C_test, X_test = sim.gen_samples(k_n)
+            test_set = (C_test, X_test, X_test)
             c_dim, x_dim, y_dim = C_train.shape[-1], X_train.shape[-1], X_train.shape[-1]
-            model = ContextualCorrelator(c_dim, x_dim, y_dim, num_archetypes=k_arch)
-            init_loss = model.get_mse(C_test, X_test, X_test)
-            model.fit(C_train, X_train, X_train, epochs=epochs, batch_size=10)
-            stop_loss = model.get_mse(C_test, X_test, X_test)
-            converges[i] = stop_loss < init_loss
-        assert converges.all()
+            # Test convergence with archetypes
+            arch_model = ContextualCorrelator(c_dim, x_dim, y_dim, num_archetypes=k_arch)
+            init_loss = arch_model.get_mse(C_test, X_test, X_test)
+            arch_model.fit(C_train, X_train, X_train, epochs=epochs, batch_size=1, validation_set=test_set)
+            stop_loss = arch_model.get_mse(C_test, X_test, X_test)
+            arch_converges[i] = stop_loss < init_loss
+            # Test convergence without archetypes
+            noarch_model = ContextualCorrelator(c_dim, x_dim, y_dim, num_archetypes=None)
+            init_loss = noarch_model.get_mse(C_test, X_test, X_test)
+            noarch_model.fit(C_train, X_train, X_train, epochs=epochs, batch_size=1, validation_set=test_set)
+            stop_loss = noarch_model.get_mse(C_test, X_test, X_test)
+            noarch_converges[i] = stop_loss < init_loss
+        assert arch_converges.all()
+        assert noarch_converges.all()
 
     def test_predict(self):
-        k, p, c, k_n = 1, 3, 1, 10000
+        k, p, c, k_n = 1, 3, 1, 100
         k_arch = 2 * k * p ** 2
         sim = GaussianSimulator(p, k, c)
         true_sigma = sim.sigmas[0]
@@ -57,10 +68,10 @@ class TestCorrelator(unittest.TestCase):
         # todo: require exact convergence in the single archetype case
         # assert np.allclose(rhos[0] == true_rhos, atol=1e-3)
 
-    def test_bootstrap(self):
+    def test_bootstrap_predict(self):
         k, p, c, k_n = 1, 3, 1, 100
         k_arch = 2 * k * p ** 2
-        bootstraps = 10
+        bootstraps = 3
         sim = GaussianSimulator(p, k, c)
         true_sigma = sim.sigmas[0]
         true_vars_tiled = np.tile(true_sigma.diagonal(), (p, 1)).T
