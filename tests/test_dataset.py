@@ -23,6 +23,11 @@ class TestGaussianSimulator(unittest.TestCase):
             empirical_cov = 1 / (k_n - 1) * X_sample.T @ X_sample
             assert np.allclose(empirical_cov, self.sim.sigmas[i], atol=1e-1)
 
+    def test_contexts(self):
+        sim = GaussianSimulator(self.p, self.k, self.c, ctype='self')
+        assert sim.c == self.p * (self.p + 1)
+        sim = GaussianSimulator(self.p, self.k, self.c, ctype='pca')
+
 
 class TestDataset(unittest.TestCase):
     def __init__(self, *args, **kwargs):

@@ -42,6 +42,10 @@ class GaussianSimulator:
             gaussian_reps = np.concatenate((self.sigmas, self.mus[:,:,np.newaxis]), axis=-1)
             gaussian_reps = gaussian_reps.reshape((self.k, self.p * (self.p + 1)))
             self.contexts = PCA(n_components=self.c).fit_transform(gaussian_reps)
+        elif self.ctype == 'self':
+            gaussian_reps = np.concatenate((self.sigmas, self.mus[:,:,np.newaxis]), axis=-1)
+            self.contexts = gaussian_reps.reshape((self.k, self.p * (self.p + 1)))
+            self.c = self.contexts.shape[-1]
 
     def gen_samples(self, k_n):
         """
