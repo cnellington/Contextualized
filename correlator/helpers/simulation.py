@@ -41,8 +41,9 @@ class GaussianSimulator:
             sigma = sigma @ sigma.T
             self.sigmas[i] = sigma
             self.vars[i] = sigma.diagonal()
-            self.betas[i] = sigma / np.tile(self.vars[i], (self.p, 1)).T  # beta[i,j] = beta_{i-->j}
-            self.rhos[i] = np.power(sigma, 2) / (self.vars[i] * self.vars[i].T)
+            vars_tiled = np.tile(self.vars[i], (self.p, 1)).T
+            self.betas[i] = sigma / vars_tiled  # beta[i,j] = beta_{i-->j}
+            self.rhos[i] = np.power(sigma, 2) / (vars_tiled * vars_tiled.T)
         # Build contexts
         if self.ctype == 'uniform':
             for i in range(self.k):
