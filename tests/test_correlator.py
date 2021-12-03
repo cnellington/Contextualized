@@ -80,7 +80,7 @@ class TestCorrelator(unittest.TestCase):
         C_train, X_train = sim.gen_samples(k_n)
         C_test, X_test = sim.gen_samples(1)
         c_dim, x_dim, y_dim = C_train.shape[-1], X_train.shape[-1], X_train.shape[-1]
-        model = ContextualCorrelator(c_dim, x_dim, y_dim, num_archetypes=k_arch, bootstraps=bootstraps)
+        model = ContextualCorrelator(c_dim, x_dim, y_dim, num_archetypes=None, encoder_layers=4, bootstraps=bootstraps)
         model.fit(C_train, X_train, X_train, epochs=100, batch_size=1, validation_set=(C_test, X_test, X_test), es_patience=100, es_epoch=5)
         betas, mus = model.predict_regression(C_test)
         rhos = model.predict_correlation(C_test)
