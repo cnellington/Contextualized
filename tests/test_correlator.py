@@ -94,9 +94,11 @@ class TestCorrelator(unittest.TestCase):
 #         print(true_betas)
         betas, mus = model.predict_regression(C_test, all_bootstraps=True)
         rhos = model.predict_correlation(C_test, all_bootstraps=True)
+        mses = model.get_mse(C_test, X_test, X_test, all_bootstraps=True)
         assert betas.shape == (len(C_test), x_dim, y_dim, bootstraps)
         assert mus.shape == (len(C_test), x_dim, y_dim, bootstraps)
         assert rhos.shape == (len(C_test), x_dim, y_dim, bootstraps)
+        assert mses.shape == (bootstraps, )
 
 
 

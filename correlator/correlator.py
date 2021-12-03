@@ -94,12 +94,6 @@ class ContextualCorrelator:
         self.x_dim = x_dim
         self.y_dim = y_dim
 
-    def get_mse(self, C, X, Y):
-        C, T, X, Y = Dataset(C, X, Y).load_data()
-        betas, mus = self.model(C, T)
-        mse = MSE(betas, mus, X, Y)
-        return mse.detach().item()
-
     def _fit(self, model, C, X, Y, epochs, batch_size, optimizer=torch.optim.Adam, lr=1e-3, validation_set=None, es_patience=None, es_epoch=0):
         model.train()
         opt = optimizer(model.parameters(), lr=lr)
@@ -163,16 +157,16 @@ class ContextualCorrelator:
         Y_temp = np.zeros((n, self.y_dim))
         C, T, _, _ = to_pairwise(C, X_temp, Y_temp)
         betas, mus = model(C, T)
-        betas = betas.detach().numpy().reshape((n, self.x_dim, self.y_dim, 1))
-        mus = mus.detach().numpy().reshape((n, self.x_dim, self.y_dim, 1))
+        betas = torch.reshape(betas.detach(), (n, self.x_dim, self.y_dim, 1))
+        mus = torch.reshape(mus.detach(), (n, self.x_dim, self.y_dim, 1))
         return betas, mus
 
     def predict_regression(self, C, all_bootstraps=False):
         betas, mus = self._predict_regression(self.models[0], C)
         for model in self.models[1:]:
             betas_i, mus_i = self._predict_regression(model, C)
-            betas = np.concatenate((betas, betas_i), axis=-1)
-            mus = np.concatenate((mus, mus_i), axis=-1)
+            betas = torch.cat((betas, betas_i), dim=-1)
+            mus = torch.cat((mus, mus_i), dim=-1)
         if all_bootstraps:
             return betas, mus
         return betas.mean(axis=-1), mus.mean(axis=-1)
@@ -188,3 +182,15 @@ class ContextualCorrelator:
             return rho
         return rho.mean(axis=-1)
 
+    def get_mse(self, C, X, Y, all_bootstraps=False):
+        """
+        Returns the MSE of the model on a dataset
+        """
+        C, T, X, Y = Dataset(C, X, Y).load_data()
+        mses = np.zeros(len(self.models))
+        for i, model in enumerate(self.models):
+            betas, mus = model(C, T)
+            mses[i] = MSE(betas, mus, X, Y).detach().item()
+        if not all_bootstraps:
+            return mses.mean()
+        return mses
