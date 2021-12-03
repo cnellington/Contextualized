@@ -20,6 +20,7 @@ class TestGaussianSimulator(unittest.TestCase):
         _, X = self.sim.gen_samples(k_n)
         for i in range(self.k):
             X_sample = X[i * k_n:(i+1) * k_n]
+            X_sample = X_sample - X_sample.mean(axis=0)
             empirical_cov = 1 / (k_n - 1) * X_sample.T @ X_sample
             assert np.allclose(empirical_cov, self.sim.sigmas[i], atol=1e-1)
 

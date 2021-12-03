@@ -17,6 +17,9 @@ class GaussianSimulator:
         # Distribution parameters
         self.sigmas = None
         self.mus = None
+        self.vars = None
+        self.betas = None
+        self.rhos = None  # rho^2, Pearson's correlation coefficient squared
         self.contexts = None
         self._build()
 
@@ -27,13 +30,19 @@ class GaussianSimulator:
         self.mus = np.zeros((self.k, self.p))
         self.sigmas = np.zeros((self.k, self.p, self.p))
         self.contexts = np.zeros((self.k, self.c))
-        # Build Gaussian models
+        self.vars = np.zeros((self.k, self.p))
+        self.betas = np.zeros((self.k, self.p, self.p))
+        self.rhos = np.zeros((self.k, self.p, self.p))
+        # Parameterize Gaussian models
         for i in range(self.k):
-            self.mus[i] = np.zeros(self.p)
+            self.mus[i] = np.random.uniform(-self.p, self.p, self.p)
             # TODO: generate sigma using eigen decomposition
             sigma = np.random.random((self.p, self.p)) * 2 - 1
             sigma = sigma @ sigma.T
             self.sigmas[i] = sigma
+            self.vars[i] = sigma.diagonal()
+            self.betas[i] = sigma / np.tile(self.vars[i], (self.p, 1)).T  # beta[i,j] = beta_{i-->j}
+            self.rhos[i] = np.power(sigma, 2) / (self.vars[i] * self.vars[i].T)
         # Build contexts
         if self.ctype == 'uniform':
             for i in range(self.k):
