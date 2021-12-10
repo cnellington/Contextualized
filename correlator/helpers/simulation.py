@@ -6,7 +6,7 @@ class GaussianSimulator:
     """
     Generate samples with known correlation
     """
-    def __init__(self, p, k, c, ctype='uniform', seed=None):
+    def __init__(self, p, k, c, ctype='self', seed=None, sigmas=None, mus=None):
         self.seed = seed if seed is not None else np.random.randint(1e9)
         np.random.seed(self.seed)
         self.ctype = ctype
@@ -15,8 +15,8 @@ class GaussianSimulator:
         self.k = k
         self.c = c
         # Distribution parameters
-        self.sigmas = None
-        self.mus = None
+        self.sigmas = sigmas
+        self.mus = mus
         self.vars = None
         self.betas = None
         self.rhos = None  # rho^2, Pearson's correlation coefficient squared
@@ -27,23 +27,27 @@ class GaussianSimulator:
         """
         Generate parameters for k p-variate gaussians with context
         """
-        self.mus = np.zeros((self.k, self.p))
-        self.sigmas = np.zeros((self.k, self.p, self.p))
+        new_mus = self.mus is None
+        new_sigmas = self.sigmas is None
+        self.mus = np.zeros((self.k, self.p)) if new_mus else self.mus
+        self.sigmas = np.zeros((self.k, self.p, self.p)) if new_sigmas else self.sigmas
         self.contexts = np.zeros((self.k, self.c))
         self.vars = np.zeros((self.k, self.p))
         self.betas = np.zeros((self.k, self.p, self.p))
         self.rhos = np.zeros((self.k, self.p, self.p))
         # Parameterize Gaussian models
         for i in range(self.k):
-            self.mus[i] = np.random.uniform(-self.p, self.p, self.p)
+            if new_mus:
+                self.mus[i] = np.random.uniform(-self.p, self.p, self.p)
             # TODO: generate sigma using eigen decomposition
-            sigma = np.random.random((self.p, self.p)) * 2 - 1
-            sigma = sigma @ sigma.T
-            self.sigmas[i] = sigma
-            self.vars[i] = sigma.diagonal()
+            if new_sigmas:
+                sigma = np.random.random((self.p, self.p)) * 2 - 1
+                sigma = sigma @ sigma.T
+                self.sigmas[i] = sigma
+            self.vars[i] = self.sigmas[i].diagonal()
             vars_tiled = np.tile(self.vars[i], (self.p, 1)).T
-            self.betas[i] = sigma / vars_tiled  # beta[i,j] = beta_{i-->j}
-            self.rhos[i] = np.power(sigma, 2) / (vars_tiled * vars_tiled.T)
+            self.betas[i] = self.sigmas[i] / vars_tiled  # beta[i,j] = beta_{i-->j}
+            self.rhos[i] = np.power(self.sigmas[i], 2) / (vars_tiled * vars_tiled.T)
         # Build contexts
         if self.ctype == 'uniform':
             for i in range(self.k):
