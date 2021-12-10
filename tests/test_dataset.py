@@ -36,14 +36,14 @@ class TestDataset(unittest.TestCase):
         self.dtype = torch.float
         self.p_x = 7
         self.p_y = 3
-        self.c = 5
         self.k = 5
         self.k_n = 10
-        self.sim = GaussianSimulator(self.p_x + self.p_y, self.k, self.c)
+        self.sim = GaussianSimulator(self.p_x + self.p_y, self.k, 0)
         self.C_full, XY_full = self.sim.gen_samples(self.k_n)
         self.X_full = XY_full[:,:self.p_x]
         self.Y_full = XY_full[:,self.p_x:]
         self.db = Dataset(self.C_full, self.X_full, self.Y_full, dtype=self.dtype)
+        self.c = self.db.c
 
     def test_taskpairs(self):
         N = self.k * self.k_n * self.p_x * self.p_y
