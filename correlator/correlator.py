@@ -9,7 +9,7 @@ from correlator.dataset import Dataset, to_pairwise
 
 
 DTYPE = torch.float 
-DEVICE = torch.device('cpu') 
+DEVICE = torch.device('cuda') 
 
 
 def MSE(beta, mu, x, y):
@@ -186,11 +186,15 @@ class ContextualCorrelator:
         """
         Returns the MSE of the model on a dataset
         """
-        C, T, X, Y = Dataset(C, X, Y).load_data()
+        n = len(X)
+        db = Dataset(C, X, Y)
         mses = np.zeros(len(self.models))
         for i, model in enumerate(self.models):
-            betas, mus = model(C, T)
-            mses[i] = MSE(betas, mus, X, Y).detach().item()
+            for batch_start in range(0, n):
+                C_paired, T_paired, X_paired, Y_paired = db.load_data(batch_start=batch_start, batch_size=1) 
+                betas, mus = model(C_paired, T_paired)
+                mse = MSE(betas, mus, X_paired, Y_paired).detach().item()
+                mses[i] += 1 / n * mse
         if not all_bootstraps:
             return mses.mean()
         return mses
