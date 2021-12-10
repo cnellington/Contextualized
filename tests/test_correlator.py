@@ -27,13 +27,13 @@ class TestCorrelator(unittest.TestCase):
             test_set = (C_test, X_test, X_test)
             c_dim, x_dim, y_dim = C_train.shape[-1], X_train.shape[-1], X_train.shape[-1]
             # Test convergence with archetypes
-            arch_model = ContextualCorrelator(c_dim, x_dim, y_dim, num_archetypes=k_arch)
+            arch_model = ContextualCorrelator(c_dim, x_dim, y_dim, num_archetypes=k_arch, l1=0.01)
             init_loss = arch_model.get_mse(C_test, X_test, X_test)
             arch_model.fit(C_train, X_train, X_train, epochs=epochs, batch_size=1, validation_set=test_set)
             stop_loss = arch_model.get_mse(C_test, X_test, X_test)
             arch_converges[i] = stop_loss < init_loss
             # Test convergence without archetypes
-            noarch_model = ContextualCorrelator(c_dim, x_dim, y_dim, num_archetypes=None)
+            noarch_model = ContextualCorrelator(c_dim, x_dim, y_dim, num_archetypes=None, l1=0.01)
             init_loss = noarch_model.get_mse(C_test, X_test, X_test)
             noarch_model.fit(C_train, X_train, X_train, epochs=epochs, batch_size=1, validation_set=test_set)
             stop_loss = noarch_model.get_mse(C_test, X_test, X_test)
@@ -52,7 +52,7 @@ class TestCorrelator(unittest.TestCase):
         C_train, X_train = sim.gen_samples(k_n)
         C_test, X_test = sim.gen_samples(1)
         c_dim, x_dim, y_dim = C_train.shape[-1], X_train.shape[-1], X_train.shape[-1]
-        model = ContextualCorrelator(c_dim, x_dim, y_dim, num_archetypes=k_arch)
+        model = ContextualCorrelator(c_dim, x_dim, y_dim, num_archetypes=k_arch, l1=0.01)
         model.fit(C_train, X_train, X_train, epochs=100, batch_size=1, validation_set=(C_test, X_test, X_test), es_patience=100, es_epoch=0)
         betas, mus = model.predict_regression(C_test)
         rhos = model.predict_correlation(C_test)

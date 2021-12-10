@@ -71,11 +71,11 @@ class ContextualRegressorModule(nn.Module):
             W_mu = self.mu_task_encoder(t).unsqueeze(1)
         beta = torch.bmm(W_beta, Z)
         mu = torch.bmm(W_mu, Z)
-        return self.flatten(beta), self.flatten(mu)
+        return self.flatten(beta), self.flatten(mu), W_beta, W_mu, Z
 
 
 class ContextualCorrelator:
-    def __init__(self, context_dim, x_dim, y_dim, num_archetypes=None, encoder_width=25, encoder_layers=2, final_dense_size=10, bootstraps=None):
+    def __init__(self, context_dim, x_dim, y_dim, num_archetypes=None, encoder_width=25, encoder_layers=2, final_dense_size=10, l1=0, bootstraps=None):
         module_params = {
             'context_dim': context_dim,
             'x_dim': x_dim, 
@@ -93,6 +93,15 @@ class ContextualCorrelator:
             self.models = [ContextualRegressorModule(**module_params) for _ in range(bootstraps)]
         self.x_dim = x_dim
         self.y_dim = y_dim
+        self.l1 = l1
+
+    def _loss(self, outputs, X, Y):
+        beta, mu, W_beta, W_mu, Z = outputs
+        mse = MSE(beta, mu, X, Y)
+        l1_beta = self.l1 * torch.norm(W_beta, 1)
+        l1_mu = self.l1 * torch.norm(W_mu, 1)
+        l1_z = self.l1 * torch.norm(Z, 1)
+        return mse + l1_beta + l1_mu + l1_z
 
     def _fit(self, model, C, X, Y, epochs, batch_size, optimizer=torch.optim.Adam, lr=1e-3, validation_set=None, es_patience=None, es_epoch=0):
         model.train()
@@ -107,16 +116,16 @@ class ContextualCorrelator:
         for epoch in progress_bar:
             for batch_start in range(0, len(X), batch_size):
                 C_paired, T_paired, X_paired, Y_paired = db.load_data(batch_start=batch_start, batch_size=batch_size) 
-                betas, mus = model(C_paired, T_paired)
-                loss = MSE(betas, mus, X_paired, Y_paired)
+                outputs = model(C_paired, T_paired)
+                loss = self._loss(outputs, X_paired, Y_paired)
                 opt.zero_grad()
                 loss.backward()
                 opt.step()
                 train_desc = f'[Train MSE: {loss.item():.4f}] [Sample: {batch_start}/{len(X)}] Epoch'
                 if validation_set is not None:  # Validation set loss
                     Cval_paired, Tval_paired, Xval_paired, Yval_paired = val_db.load_data(batch_size=batch_size)
-                    val_betas, val_mus = model(Cval_paired, Tval_paired)
-                    val_loss = MSE(val_betas, val_mus, Xval_paired, Yval_paired).item()
+                    val_outputs = model(Cval_paired, Tval_paired)
+                    val_loss = self._loss(val_outputs, Xval_paired, Yval_paired).item()
                     if es_patience is not None and epoch >= es_epoch:  # Early stopping
                         if val_loss < min_loss:
                             min_loss = val_loss
@@ -156,7 +165,7 @@ class ContextualCorrelator:
         X_temp = np.zeros((n, self.x_dim))
         Y_temp = np.zeros((n, self.y_dim))
         C, T, _, _ = to_pairwise(C, X_temp, Y_temp)
-        betas, mus = model(C, T)
+        betas, mus, _, _, _ = model(C, T)
         betas = torch.reshape(betas.detach(), (n, self.x_dim, self.y_dim, 1))
         mus = torch.reshape(mus.detach(), (n, self.x_dim, self.y_dim, 1))
         return betas, mus
@@ -192,7 +201,7 @@ class ContextualCorrelator:
         for i, model in enumerate(self.models):
             for batch_start in range(0, n):
                 C_paired, T_paired, X_paired, Y_paired = db.load_data(batch_start=batch_start, batch_size=1) 
-                betas, mus = model(C_paired, T_paired)
+                betas, mus, _, _, _ = model(C_paired, T_paired)
                 mse = MSE(betas, mus, X_paired, Y_paired).detach().item()
                 mses[i] += 1 / n * mse
         if not all_bootstraps:
