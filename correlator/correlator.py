@@ -103,14 +103,14 @@ class ContextualCorrelator:
         l1_z = self.l1 * torch.norm(Z, 1)
         return mse + l1_beta + l1_mu + l1_z
 
-    def _fit(self, model, C, X, Y, epochs, batch_size, optimizer=torch.optim.Adam, lr=1e-3, validation_set=None, es_patience=None, es_epoch=0):
+    def _fit(self, model, C, X, Y, epochs, batch_size, optimizer=torch.optim.Adam, lr=1e-3, validation_set=None, es_patience=None, es_epoch=0, silent=False):
         model.train()
         opt = optimizer(model.parameters(), lr=lr)
         db = Dataset(C, X, Y)
         if validation_set is not None:
             Cval, Xval, Yval = validation_set
             val_db = Dataset(Cval, Xval, Yval)
-        progress_bar = tqdm(range(epochs))
+        progress_bar = tqdm(range(epochs), disable=silent)
         min_loss = np.inf
         es_count = 0
         for epoch in progress_bar:
@@ -139,11 +139,12 @@ class ContextualCorrelator:
                     return
         model.eval()
 
-    def fit(self, C, X, Y, epochs, batch_size, optimizer=torch.optim.Adam, lr=1e-3, validation_set=None, es_patience=None, es_epoch=0):
+    def fit(self, C, X, Y, epochs, batch_size, optimizer=torch.optim.Adam, lr=1e-3, validation_set=None, es_patience=None, es_epoch=0, silent=False):
         fit_params = {
             'C': C, 'X': X, 'Y': Y, 'epochs': epochs, 'batch_size': batch_size,
             'optimizer': optimizer, 'lr': lr, 
             'validation_set': validation_set, 'es_epoch': es_epoch, 'es_patience': es_patience,
+            'silent': silent,
         }
         if self.model:
             fit_params['model'] = self.model
