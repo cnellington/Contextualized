@@ -77,16 +77,12 @@ for _ in range(runs):
             model_params = {key: val for key, val in zip(target_params, paramset)}
             model_params.update(invariant_params)
             model = ContextualCorrelator(**model_params)
-            model.fit(C_train, X_train, X_train, 100, 1, validation_set=(C_val, X_val, X_val), es_epoch=25, es_patience=100, silent=False)
+            model.fit(C_train, X_train, X_train, 100, 1, validation_set=(C_val, X_val, X_val), es_epoch=25, es_patience=100, silent=True)
             mses = model.get_mse(C_test, X_test, X_test, all_bootstraps=True)
             mse = mses.mean()
             mse_var = mses.var(axis=-1).mean()
             corrs = model.predict_correlation(C_test, all_bootstraps=True).numpy()
             true_corrs = sim.rhos[:,:,:,np.newaxis]
-            print(corrs[0,:2,:2])
-            print()
-            print(true_corrs[0,:2,:2])
-            print()
             if bootstraps is not None:
                 true_corrs = np.repeat(true_corrs, bootstraps, axis=-1)
             norm_sqdiff = (corrs - true_corrs)**2
