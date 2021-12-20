@@ -27,14 +27,14 @@ class ContextualRegressorModule(nn.Module):
     A(t_i, t_j) = <g(t_i, t_j), A_{1..K}>
     g(t_i, t_j) = softmax(dense(t_i, t_j))
     """
-    def __init__(self, context_dim, x_dim, y_dim, num_archetypes=None, encoder_width=25, encoder_layers=2, final_dense_size=10):
+    def __init__(self, context_dim, x_dim, y_dim, num_archetypes=0, encoder_width=25, encoder_layers=2, final_dense_size=10):
         super(ContextualRegressorModule, self).__init__()
         self.context_encoder_in_shape = (context_dim, 1)
         self.context_encoder_out_shape = (final_dense_size,)
         taskpair_dim = max(x_dim, y_dim) * 2
         task_encoder_in_shape = (taskpair_dim, 1)
         task_encoder_out_shape = (final_dense_size,)
-        self.use_archetypes = num_archetypes is not None
+        self.use_archetypes = num_archetypes > 0
 
         default_layers = lambda: [layer for _ in range(0, encoder_layers - 2) for layer in (nn.Linear(encoder_width, encoder_width), nn.ReLU())] \
             + [nn.Linear(encoder_width, final_dense_size), nn.ReLU()] 
@@ -75,7 +75,7 @@ class ContextualRegressorModule(nn.Module):
 
 
 class ContextualCorrelator:
-    def __init__(self, context_dim, x_dim, y_dim, num_archetypes=None, encoder_width=25, encoder_layers=2, final_dense_size=10, l1=0, bootstraps=None):
+    def __init__(self, context_dim, x_dim, y_dim, num_archetypes=0, encoder_width=25, encoder_layers=2, final_dense_size=10, l1=0, bootstraps=None):
         module_params = {
             'context_dim': context_dim,
             'x_dim': x_dim, 
