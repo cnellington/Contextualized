@@ -29,13 +29,13 @@ class TestCorrelator(unittest.TestCase):
             # Test convergence with archetypes
             arch_model = ContextualCorrelator(c_dim, x_dim, y_dim, num_archetypes=k_arch, l1=0.01)
             init_loss = arch_model.get_mse(C_test, X_test, X_test)
-            arch_model.fit(C_train, X_train, X_train, epochs=epochs, batch_size=1, validation_set=test_set)
+            arch_model.fit(C_train, X_train, X_train, epochs=epochs, batch_size=1, validation_set=test_set, silent=True)
             stop_loss = arch_model.get_mse(C_test, X_test, X_test)
             arch_converges[i] = stop_loss < init_loss
             # Test convergence without archetypes
             noarch_model = ContextualCorrelator(c_dim, x_dim, y_dim, num_archetypes=None, l1=0.01)
             init_loss = noarch_model.get_mse(C_test, X_test, X_test)
-            noarch_model.fit(C_train, X_train, X_train, epochs=epochs, batch_size=1, validation_set=test_set)
+            noarch_model.fit(C_train, X_train, X_train, epochs=epochs, batch_size=1, validation_set=test_set, silent=True)
             stop_loss = noarch_model.get_mse(C_test, X_test, X_test)
             noarch_converges[i] = stop_loss < init_loss
         assert arch_converges.all()
@@ -53,7 +53,7 @@ class TestCorrelator(unittest.TestCase):
         C_test, X_test = sim.gen_samples(1)
         c_dim, x_dim, y_dim = C_train.shape[-1], X_train.shape[-1], X_train.shape[-1]
         model = ContextualCorrelator(c_dim, x_dim, y_dim, num_archetypes=k_arch, l1=0.01)
-        model.fit(C_train, X_train, X_train, epochs=100, batch_size=1, validation_set=(C_test, X_test, X_test), es_patience=100, es_epoch=0)
+        model.fit(C_train, X_train, X_train, epochs=100, batch_size=1, validation_set=(C_test, X_test, X_test), es_patience=100, es_epoch=0, silent=True)
         betas, mus = model.predict_regression(C_test)
         rhos = model.predict_correlation(C_test)
 #         print(rhos)
@@ -81,7 +81,7 @@ class TestCorrelator(unittest.TestCase):
         C_test, X_test = sim.gen_samples(1)
         c_dim, x_dim, y_dim = C_train.shape[-1], X_train.shape[-1], X_train.shape[-1]
         model = ContextualCorrelator(c_dim, x_dim, y_dim, num_archetypes=None, encoder_layers=4, bootstraps=bootstraps)
-        model.fit(C_train, X_train, X_train, epochs=100, batch_size=1, validation_set=(C_test, X_test, X_test), es_patience=100, es_epoch=5)
+        model.fit(C_train, X_train, X_train, epochs=100, batch_size=1, validation_set=(C_test, X_test, X_test), es_patience=100, es_epoch=5, silent=True)
         betas, mus = model.predict_regression(C_test)
         rhos = model.predict_correlation(C_test)
 #         print(rhos)
