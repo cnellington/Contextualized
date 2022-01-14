@@ -163,10 +163,18 @@ class ContextualCorrelator:
         beta[i,j] and mu[i,j] solve the regression problem y_j = beta[i,j] * x_i + mu[i,j]
         """
         n = C.shape[0]
+        betas = torch.zeros((n * self.x_dim * self.y_dim, 1))
+        mus = torch.zeros((n * self.x_dim * self.y_dim, 1))
         X_temp = np.zeros((n, self.x_dim))
         Y_temp = np.zeros((n, self.y_dim))
-        C, T, _, _ = to_pairwise(C, X_temp, Y_temp)
-        betas, mus, _, _, _ = model(C, T)
+        db = Dataset(C, X_temp, Y_temp)
+        C_paired, T_paired, _, _ = db.load_data(batch_start=0, batch_size=1) 
+        betas, mus, _, _, _ = model(C_paired, T_paired) 
+        for i in range(1, n):  # Predict per-sample
+                C_paired, T_paired, _, _ = db.load_data(batch_start=i, batch_size=1) 
+                betas_i, mus_i, _, _, _ = model(C_paired, T_paired)
+                betas = torch.cat((betas, betas_i))
+                mus = torch.cat((mus, mus_i))
         betas = torch.reshape(betas.detach(), (n, self.x_dim, self.y_dim, 1))
         mus = torch.reshape(mus.detach(), (n, self.x_dim, self.y_dim, 1))
         return betas, mus
