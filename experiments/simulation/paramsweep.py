@@ -24,10 +24,9 @@ def make_sigma(p):
 
 # Data Params
 # data_params = ['p', 'k', 'c', 'ctype', 'sigmas', 'mus']
-k_list = [100, ]
+k_list = [10, 100, ]
 k_n = 1
-# p_list = [5, 10, 15, 20, 50] 
-p_list = [50] 
+p_list = [5, 10, 15, 20, 50, 100] 
 
 # Model Params
 target_params = ['num_archetypes', 'encoder_width', 'encoder_layers', 'final_dense_size', 'l1']
@@ -54,7 +53,8 @@ if not os.path.exists(script_path):
     header = ['p', 'k'] + target_params + ['mse', 'mse_var', 'norm', 'norm_var', 'edge_var']
     open(script_path, 'w').write(', '.join(header) + '\n')
 
-runs = 50
+print('Started Successfully, see you later <:)')
+runs = 10
 for _ in range(runs):
     for p in p_list:
         sigma1 = make_sigma(p)
@@ -74,7 +74,7 @@ for _ in range(runs):
                 data_params = {'context_dim': c, 'x_dim': p, 'y_dim': p}
                 model_params.update(data_params)
                 model = ContextualCorrelator(**model_params)
-                model.fit(C_train, X_train, X_train, 100, 1, validation_set=(C_val, X_val, X_val), es_epoch=25, es_patience=100, silent=True)
+                model.fit(C_train, X_train, X_train, 100, 1, validation_set=(C_val, X_val, X_val), es_epoch=10, es_patience=100, silent=True)
                 mses = model.get_mse(C_test, X_test, X_test, all_bootstraps=True)
                 mse = mses.mean()
                 mse_var = mses.var(axis=-1).mean()
