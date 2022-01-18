@@ -2,10 +2,13 @@ import itertools
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+import torch
 
 from correlator.helpers.simulation import GaussianSimulator
 from correlator.correlator import ContextualCorrelator
 
+
+DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def linear_interpolate(mat1, mat2, steps):
     assert mat1.shape == mat2.shape
@@ -24,7 +27,7 @@ def make_sigma(p):
 
 # Data Params
 # data_params = ['p', 'k', 'c', 'ctype', 'sigmas', 'mus']
-k_list = [10, 100, ]
+k_list = [10, 100]
 k_n = 1
 p_list = [5, 10, 15, 20, 50, 100] 
 
@@ -46,9 +49,10 @@ paramlists = [
 ]
 paramsets = list(itertools.product(*paramlists))
 
-base_dir = "/home/hongyiwa/cellingt/ContextualizedCorrelator/experiments/simulation/"
+base_dir = "/home/hongyiwa/cellingt/ContextualizedCorrelator/experiments/simulation/data/"
 # base_dir = './'
-script_path = base_dir + 'paramsweep.txt'
+timestamp = '220118'
+script_path = base_dir + f'paramsweep_{timestamp}.txt'
 if not os.path.exists(script_path):
     header = ['p', 'k'] + target_params + ['mse', 'mse_var', 'norm', 'norm_var', 'edge_var']
     open(script_path, 'w').write(', '.join(header) + '\n')
@@ -74,11 +78,13 @@ for _ in range(runs):
                 data_params = {'context_dim': c, 'x_dim': p, 'y_dim': p}
                 model_params.update(data_params)
                 model = ContextualCorrelator(**model_params)
+                model = model.to(DEVICE)
                 model.fit(C_train, X_train, X_train, 100, 1, validation_set=(C_val, X_val, X_val), es_epoch=10, es_patience=100, silent=True)
+                print(next(model.models[0].parameters()).device)
                 mses = model.get_mse(C_test, X_test, X_test, all_bootstraps=True)
                 mse = mses.mean()
                 mse_var = mses.var(axis=-1).mean()
-                corrs = model.predict_correlation(C_test, all_bootstraps=True).numpy()
+                corrs = model.predict_correlation(C_test, all_bootstraps=True).cpu().numpy()
                 true_corrs = sim.rhos[:,:,:,np.newaxis]
                 if bootstraps is not None:
                     true_corrs = np.repeat(true_corrs, bootstraps, axis=-1)

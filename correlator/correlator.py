@@ -5,12 +5,11 @@ import torch
 import torch.nn as nn
 from torch.nn.parameter import Parameter
 
-from correlator.dataset import Dataset, to_pairwise
+from correlator.dataset import Dataset
 
 
 DTYPE = torch.float 
-DEVICE = torch.device('cuda') 
-
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def MSE(beta, mu, x, y):
     residual = beta.squeeze() * x + mu.squeeze() - y
@@ -75,7 +74,7 @@ class ContextualRegressorModule(nn.Module):
 
 
 class ContextualCorrelator:
-    def __init__(self, context_dim, x_dim, y_dim, num_archetypes=0, encoder_width=25, encoder_layers=2, final_dense_size=10, l1=0, bootstraps=None):
+    def __init__(self, context_dim, x_dim, y_dim, num_archetypes=0, encoder_width=25, encoder_layers=2, final_dense_size=10, l1=0, bootstraps=None, device=torch.device('cpu')):
         module_params = {
             'context_dim': context_dim,
             'x_dim': x_dim, 
@@ -94,6 +93,13 @@ class ContextualCorrelator:
         self.x_dim = x_dim
         self.y_dim = y_dim
         self.l1 = l1
+        self.to(device)
+
+    def to(self, device):
+        self.device = device
+        for model in self.models:
+            model.to(self.device)
+        return self
 
     def _loss(self, outputs, X, Y):
         beta, mu, W_beta, W_mu, Z = outputs
@@ -105,11 +111,12 @@ class ContextualCorrelator:
 
     def _fit(self, model, C, X, Y, epochs, batch_size, optimizer=torch.optim.Adam, lr=1e-3, validation_set=None, es_patience=None, es_epoch=0, silent=False):
         model.train()
+        device = model.beta_archetypes.device
         opt = optimizer(model.parameters(), lr=lr)
-        db = Dataset(C, X, Y)
+        db = Dataset(C, X, Y, device=device)
         if validation_set is not None:
             Cval, Xval, Yval = validation_set
-            val_db = Dataset(Cval, Xval, Yval)
+            val_db = Dataset(Cval, Xval, Yval, device=device)
         progress_bar = tqdm(range(epochs), disable=silent)
         min_loss = np.inf
         es_count = 0
@@ -167,7 +174,7 @@ class ContextualCorrelator:
         mus = torch.zeros((n * self.x_dim * self.y_dim, 1))
         X_temp = np.zeros((n, self.x_dim))
         Y_temp = np.zeros((n, self.y_dim))
-        db = Dataset(C, X_temp, Y_temp)
+        db = Dataset(C, X_temp, Y_temp, device=self.device)
         C_paired, T_paired, _, _ = db.load_data(batch_start=0, batch_size=1) 
         betas, mus, _, _, _ = model(C_paired, T_paired) 
         for i in range(1, n):  # Predict per-sample
@@ -194,7 +201,7 @@ class ContextualCorrelator:
         Predict a (p_x, p_y) matrix of squared Pearson's correlation coefficients for each context
         """
         betas, mus = self.predict_regression(C, all_bootstraps=True)
-        betas_T = np.transpose(betas, axes=(0, 2, 1, 3))
+        betas_T = torch.transpose(betas, 1, 2)
         rho = betas * betas_T
         if all_bootstraps:
             return rho
@@ -205,13 +212,13 @@ class ContextualCorrelator:
         Returns the MSE of the model on a dataset
         """
         n = len(X)
-        db = Dataset(C, X, Y)
+        db = Dataset(C, X, Y, device=self.device)
         mses = np.zeros(len(self.models))
         for i, model in enumerate(self.models):
             for batch_start in range(0, n):
                 C_paired, T_paired, X_paired, Y_paired = db.load_data(batch_start=batch_start, batch_size=1) 
                 betas, mus, _, _, _ = model(C_paired, T_paired)
-                mse = MSE(betas, mus, X_paired, Y_paired).detach().item()
+                mse = MSE(betas, mus, X_paired, Y_paired).cpu().detach().item()
                 mses[i] += 1 / n * mse
         if not all_bootstraps:
             return mses.mean()

@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=ss-paramsweep    # create a short name for your job
-#SBATCH --output=ss-paramsweep_log.txt
+#SBATCH --output=/home/hongyiwa/cellingt/ContextualizedCorrelator/experiments/simulation/data/ss-paramsweep_log.txt
 #SBATCH --nodes=1                # node count
 #SBATCH --ntasks-per-node=1      # total number of tasks across all nodes
 #SBATCH --cpus-per-task=1        # cpu-cores per task (>1 if multi-threaded tasks)
@@ -12,4 +12,4 @@
 source /apps/local/conda_init.sh
 conda activate ss-models
 
-python paramsweep.py
+python /home/hongyiwa/cellingt/ContextualizedCorrelator/experiments/simulation/paramsweep.py
