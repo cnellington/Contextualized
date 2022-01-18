@@ -9,7 +9,7 @@ def onehot_task(t_i, k):
     return task_rep
 
 
-def to_pairwise(C, X, Y, task_fn=onehot_task, dtype=torch.float):
+def to_pairwise(C, X, Y, task_fn=onehot_task, dtype=torch.float, device=torch.device('cpu')):
     """
     Load a pairwise (X x Y) dataset of C, T, X, Y
     """
@@ -34,10 +34,10 @@ def to_pairwise(C, X, Y, task_fn=onehot_task, dtype=torch.float):
         task_y = task_fn(t_j, p_t)
         taskpair = np.concatenate((task_x, task_y))
         T_pairwise[n] = taskpair
-    C_pairwise = torch.tensor(C_pairwise, dtype=dtype)
-    T_pairwise = torch.tensor(T_pairwise, dtype=dtype)
-    X_pairwise = torch.tensor(X_pairwise, dtype=dtype)
-    Y_pairwise = torch.tensor(Y_pairwise, dtype=dtype)
+    C_pairwise = torch.tensor(C_pairwise, dtype=dtype, device=device)
+    T_pairwise = torch.tensor(T_pairwise, dtype=dtype, device=device)
+    X_pairwise = torch.tensor(X_pairwise, dtype=dtype, device=device)
+    Y_pairwise = torch.tensor(Y_pairwise, dtype=dtype, device=device)
     return C_pairwise, T_pairwise, X_pairwise, Y_pairwise
 
 
@@ -45,10 +45,11 @@ class Dataset:
     """
     Dataset
     """
-    def __init__(self, C, X, Y, task_fn=onehot_task, seed=None, dtype=torch.float):
+    def __init__(self, C, X, Y, task_fn=onehot_task, seed=None, dtype=torch.float, device=torch.device('cpu')):
         self.seed = seed if seed is not None else np.random.randint(1e9)
         np.random.seed(self.seed)
         self.dtype = dtype
+        self.device = device
         self.task_fn = task_fn
         self.C, self.X, self.Y = C, X, Y
         self.N, self.p_x = X.shape
@@ -74,5 +75,5 @@ class Dataset:
                 batch_start += self.N
             batch_end = min(self.N, batch_start + batch_size)
             batch_idx = self.train_idx[batch_start:batch_end]
-        return to_pairwise(self.C[batch_idx], self.X[batch_idx], self.Y[batch_idx])
+        return to_pairwise(self.C[batch_idx], self.X[batch_idx], self.Y[batch_idx], device=self.device)
 
