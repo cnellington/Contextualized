@@ -1,5 +1,6 @@
 import itertools
 import os
+import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
@@ -8,8 +9,18 @@ from correlator.helpers.simulation import GaussianSimulator
 from correlator.correlator import ContextualCorrelator
 
 
+# Simulation Setup
+basedir = "/home/caleb.ellington/ContextualizedCorrelator/experiments/simulation/results/"
+filename = sys.argv[0].split('/')[-1].split('.')[0]
+jobid = os.environ["SLURM_JOB_ID"]
+script_path = basedir + f'{filename}_{jobid}.out'
+if not os.path.exists(script_path):
+    header = ['p', 'k'] + target_params + ['mse', 'mse_var', 'norm', 'norm_var', 'edge_var']
+    open(script_path, 'w').write(', '.join(header) + '\n')
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+runs = 10
 
+# Data Params
 def linear_interpolate(mat1, mat2, steps):
     assert mat1.shape == mat2.shape
     mat_step = (mat2 - mat1) / steps
@@ -25,11 +36,11 @@ def make_sigma(p):
     sigma = A.T @ A
     return sigma
 
-# Data Params
-# data_params = ['p', 'k', 'c', 'ctype', 'sigmas', 'mus']
-k_list = [10, 100]
+# k_list = [10, 100]
+k_list = [10]
 k_n = 1
-p_list = [5, 10, 15, 20, 50, 100] 
+# p_list = [5, 10, 15, 20, 50, 100] 
+p_list = [5]
 
 # Model Params
 target_params = ['num_archetypes', 'encoder_width', 'encoder_layers', 'final_dense_size', 'l1']
@@ -49,16 +60,9 @@ paramlists = [
 ]
 paramsets = list(itertools.product(*paramlists))
 
-base_dir = "/home/hongyiwa/cellingt/ContextualizedCorrelator/experiments/simulation/data/"
-# base_dir = './'
-timestamp = '220118'
-script_path = base_dir + f'paramsweep_{timestamp}.txt'
-if not os.path.exists(script_path):
-    header = ['p', 'k'] + target_params + ['mse', 'mse_var', 'norm', 'norm_var', 'edge_var']
-    open(script_path, 'w').write(', '.join(header) + '\n')
 
+# Run Simulation
 print('Started Successfully, see you later <:)')
-runs = 10
 for _ in range(runs):
     for p in p_list:
         sigma1 = make_sigma(p)
@@ -79,12 +83,11 @@ for _ in range(runs):
                 model_params.update(data_params)
                 model = ContextualCorrelator(**model_params)
                 model = model.to(DEVICE)
-                model.fit(C_train, X_train, X_train, 100, 1, validation_set=(C_val, X_val, X_val), es_epoch=10, es_patience=100, silent=True)
-                print(next(model.models[0].parameters()).device)
+                model.fit(C_train, X_train, X_train, 100, 1, validation_set=(C_val, X_val, X_val), es_epoch=10, es_patience=100, silent=True) 
                 mses = model.get_mse(C_test, X_test, X_test, all_bootstraps=True)
                 mse = mses.mean()
                 mse_var = mses.var(axis=-1).mean()
-                corrs = model.predict_correlation(C_test, all_bootstraps=True).cpu().numpy()
+                corrs = model.predict_correlation(C_test, all_bootstraps=True).numpy()
                 true_corrs = sim.rhos[:,:,:,np.newaxis]
                 if bootstraps is not None:
                     true_corrs = np.repeat(true_corrs, bootstraps, axis=-1)
@@ -94,6 +97,6 @@ for _ in range(runs):
                 norm = norms.mean()
                 norm_var = norms.var(axis=-1).mean()
                 vals = [p, k] + list(paramset) + [mse, mse_var, norm, norm_var, edge_var]
-                open(script_path, 'a').write(', '.join([str(val) for val in vals]) + '\n')
-
+                row = ', '.join([str(val) for val in vals])
+                open(script_path, 'a').write(row + '\n')
 print('Finished successfully')
