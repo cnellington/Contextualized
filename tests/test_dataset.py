@@ -4,7 +4,7 @@ import numpy as np
 import torch
 
 from correlator.dataset import Dataset, to_pairwise
-from correlator.helpers.simulation import GaussianSimulator
+from correlator.helpers.simulation import GaussianSimulator, GraphicalSimulator
 
 
 class TestGaussianSimulator(unittest.TestCase):
@@ -28,6 +28,22 @@ class TestGaussianSimulator(unittest.TestCase):
         sim = GaussianSimulator(self.p, self.k, self.c, ctype='self')
         assert sim.c == self.p * (self.p + 1)
         sim = GaussianSimulator(self.p, self.k, self.c, ctype='pca')
+        
+class TestGraphicalSimulator(unittest.TestCase):
+    def __init__(self, *args, **kwargs):
+        super(TestGraphicalSimulator, self).__init__(*args, **kwargs)
+        self.p = 10
+        self.k = 5
+        self.sim = GraphicalSimulator(self.k, self.p)
+    
+    def test_empirical_cov(self):
+        k_n = int(1e5)
+        _, X = self.sim.gen_samples(k_n)
+        for i in range(self.k):
+            X_sample = X[i * k_n:(i+1) * k_n]
+            X_sample = X_sample - X_sample.mean(axis=0)
+            empirical_cov = 1 / (k_n - 1) * X_sample.T @ X_sample
+            assert np.allclose(empirical_cov, self.sim.sigmas[i], atol=1e-1)
 
 
 class TestDataset(unittest.TestCase):
