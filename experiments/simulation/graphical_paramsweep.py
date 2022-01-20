@@ -9,21 +9,10 @@ from correlator.helpers.simulation import GraphicalSimulator
 from correlator.correlator import ContextualCorrelator
 
 
-# Simulation Setup
-basedir = "/home/caleb.ellington/ContextualizedCorrelator/experiments/simulation/results/"
-filename = sys.argv[0].split('/')[-1].split('.')[0]
-jobid = os.environ["SLURM_JOB_ID"] 
-script_path = basedir + f'{filename}_{jobid}.out'
-if not os.path.exists(script_path):
-    header = ['p', 'k'] + target_params + ['mse', 'mse_var', 'norm', 'norm_var', 'edge_var']
-    open(script_path, 'w').write(', '.join(header) + '\n')
-
 # Data Params
-# k_list = [10, 100, 500]
-k_list = [10]
+k_list = [10, 50, 100, 500]
 k_n = 1
-# p_list = [5, 10, 15, 20, 50, 100] 
-p_list = [5]
+p_list = [5, 10, 15, 20, 50, 100] 
 
 # Model Params
 target_params = ['num_archetypes', 'encoder_width', 'encoder_layers', 'final_dense_size', 'l1']
@@ -44,6 +33,13 @@ paramlists = [
 paramsets = list(itertools.product(*paramlists))
 
 # Simulation Params
+basedir = "/home/caleb.ellington/ContextualizedCorrelator/experiments/simulation/results/"
+filename = sys.argv[0].split('/')[-1].split('.')[0]
+jobid = os.environ["SLURM_JOB_ID"] 
+script_path = basedir + f'{filename}_{jobid}.out'
+if not os.path.exists(script_path):
+    header = ['p', 'k'] + target_params + ['mse', 'mse_var', 'norm', 'norm_var', 'edge_var']
+    open(script_path, 'w').write(', '.join(header) + '\n')
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 runs = 10
 
