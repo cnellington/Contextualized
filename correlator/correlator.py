@@ -8,7 +8,7 @@ from torch.nn.parameter import Parameter
 from correlator.dataset import Dataset
 
 
-DTYPE = torch.float 
+DTYPE = torch.float
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def MSE(beta, mu, x, y):
@@ -20,13 +20,14 @@ class ContextualRegressorModule(nn.Module):
     """
     rho(c) = beta(c) * beta'(c)
     beta(c) = sigma(A @ f(c) + b)
-    
+
     beta_{a_i, b_j} = sigma(A(t_i, t_j) @ f(c) + b)
     f(c) = sigma(dense(c))
     A(t_i, t_j) = <g(t_i, t_j), A_{1..K}>
     g(t_i, t_j) = softmax(dense(t_i, t_j))
     """
-    def __init__(self, context_dim, x_dim, y_dim, num_archetypes=0, encoder_width=25, encoder_layers=2, final_dense_size=10):
+    def __init__(self, context_dim, x_dim, y_dim, num_archetypes=0, encoder_width=25, encoder_layers=2, final_dense_size=10,
+        activation=nn.ReLU):
         super(ContextualRegressorModule, self).__init__()
         self.context_encoder_in_shape = (context_dim, 1)
         self.context_encoder_out_shape = (final_dense_size,)
@@ -35,12 +36,12 @@ class ContextualRegressorModule(nn.Module):
         task_encoder_out_shape = (final_dense_size,)
         self.use_archetypes = num_archetypes > 0
 
-        default_layers = lambda: [layer for _ in range(0, encoder_layers - 2) for layer in (nn.Linear(encoder_width, encoder_width), nn.ReLU())] \
-            + [nn.Linear(encoder_width, final_dense_size), nn.ReLU()] 
-        context_encoder_layers = [nn.Linear(context_dim, encoder_width), nn.ReLU()] + default_layers()
-        beta_task_encoder_layers = [nn.Linear(taskpair_dim, encoder_width), nn.ReLU()] + default_layers()
-        mu_task_encoder_layers = [nn.Linear(taskpair_dim, encoder_width), nn.ReLU()] + default_layers()
-        
+        default_layers = lambda: [layer for _ in range(0, encoder_layers - 2) for layer in (nn.Linear(encoder_width, encoder_width), activation())] \
+            + [nn.Linear(encoder_width, final_dense_size), activation()]
+        context_encoder_layers = [nn.Linear(context_dim, encoder_width), activation()] + default_layers()
+        beta_task_encoder_layers = [nn.Linear(taskpair_dim, encoder_width), activation()] + default_layers()
+        mu_task_encoder_layers = [nn.Linear(taskpair_dim, encoder_width), activation()] + default_layers()
+
         if self.use_archetypes:
             beta_task_encoder_layers = beta_task_encoder_layers[:-2] + [nn.Linear(encoder_width, num_archetypes), nn.Softmax(dim=1)]
             mu_task_encoder_layers = mu_task_encoder_layers[:-2] + [nn.Linear(encoder_width, num_archetypes), nn.Softmax(dim=1)]
@@ -48,12 +49,12 @@ class ContextualRegressorModule(nn.Module):
             init_mu_archetypes = torch.rand(num_archetypes, final_dense_size)
             self.beta_archetypes = nn.parameter.Parameter(init_beta_archetypes, requires_grad=True)
             self.mu_archetypes = nn.parameter.Parameter(init_mu_archetypes, requires_grad=True)
-        
+
         self.context_encoder = nn.Sequential(*context_encoder_layers)
         self.beta_task_encoder = nn.Sequential(*beta_task_encoder_layers)
         self.mu_task_encoder = nn.Sequential(*mu_task_encoder_layers)
         self.flatten = nn.Flatten(0, 1)
-        
+
     def forward(self, c, t):
         Z = self.context_encoder(c).unsqueeze(-1)
         W_beta, W_mu = None, None
@@ -74,15 +75,18 @@ class ContextualRegressorModule(nn.Module):
 
 
 class ContextualCorrelator:
-    def __init__(self, context_dim, x_dim, y_dim, num_archetypes=0, encoder_width=25, encoder_layers=2, final_dense_size=10, l1=0, bootstraps=None, device=torch.device('cpu')):
+    def __init__(self, context_dim, x_dim, y_dim, num_archetypes=0,
+        encoder_width=25, encoder_layers=2, final_dense_size=10, l1=0,
+        bootstraps=None, device=torch.device('cpu'), activation=nn.ReLU):
         module_params = {
             'context_dim': context_dim,
-            'x_dim': x_dim, 
+            'x_dim': x_dim,
             'y_dim': y_dim,
             'num_archetypes': num_archetypes,
             'encoder_width': encoder_width,
             'encoder_layers': encoder_layers,
             'final_dense_size': final_dense_size,
+            'activation': activation
         }
         if bootstraps is None:
             self.model = ContextualRegressorModule(**module_params)
@@ -122,7 +126,7 @@ class ContextualCorrelator:
         es_count = 0
         for epoch in progress_bar:
             for batch_start in range(0, len(X), batch_size):
-                C_paired, T_paired, X_paired, Y_paired = db.load_data(batch_start=batch_start, batch_size=batch_size) 
+                C_paired, T_paired, X_paired, Y_paired = db.load_data(batch_start=batch_start, batch_size=batch_size)
                 outputs = model(C_paired, T_paired)
                 loss = self._loss(outputs, X_paired, Y_paired)
                 opt.zero_grad()
@@ -149,7 +153,7 @@ class ContextualCorrelator:
     def fit(self, C, X, Y, epochs, batch_size, optimizer=torch.optim.Adam, lr=1e-3, validation_set=None, es_patience=None, es_epoch=0, silent=False):
         fit_params = {
             'C': C, 'X': X, 'Y': Y, 'epochs': epochs, 'batch_size': batch_size,
-            'optimizer': optimizer, 'lr': lr, 
+            'optimizer': optimizer, 'lr': lr,
             'validation_set': validation_set, 'es_epoch': es_epoch, 'es_patience': es_patience,
             'silent': silent,
         }
@@ -175,11 +179,11 @@ class ContextualCorrelator:
         X_temp = np.zeros((n, self.x_dim))
         Y_temp = np.zeros((n, self.y_dim))
         db = Dataset(C, X_temp, Y_temp, device=self.device)
-        C_paired, T_paired, _, _ = db.load_data(batch_start=0, batch_size=1) 
-        betas, mus, _, _, _ = model(C_paired, T_paired) 
+        C_paired, T_paired, _, _ = db.load_data(batch_start=0, batch_size=1)
+        betas, mus, _, _, _ = model(C_paired, T_paired)
         betas, mus = betas.cpu().detach(), mus.cpu().detach()
         for i in range(1, n):  # Predict per-sample
-                C_paired, T_paired, _, _ = db.load_data(batch_start=i, batch_size=1) 
+                C_paired, T_paired, _, _ = db.load_data(batch_start=i, batch_size=1)
                 betas_i, mus_i, _, _, _ = model(C_paired, T_paired)
                 betas_i, mus_i = betas_i.cpu().detach(), mus_i.cpu().detach()
                 betas = torch.cat((betas, betas_i))
@@ -224,7 +228,7 @@ class ContextualCorrelator:
         mses = np.zeros(len(self.models))
         for i, model in enumerate(self.models):
             for batch_start in range(0, n):
-                C_paired, T_paired, X_paired, Y_paired = db.load_data(batch_start=batch_start, batch_size=1) 
+                C_paired, T_paired, X_paired, Y_paired = db.load_data(batch_start=batch_start, batch_size=1)
                 betas, mus, _, _, _ = model(C_paired, T_paired)
                 mse = MSE(betas, mus, X_paired, Y_paired).item()
                 mses[i] += 1 / n * mse
