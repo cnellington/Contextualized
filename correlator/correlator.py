@@ -204,8 +204,8 @@ class ContextualCorrelator:
         betas, mus = self._predict_regression(self.models[0], C)
         for model in self.models[1:]:
             betas_i, mus_i = self._predict_regression(model, C)
-            betas = torch.concatenate((betas, betas_i), dim=-1)
-            mus = torch.concatenate((mus, mus_i), dim=-1)
+            betas = np.concatenate((betas, betas_i), axis=-1)
+            mus = np.concatenate((mus, mus_i), axis=-1)
         if all_bootstraps:
             return betas, mus
         return betas.mean(axis=-1), mus.mean(axis=-1)
