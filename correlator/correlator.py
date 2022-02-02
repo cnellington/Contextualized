@@ -11,6 +11,7 @@ from correlator.dataset import Dataset
 DTYPE = torch.float
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+
 def MSE(beta, mu, x, y):
     residual = beta.squeeze() * x + mu.squeeze() - y
     return residual.pow(2).mean()
@@ -45,8 +46,8 @@ class ContextualRegressorModule(nn.Module):
         if self.use_archetypes:
             beta_task_encoder_layers = beta_task_encoder_layers[:-2] + [nn.Linear(encoder_width, num_archetypes), nn.Softmax(dim=1)]
             mu_task_encoder_layers = mu_task_encoder_layers[:-2] + [nn.Linear(encoder_width, num_archetypes), nn.Softmax(dim=1)]
-            init_beta_archetypes = torch.rand(num_archetypes, final_dense_size)
-            init_mu_archetypes = torch.rand(num_archetypes, final_dense_size)
+            init_beta_archetypes = (torch.rand(num_archetypes, final_dense_size) - 0.5) * 1e-2
+            init_mu_archetypes = (torch.rand(num_archetypes, final_dense_size) - 0.5) * 1e-2
             self.beta_archetypes = nn.parameter.Parameter(init_beta_archetypes, requires_grad=True)
             self.mu_archetypes = nn.parameter.Parameter(init_mu_archetypes, requires_grad=True)
 
@@ -122,16 +123,18 @@ class ContextualCorrelator:
             Cval, Xval, Yval = validation_set
             val_db = Dataset(Cval, Xval, Yval, device=device)
         progress_bar = tqdm(range(epochs), disable=silent)
-        min_loss = np.inf
+        min_loss = np.inf  # for early stopping
         es_count = 0
         for epoch in progress_bar:
             for batch_start in range(0, len(X), batch_size):
-                C_paired, T_paired, X_paired, Y_paired = db.load_data(batch_start=batch_start, batch_size=batch_size)
-                outputs = model(C_paired, T_paired)
-                loss = self._loss(outputs, X_paired, Y_paired)
-                opt.zero_grad()
-                loss.backward()
-                opt.step()
+                data_paired = db.load_data(batch_start=batch_start, batch_size=batch_size)  # todo: revise load_data to use a combinatorial product of indices for C, X, Y to make batch_size useful
+                loss = None
+                for C_paired, T_paired, X_paired, Y_paired in zip(*data_paired):  # This makes batch_size irrelevant. Maybe remove?
+                    outputs = model(C_paired.unsqueeze(0), T_paired.unsqueeze(0))
+                    loss = self._loss(outputs, X_paired.unsqueeze(0), Y_paired.unsqueeze(0))  # this loop w unsqueeze is a hacky fix for the todo above
+                    opt.zero_grad()
+                    loss.backward()
+                    opt.step()
                 train_desc = f'[Train MSE: {loss.item():.4f}] [Sample: {batch_start}/{len(X)}] Epoch'
                 if validation_set is not None:  # Validation set loss
                     Cval_paired, Tval_paired, Xval_paired, Yval_paired = val_db.load_data(batch_size=batch_size)
@@ -172,6 +175,7 @@ class ContextualCorrelator:
         """
         Predict a (p_x, p_y) matrix of regression coefficients and offsets for each context
         beta[i,j] and mu[i,j] solve the regression problem y_j = beta[i,j] * x_i + mu[i,j]
+        returns a numpy matrix
         """
         n = C.shape[0]
         betas = torch.zeros((n * self.x_dim * self.y_dim, 1))
@@ -179,29 +183,29 @@ class ContextualCorrelator:
         X_temp = np.zeros((n, self.x_dim))
         Y_temp = np.zeros((n, self.y_dim))
         db = Dataset(C, X_temp, Y_temp, device=self.device)
-        C_paired, T_paired, _, _ = db.load_data(batch_start=0, batch_size=1)
-        betas, mus, _, _, _ = model(C_paired, T_paired)
-        betas, mus = betas.cpu().detach(), mus.cpu().detach()
-        for i in range(1, n):  # Predict per-sample
-                C_paired, T_paired, _, _ = db.load_data(batch_start=i, batch_size=1)
+        C_paired, T_paired, _, _ = db.load_data(batch_start=0, batch_size=1) 
+        betas, mus, _, _, _ = model(C_paired, T_paired) 
+        betas, mus = betas.cpu().detach().numpy(), mus.cpu().detach().numpy()
+        for i in range(1, n):  # Predict per-sample to avoid OOM
+                C_paired, T_paired, _, _ = db.load_data(batch_start=i, batch_size=1) 
                 betas_i, mus_i, _, _, _ = model(C_paired, T_paired)
-                betas_i, mus_i = betas_i.cpu().detach(), mus_i.cpu().detach()
-                betas = torch.cat((betas, betas_i))
-                mus = torch.cat((mus, mus_i))
-        betas = torch.reshape(betas, (n, self.x_dim, self.y_dim, 1))
-        mus = torch.reshape(mus, (n, self.x_dim, self.y_dim, 1))
+                betas_i, mus_i = betas_i.cpu().detach().numpy(), mus_i.cpu().detach().numpy()
+                betas = np.concatenate((betas, betas_i))
+                mus = np.concatenate((mus, mus_i))
+        betas = betas.reshape((n, self.x_dim, self.y_dim, 1))
+        mus = mus.reshape((n, self.x_dim, self.y_dim, 1))
         return betas, mus
 
     def predict_regression(self, C, all_bootstraps=False):
         """
         Predict an (x_dim, y_dim) matrix of regression coefficients for each context
-        Returns a detached CPU tensor (n, x_dim, y_dim, 1 or bootstraps)
+        Returns a numpy matrix (n, x_dim, y_dim, 1 or bootstraps)
         """
         betas, mus = self._predict_regression(self.models[0], C)
         for model in self.models[1:]:
             betas_i, mus_i = self._predict_regression(model, C)
-            betas = torch.cat((betas, betas_i), dim=-1)
-            mus = torch.cat((mus, mus_i), dim=-1)
+            betas = np.concatenate((betas, betas_i), axis=-1)
+            mus = np.concatenate((mus, mus_i), axis=-1)
         if all_bootstraps:
             return betas, mus
         return betas.mean(axis=-1), mus.mean(axis=-1)
@@ -209,10 +213,10 @@ class ContextualCorrelator:
     def predict_correlation(self, C, all_bootstraps=False):
         """
         Predict an (x_dim, y_dim) matrix of squared Pearson's correlation coefficients for each context
-        Returns a detached CPU tensor (n, x_dim, y_dim, 1 or bootstraps)
+        Returns a numpy matrix (n, x_dim, y_dim, 1 or bootstraps)
         """
         betas, mus = self.predict_regression(C, all_bootstraps=True)
-        betas_T = torch.transpose(betas, 1, 2)
+        betas_T = np.transpose(betas, (0, 2, 1, 3))
         rho = betas * betas_T
         if all_bootstraps:
             return rho
