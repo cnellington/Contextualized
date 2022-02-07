@@ -31,13 +31,13 @@ class ContextualRegressorModule(nn.Module):
         activation=nn.ReLU):
         super(ContextualRegressorModule, self).__init__()
         self.context_dim = context_dim
-        self.task_dim = max(x_dim, y_dim) * 2
+        self.task_dim = max(x_dim, y_dim)
         self.final_dense_size = final_dense_size
         self.use_archetypes = num_archetypes > 0
 
         hidden_layers = lambda: [layer for _ in range(0, encoder_layers - 2) for layer in (nn.Linear(encoder_width, encoder_width), activation())]
         context_encoder_layers = [nn.Linear(self.context_dim, encoder_width), activation()] + hidden_layers() + [nn.Linear(encoder_width, self.final_dense_size)]
-        task_encoder_layers = [nn.Linear(self.task_dim, encoder_width), activation()] + hidden_layers() + [nn.Linear(encoder_width, self.final_dense_size * 2)]
+        task_encoder_layers = [nn.Linear(self.task_dim * 2, encoder_width), activation()] + hidden_layers() + [nn.Linear(encoder_width, self.final_dense_size * 2)]
 
         if self.use_archetypes:
             task_encoder_layers = task_encoder_layers[:-1] + [nn.Linear(encoder_width, num_archetypes), nn.Softmax(dim=1)]  # remove dense, add softmax
@@ -82,8 +82,10 @@ class ContextualCorrelator:
         else:
             self.model = None
             self.models = [ContextualRegressorModule(**module_params) for _ in range(bootstraps)]
+        self.context_dim = context_dim
         self.x_dim = x_dim
         self.y_dim = y_dim
+        self.task_dim = max(x_dim, y_dim)
         self.l1 = l1
         self.to(device)
 
@@ -166,22 +168,19 @@ class ContextualCorrelator:
         returns a numpy matrix
         """
         n = C.shape[0]
-        betas = torch.zeros((n * self.x_dim * self.y_dim, 1))
-        mus = torch.zeros((n * self.x_dim * self.y_dim, 1))
-        X_temp = np.zeros((n, self.x_dim))
-        Y_temp = np.zeros((n, self.y_dim))
-        db = Dataset(C, X_temp, Y_temp, device=self.device)
-        C_paired, T_paired, _, _ = db.load_data(batch_start=0, batch_size=1) 
-        betas, mus, _, _, = model(C_paired, T_paired) 
-        betas, mus = betas.cpu().detach().numpy(), mus.cpu().detach().numpy()
-        for i in range(1, n):  # Predict per-sample to avoid OOM
-                C_paired, T_paired, _, _ = db.load_data(batch_start=i, batch_size=1) 
-                betas_i, mus_i, _, _ = model(C_paired, T_paired)
-                betas_i, mus_i = betas_i.cpu().detach().numpy(), mus_i.cpu().detach().numpy()
-                betas = np.concatenate((betas, betas_i))
-                mus = np.concatenate((mus, mus_i))
-        betas = betas.reshape((n, self.x_dim, self.y_dim, 1))
-        mus = mus.reshape((n, self.x_dim, self.y_dim, 1))
+        betas = np.zeros((n, self.x_dim, self.y_dim, 1))
+        mus = np.zeros((n, self.x_dim, self.y_dim, 1))
+        for i in range(n):  # Predict per-sample to avoid OOM
+            C_i = torch.Tensor(C[i])
+            for t_x in range(self.x_dim):
+                for t_y in range(self.y_dim):
+                    task = torch.zeros(self.task_dim * 2)
+                    task[t_x] = 1
+                    task[self.task_dim + t_y] = 1
+                    beta, mu, _, _ = model(C_i.unsqueeze(0), task.unsqueeze(0))
+                    beta, mu = beta.cpu().detach().numpy(), mu.cpu().detach().numpy()
+                    betas[i, t_x, t_y] = beta
+                    mus[i, t_x, t_y] = mu
         return betas, mus
 
     def predict_regression(self, C, all_bootstraps=False):
