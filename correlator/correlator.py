@@ -13,7 +13,7 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def MSE(beta, mu, x, y):
-    residual = beta.squeeze() * x + mu.squeeze() - y
+    residual = beta * x + mu - y
     return residual.pow(2).mean()
 
 
@@ -30,49 +30,36 @@ class ContextualRegressorModule(nn.Module):
     def __init__(self, context_dim, x_dim, y_dim, num_archetypes=0, encoder_width=25, encoder_layers=2, final_dense_size=10,
         activation=nn.ReLU):
         super(ContextualRegressorModule, self).__init__()
-        self.context_encoder_in_shape = (context_dim, 1)
-        self.context_encoder_out_shape = (final_dense_size,)
-        taskpair_dim = max(x_dim, y_dim) * 2
-        task_encoder_in_shape = (taskpair_dim, 1)
-        task_encoder_out_shape = (final_dense_size,)
+        self.context_dim = context_dim
+        self.task_dim = max(x_dim, y_dim) * 2
+        self.final_dense_size = final_dense_size
         self.use_archetypes = num_archetypes > 0
 
-        default_layers = lambda: [layer for _ in range(0, encoder_layers - 2) for layer in (nn.Linear(encoder_width, encoder_width), activation())] \
-            + [nn.Linear(encoder_width, final_dense_size), activation()]
-        context_encoder_layers = [nn.Linear(context_dim, encoder_width), activation()] + default_layers()
-        beta_task_encoder_layers = [nn.Linear(taskpair_dim, encoder_width), activation()] + default_layers()
-        mu_task_encoder_layers = [nn.Linear(taskpair_dim, encoder_width), activation()] + default_layers()
+        hidden_layers = lambda: [layer for _ in range(0, encoder_layers - 2) for layer in (nn.Linear(encoder_width, encoder_width), activation())]
+        context_encoder_layers = [nn.Linear(self.context_dim, encoder_width), activation()] + hidden_layers() + [nn.Linear(encoder_width, self.final_dense_size)]
+        task_encoder_layers = [nn.Linear(self.task_dim, encoder_width), activation()] + hidden_layers() + [nn.Linear(encoder_width, self.final_dense_size * 2)]
 
         if self.use_archetypes:
-            beta_task_encoder_layers = beta_task_encoder_layers[:-2] + [nn.Linear(encoder_width, num_archetypes), nn.Softmax(dim=1)]
-            mu_task_encoder_layers = mu_task_encoder_layers[:-2] + [nn.Linear(encoder_width, num_archetypes), nn.Softmax(dim=1)]
-            init_beta_archetypes = (torch.rand(num_archetypes, final_dense_size) - 0.5) * 1e-2
-            init_mu_archetypes = (torch.rand(num_archetypes, final_dense_size) - 0.5) * 1e-2
-            self.beta_archetypes = nn.parameter.Parameter(init_beta_archetypes, requires_grad=True)
-            self.mu_archetypes = nn.parameter.Parameter(init_mu_archetypes, requires_grad=True)
+            task_encoder_layers = task_encoder_layers[:-1] + [nn.Linear(encoder_width, num_archetypes), nn.Softmax(dim=1)]  # remove dense, add softmax
+            init_archetypes = (torch.rand(num_archetypes, final_dense_size * 2) - 0.5) * 2e-2  # Unif[-1e-2, 1e-2]
+            self.archetypes = nn.parameter.Parameter(init_archetypes, requires_grad=True)
 
         self.context_encoder = nn.Sequential(*context_encoder_layers)
-        self.beta_task_encoder = nn.Sequential(*beta_task_encoder_layers)
-        self.mu_task_encoder = nn.Sequential(*mu_task_encoder_layers)
-        self.flatten = nn.Flatten(0, 1)
+        self.task_encoder = nn.Sequential(*task_encoder_layers)
 
     def forward(self, c, t):
-        Z = self.context_encoder(c).unsqueeze(-1)
-        W_beta, W_mu = None, None
+        batch_size = c.shape[0]
+        Z = self.context_encoder(c)
+        A = self.task_encoder(t)
         if self.use_archetypes:
-            A_beta = self.beta_task_encoder(t).unsqueeze(1)
-            A_mu = self.mu_task_encoder(t).unsqueeze(1)
-            batch_size = A_beta.shape[0]
-            batch_beta_archetypes = self.beta_archetypes.unsqueeze(0).repeat(batch_size, 1, 1)
-            batch_mu_archetypes = self.mu_archetypes.unsqueeze(0).repeat(batch_size, 1, 1)
-            W_beta = torch.bmm(A_beta, batch_beta_archetypes)
-            W_mu = torch.bmm(A_mu, batch_mu_archetypes)
+            batch_archetypes = self.archetypes.unsqueeze(0).repeat(batch_size, 1, 1)
+            W = torch.bmm(A.unsqueeze(1), batch_archetypes)
         else:
-            W_beta = self.beta_task_encoder(t).unsqueeze(1)
-            W_mu = self.mu_task_encoder(t).unsqueeze(1)
-        beta = torch.bmm(W_beta, Z)
-        mu = torch.bmm(W_mu, Z)
-        return self.flatten(beta), self.flatten(mu), W_beta, W_mu, Z
+            W = A
+        W = W.reshape((batch_size, 2, self.final_dense_size))
+        out = torch.bmm(W, Z.unsqueeze(-1)).squeeze(-1)
+        beta, mu = out.T
+        return beta, mu, W, Z
 
 
 class ContextualCorrelator:
@@ -107,12 +94,11 @@ class ContextualCorrelator:
         return self
 
     def _loss(self, outputs, X, Y):
-        beta, mu, W_beta, W_mu, Z = outputs
+        beta, mu, W, Z = outputs
         mse = MSE(beta, mu, X, Y)
-        l1_beta = self.l1 * torch.norm(W_beta, 1)
-        l1_mu = self.l1 * torch.norm(W_mu, 1)
+        l1_w = self.l1 * torch.norm(W, 1)
         l1_z = self.l1 * torch.norm(Z, 1)
-        return mse + l1_beta + l1_mu + l1_z
+        return mse + l1_w + l1_z
 
     def _fit(self, model, C, X, Y, epochs, batch_size, optimizer=torch.optim.Adam, lr=1e-3, validation_set=None, es_patience=None, es_epoch=0, silent=False):
         model.train()
@@ -129,18 +115,20 @@ class ContextualCorrelator:
             for batch_start in range(0, len(X), batch_size):
                 data_paired = db.load_data(batch_start=batch_start, batch_size=batch_size)  # todo: revise load_data to use a combinatorial product of indices for C, X, Y to make batch_size useful
                 loss = None
+                # Train context encoder
                 for C_paired, T_paired, X_paired, Y_paired in zip(*data_paired):  # This makes batch_size irrelevant. Maybe remove?
                     outputs = model(C_paired.unsqueeze(0), T_paired.unsqueeze(0))
                     loss = self._loss(outputs, X_paired.unsqueeze(0), Y_paired.unsqueeze(0))  # this loop w unsqueeze is a hacky fix for the todo above
                     opt.zero_grad()
                     loss.backward()
                     opt.step()
+                # Update UI and check validation set for early stopping
                 train_desc = f'[Train MSE: {loss.item():.4f}] [Sample: {batch_start}/{len(X)}] Epoch'
-                if validation_set is not None:  # Validation set loss
+                if validation_set is not None:
                     Cval_paired, Tval_paired, Xval_paired, Yval_paired = val_db.load_data(batch_size=batch_size)
                     val_outputs = model(Cval_paired, Tval_paired)
                     val_loss = self._loss(val_outputs, Xval_paired, Yval_paired).item()
-                    if es_patience is not None and epoch >= es_epoch:  # Early stopping
+                    if es_patience is not None and epoch >= es_epoch:
                         if val_loss < min_loss:
                             min_loss = val_loss
                             es_count = 0
@@ -184,11 +172,11 @@ class ContextualCorrelator:
         Y_temp = np.zeros((n, self.y_dim))
         db = Dataset(C, X_temp, Y_temp, device=self.device)
         C_paired, T_paired, _, _ = db.load_data(batch_start=0, batch_size=1) 
-        betas, mus, _, _, _ = model(C_paired, T_paired) 
+        betas, mus, _, _, = model(C_paired, T_paired) 
         betas, mus = betas.cpu().detach().numpy(), mus.cpu().detach().numpy()
         for i in range(1, n):  # Predict per-sample to avoid OOM
                 C_paired, T_paired, _, _ = db.load_data(batch_start=i, batch_size=1) 
-                betas_i, mus_i, _, _, _ = model(C_paired, T_paired)
+                betas_i, mus_i, _, _ = model(C_paired, T_paired)
                 betas_i, mus_i = betas_i.cpu().detach().numpy(), mus_i.cpu().detach().numpy()
                 betas = np.concatenate((betas, betas_i))
                 mus = np.concatenate((mus, mus_i))
@@ -233,7 +221,7 @@ class ContextualCorrelator:
         for i, model in enumerate(self.models):
             for batch_start in range(0, n):
                 C_paired, T_paired, X_paired, Y_paired = db.load_data(batch_start=batch_start, batch_size=1)
-                betas, mus, _, _, _ = model(C_paired, T_paired)
+                betas, mus, _, _ = model(C_paired, T_paired)
                 mse = MSE(betas, mus, X_paired, Y_paired).item()
                 mses[i] += 1 / n * mse
         if not all_bootstraps:
