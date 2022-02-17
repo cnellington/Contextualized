@@ -1,7 +1,7 @@
 import setuptools
 
 setuptools.setup(name='correlator',
-      packages=['correlator', 'correlator.helpers'],
+      packages=['correlator', 'regression', 'correlator.helpers'],
       version='0.0.0',
       install_requires=[
           'torch',
