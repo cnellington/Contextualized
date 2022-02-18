@@ -70,9 +70,9 @@ class ContextualizedRegressionModule(nn.Module):
         self.catcol = CatCol((context_archetypes, task_archetypes), (beta_dim + 1, ))
 
     def forward(self, c, t):
-        Z_context = F.softmax(self.context_encoder(c), dim=1)
-        Z_task = F.softmax(self.task_encoder(t), dim=1)
-        W = self.catcol(Z_context, Z_task)
+        Z_context = self.context_encoder(c)
+        Z_task = self.task_encoder(t)        
+        W = self.catcol(F.softmax(Z_context, dim=1), F.softmax(Z_task, dim=1))
         beta = W[:, :-1]
         mu = W[:, -1:]
         return beta, mu
@@ -216,20 +216,20 @@ class MultivariateDataset:
         return self.n * self.y_dim
     
 
-class ContextualizedRegression:
-    def __init__(self, context_dim, x_dim, y_dim, num_archetypes=10, l1=0,
-        encoder_width=25, encoder_layers=2, activation=nn.ReLU, bootstraps=None, 
-        device=torch.device('cpu')):
+class ContextualizedUnivariateRegression:
+    def __init__(self, context_dim, x_dim, y_dim, context_archetypes=10, task_archetypes=10, 
+                l1=0, encoder_width=25, encoder_layers=2, activation=nn.ReLU, bootstraps=None, 
+                device=torch.device('cpu')):
         self.context_dim = context_dim
         self.x_dim = x_dim
         self.y_dim = y_dim
-        self.task_dim = max(x_dim, y_dim)
+        self.taskpair_dim = x_dim + y_dim
         module_params = {
             'context_dim': context_dim,
-            'task_dim': self.task_dim * 2,
-            'beta_dim': x_dim,
-            'context_archetypes': num_archetypes,
-            'task_archetypes': num_archetypes,
+            'task_dim': self.taskpair_dim,
+            'beta_dim': 1,
+            'context_archetypes': context_archetypes,
+            'task_archetypes': task_archetypes,
             'nam_width': encoder_width,
             'nam_layers': encoder_layers,
             'activation': activation,
@@ -249,10 +249,8 @@ class ContextualizedRegression:
         return self
 
     def _loss(self, outputs, X, Y):
-        beta, mu = outputs
+        beta, mu, = outputs
         mse = MSE(beta, mu, X, Y)
-#         l1_w = self.l1 * torch.norm(W, 1)
-#         l1_z = self.l1 * torch.norm(Z, 1)
         return mse
 
     def _fit(self, model, C, X, Y, epochs, batch_size, optimizer=torch.optim.Adam, lr=1e-3, 
@@ -270,7 +268,7 @@ class ContextualizedRegression:
         for epoch in progress_bar:
             for batch_i, (c, t, x, y) in enumerate(dataset):
                 loss = None
-                # Train context encoder
+                # Train
                 outputs = model(c, t)
                 loss = self._loss(outputs, x, y)
                 opt.zero_grad()
@@ -316,68 +314,67 @@ class ContextualizedRegression:
                 })
                 self._fit(**fit_params)
 
-    def _predict_regression(self, model, C):
+    def _predict_coefs(self, model, C):
         """
-        Predict a (p_x, p_y) matrix of regression coefficients and offsets for each context
+        Predict a (1, c_dim, x_dim, y_dim) matrix of regression coefficients and offsets for each context
         beta[i,j] and mu[i,j] solve the regression problem y_j = beta[i,j] * x_i + mu[i,j]
         returns a numpy matrix
         """
         n = C.shape[0]
-        betas = np.zeros((n, self.x_dim, self.y_dim, 1))
-        mus = np.zeros((n, self.x_dim, self.y_dim, 1))
+        betas = torch.zeros((n, self.x_dim, self.y_dim))
+        mus = torch.zeros((n, self.x_dim, self.y_dim))
         for i in range(n):  # Predict per-sample to avoid OOM
             C_i = torch.Tensor(C[i])
             for t_x in range(self.x_dim):
                 for t_y in range(self.y_dim):
-                    task = torch.zeros(self.task_dim * 2)
+                    task = torch.zeros(self.taskpair_dim)
                     task[t_x] = 1
-                    task[self.task_dim + t_y] = 1
-                    beta, mu, _, _ = model(C_i.unsqueeze(0), task.unsqueeze(0))
-                    beta, mu = beta.cpu().detach().numpy(), mu.cpu().detach().numpy()
-                    betas[i, t_x, t_y] = beta
-                    mus[i, t_x, t_y] = mu
-        return betas, mus
+                    task[self.x_dim + t_y] = 1
+                    beta, mu = model(C_i.unsqueeze(0), task.unsqueeze(0))
+                    beta, mu = beta.cpu().detach(), mu.cpu().detach()
+                    betas[i, t_x, t_y] = beta.squeeze()
+                    mus[i, t_x, t_y] = mu.squeeze()
+        return betas.unsqueeze(0).numpy(), mus.unsqueeze(0).numpy()
 
-    def predict_regression(self, C, all_bootstraps=False):
+    def predict_coefs(self, C, all_bootstraps=False):
         """
         Predict an (x_dim, y_dim) matrix of regression coefficients for each context
-        Returns a numpy matrix (n, x_dim, y_dim, 1 or bootstraps)
+        Returns a numpy matrix (1 or bootstraps, n, x_dim, y_dim)
         """
-        betas, mus = self._predict_regression(self.models[0], C)
+        betas, mus = self._predict_coefs(self.models[0], C)
         for model in self.models[1:]:
-            betas_i, mus_i = self._predict_regression(model, C)
-            betas = np.concatenate((betas, betas_i), axis=-1)
-            mus = np.concatenate((mus, mus_i), axis=-1)
+            betas_i, mus_i = self._predict_coefs(model, C)
+            betas = np.concatenate((betas, betas_i), axis=0)
+            mus = np.concatenate((mus, mus_i), axis=0)
         if all_bootstraps:
             return betas, mus
-        return betas.mean(axis=-1), mus.mean(axis=-1)
+        return betas.mean(axis=0), mus.mean(axis=0)
 
     def predict_correlation(self, C, all_bootstraps=False):
         """
+        Requires x_dim == y_dim
         Predict an (x_dim, y_dim) matrix of squared Pearson's correlation coefficients for each context
         Returns a numpy matrix (n, x_dim, y_dim, 1 or bootstraps)
         """
-        betas, mus = self.predict_regression(C, all_bootstraps=True)
-        betas_T = np.transpose(betas, (0, 2, 1, 3))
+        betas, mus = self.predict_coefs(C, all_bootstraps=True)
+        betas_T = np.transpose(betas, (0, 1, 3, 2))
         rho = betas * betas_T
         if all_bootstraps:
             return rho
-        return rho.mean(axis=-1)
+        return rho.mean(axis=0)
 
     def get_mse(self, C, X, Y, all_bootstraps=False):
         """
         Returns the MSE of the model on a dataset
         Returns a numpy array (1 or bootstraps, )
         """
-        n = len(X)
-        db = Dataset(C, X, Y, device=self.device)
+        dataset = UnivariateDataset(C, X, Y, batch_size=1, device=self.device)
         mses = np.zeros(len(self.models))
         for i, model in enumerate(self.models):
-            for batch_start in range(0, n):
-                C_paired, T_paired, X_paired, Y_paired = db.load_data(batch_start=batch_start, batch_size=1)
-                betas, mus, _, _ = model(C_paired, T_paired)
-                mse = MSE(betas, mus, X_paired, Y_paired).item()
-                mses[i] += 1 / n * mse
+            for c, t, x, y in dataset:
+                betas, mus = model(c, t)
+                mse = MSE(betas, mus, x, y).item()
+                mses[i] += 1 / len(dataset) * mse
         if not all_bootstraps:
             return mses.mean()
         return mses
