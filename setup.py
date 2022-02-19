@@ -1,7 +1,7 @@
 import setuptools
 
-setuptools.setup(name='correlator',
-      packages=['correlator', 'regression', 'correlator.helpers'],
+setuptools.setup(name='contextualized',
+      packages=['contextualized', 'contextualized.helpers'],
       version='0.0.0',
       install_requires=[
           'torch',
