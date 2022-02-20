@@ -34,27 +34,18 @@ class SoftSelect(nn.Module):
                 batch_w = batch_w.unsqueeze(1)
             batch_archetypes = torch.matmul(batch_archetypes, batch_w).squeeze(-1)
         return batch_archetypes
-    
+
+
 class Explainer(nn.Module):
     """
-    Parameter sharing for multiple context encoders:
-    Batched computation for mapping many subtypes onto d-dimensional archetypes
+    2D subtype-archetype parameter sharing
     """
     def __init__(self, k, out_shape):
-        super(SoftSelect, self).__init__()
-        init_mat = torch.rand(list(out_shape) + [k]) * 2e-2 - 1e-2
-        self.archetypes = nn.parameter.Parameter(init_mat, requires_grad=True)
+        super(Explainer, self).__init__()
+        self.softselect = SoftSelect((k, ), out_shape)
 
     def forward(self, batch_subtypes):
-        batch_size = batch_subtypes[0].shape[0]
-        expand_dims = [batch_size] + [-1 for _ in range(len(self.archetypes.shape))]
-        batch_archetypes = self.archetypes.unsqueeze(0).expand(expand_dims)
-        batch_w = batch_subtypes.unsqueeze(-1)
-        d = len(batch_archetypes.shape) - len(batch_w.shape)
-        for _ in range(d):
-            batch_w = batch_w.unsqueeze(1)
-        batch_archetypes = torch.matmul(batch_archetypes, batch_w).squeeze(-1)
-        return batch_archetypes
+        return self.softselect(batch_subtypes)
 
 
 class NGAM(nn.Module):
