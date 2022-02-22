@@ -58,7 +58,7 @@ class NGAM(nn.Module):
         self.output_dim = output_dim
         hidden_layers = lambda: [layer for _ in range(0, layers - 2) for layer in (nn.Linear(width, width), activation())]
         nam_layers = lambda: [nn.Linear(1, width), activation()] + hidden_layers() + [nn.Linear(width, output_dim)]
-        self.nams = [nn.Sequential(*nam_layers()) for _ in range(input_dim)]
+        self.nams = nn.ModuleList([nn.Sequential(*nam_layers()) for _ in range(input_dim)])
 
     def forward(self, x):
         batch_size = x.shape[0]

@@ -12,5 +12,6 @@ setuptools.setup(name='contextualized',
           'matplotlib',
           'pandas',
           'umap-learn',
+          'interpret',
       ],
 )
