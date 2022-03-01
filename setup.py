@@ -5,6 +5,7 @@ setuptools.setup(name='contextualized',
       version='0.0.0',
       install_requires=[
           'torch',
+          'pytorch-lightning',
           'numpy',
           'tqdm',
           'scikit-learn',

@@ -22,6 +22,16 @@ LINK_FNS = [
 ]
 
 
+class CRTrainer(pl.Trainer):
+    def predict_coefs(self, model, dataloader):
+        preds = super().predict(model, dataloader)
+        return model._coef_preds(preds, dataloader)
+    
+    def predict_y(self, model, dataloader):
+        preds = super().predict(model, dataloader)
+        return model._y_preds(preds, dataloader)
+
+
 class Dataset:
     def __init__(self, C, X, Y, dtype=torch.float):
         """
@@ -228,10 +238,16 @@ class TasksplitContextualizedRegression(pl.LightningModule):
         return loss
     
     def validation_step(self, batch, batch_idx):
-        pass
+        C, T, X, Y, _, _, _ = batch
+        beta_hat, mu_hat = self(C, T)
+        loss = MSE(beta_hat, mu_hat, X, Y)
+        return loss
     
     def test_step(self, batch, batch_idx):
-        pass
+        C, T, X, Y, _, _, _ = batch
+        beta_hat, mu_hat = self(C, T)
+        loss = MSE(beta_hat, mu_hat, X, Y)
+        self.log_dict({'test_mse': loss})
     
     def predict_step(self, batch, batch_idx):
         C, T, X, Y, _, _, _ = batch
