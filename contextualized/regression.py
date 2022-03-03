@@ -280,8 +280,3 @@ class TasksplitContextualizedRegression(pl.LightningModule):
     
     def dataloader(self, C, X, Y, batch_size=32):
         return DataLoader(dataset=DataIterable(MultitaskUnivariateDataset(C, X, Y)), batch_size=batch_size)
-    
-class ContextualizedUnivariateRegression:
-    def __init__(self, context_dim, x_dim, y_dim, metamodel='tasksplit'):
-        if metamodel == 'tasksplit':
-            self.model = TasksplitContextualizedRegression(context_dim, x_dim, y_dim, univariate=True)
