@@ -68,27 +68,71 @@ class Dataset:
 
 class MultivariateDataset(Dataset):
     def __next__(self):
-        pass
+        self.n_i += 1
+        if self.n_i >= self.n:
+            self.n_i = 0
+            raise StopIteration
+        ret = (
+            self.C[self.n_i],
+            self.X[self.n_i].expand(self.y_dim, -1),
+            self.Y[self.n_i],
+            self.n_i,
+        )
+        return ret
         
     def __len(self):
         return self.n
     
 class UnivariateDataset(Dataset):
     def __next__(self):
-        pass
+        self.n_i += 1
+        if self.n_i >= self.n:
+            self.n_i = 0
+            raise StopIteration
+        ret = (
+            self.C[self.n_i],
+            self.X[self.n_i].expand(self.y_dim, -1),
+            self.Y[self.n_i].expand(self.x_dim, -1).T,
+            self.n_i,
+        )
+        return ret
         
     def __len(self):
         return self.n
     
 class MultitaskMultivariateDataset(Dataset):
     def __next__(self):
-        pass
+        self.y_i += 1
+        if self.y_i >= self.y_dim:
+            self.n_i += 1
+            self.y_i = 0
+        if self.n_i >= self.n:
+            self.n_i = 0
+            raise StopIteration
+        t = torch.zeros(self.y_dim)
+        t[self.y_i] = 1
+        ret = (
+            self.C[self.n_i],
+            t,
+            self.X[self.n_i]
+            self.Y[self.n_i, self.y_i].unsqueeze(0),
+            self.n_i,
+            self.y_i,
+        )
+        return ret
         
     def __len(self):
         return self.n * self.y_dim
     
 class MultitaskUnivariateDataset(Dataset):
     def __next__(self):
+        self.y_i += 1
+        if self.y_i >= self.y_dim:
+            self.x_i += 1
+            self.y_i = 0
+        if self.x_i >= self.x_dim:
+            self.n_i += 1
+            self.x_i = 0
         if self.n_i >= self.n:
             self.n_i = 0
             raise StopIteration
@@ -98,19 +142,12 @@ class MultitaskUnivariateDataset(Dataset):
         ret = (
             self.C[self.n_i],
             t,
-            self.X[self.n_i, self.x_i:self.x_i+1],
-            self.Y[self.n_i, self.y_i:self.y_i+1],
+            self.X[self.n_i, self.x_i].unsqueeze(0),
+            self.Y[self.n_i, self.y_i].unsqueeze(0),
             self.n_i,
             self.x_i,
             self.y_i,
         )
-        self.y_i += 1
-        if self.y_i >= self.y_dim:
-            self.x_i += 1
-            self.y_i = 0
-        if self.x_i >= self.x_dim:
-            self.n_i += 1
-            self.x_i = 0
         return ret
     
     def __len__(self):
