@@ -24,7 +24,7 @@ class CorrTrainer(CRTrainer):
     def predict_network(self, model, dataloader):
         betas, _ = super().predict_coefs(model, dataloader)
         print(betas.shape)
-        rhos = betas * np.transpose(betas, (0, 1, 2))
+        rhos = betas * np.transpose(betas, (0, 2, 1))
         return rhos
 
 
@@ -61,6 +61,5 @@ if __name__ == '__main__':
     beta_preds, mu_preds = trainer.predict_coefs(model, dataloader)
     y_preds = trainer.predict_y(model, dataloader)
     rhos = trainer.predict_network(model, dataloader)
-    print(rhos)
     trainer.test(model, dataloader)
     # reg.reshape_preds(preds, dataloader)[0].shape
