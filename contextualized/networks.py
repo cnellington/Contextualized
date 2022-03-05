@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 import pytorch_lightning as pl
 
 from contextualized.modules import NGAM, MLP, SoftSelect, Explainer
-from contextualized.regression import DataIterable, CRTrainer, MultitaskUnivariateDataset, TasksplitContextualizedRegression
+from contextualized.regression import CRTrainer, TasksplitContextualizedUnivariateRegression
 
 
 ENCODERS = {
@@ -22,15 +22,14 @@ LINK_FNS = [
 
 class CorrTrainer(CRTrainer):
     def predict_network(self, model, dataloader):
-        betas, _ = super().predict_coefs(model, dataloader)
-        print(betas.shape)
+        betas, _ = super().predict_params(model, dataloader)
         rhos = betas * np.transpose(betas, (0, 2, 1))
         return rhos
 
 
-class ContextualizedCorrelation(TasksplitContextualizedRegression):
+class ContextualizedCorrelation(TasksplitContextualizedUnivariateRegression):
     def __init__(self, context_dim, x_dim, **kwargs):
-        super().__init__(context_dim, x_dim, x_dim, univariate=True, **kwargs)
+        super().__init__(context_dim, x_dim, x_dim, **kwargs)
     
     def dataloader(self, C, X, **kwargs):
         return super().dataloader(C, X, X, **kwargs)
@@ -58,7 +57,7 @@ if __name__ == '__main__':
     dataloader = model.dataloader(C, X, batch_size=32)
     trainer = CorrTrainer(max_epochs=10)
     trainer.fit(model, dataloader)
-    beta_preds, mu_preds = trainer.predict_coefs(model, dataloader)
+    beta_preds, mu_preds = trainer.predict_params(model, dataloader)
     y_preds = trainer.predict_y(model, dataloader)
     rhos = trainer.predict_network(model, dataloader)
     trainer.test(model, dataloader)

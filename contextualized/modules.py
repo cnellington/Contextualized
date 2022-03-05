@@ -42,32 +42,34 @@ class NGAM(nn.Module):
     """
     Neural generalized additive model
     """
-    def __init__(self, input_dim, output_dim, width, layers, activation=nn.ReLU):
+    def __init__(self, input_dim, output_dim, width, layers, activation=nn.ReLU, link_fn=lambda x: x):
         super(NGAM, self).__init__()
         self.intput_dim = input_dim
         self.output_dim = output_dim
         hidden_layers = lambda: [layer for _ in range(0, layers - 2) for layer in (nn.Linear(width, width), activation())]
         nam_layers = lambda: [nn.Linear(1, width), activation()] + hidden_layers() + [nn.Linear(width, output_dim)]
         self.nams = nn.ModuleList([nn.Sequential(*nam_layers()) for _ in range(input_dim)])
+        self.link_fn = link_fn
 
     def forward(self, x):
         batch_size = x.shape[0]
         ret = torch.zeros((batch_size, self.output_dim))
         for i, nam in enumerate(self.nams):
             ret += nam(x[:, i].unsqueeze(-1))
-        return ret
+        return self.link_fn(ret)
 
     
 class MLP(nn.Module):
     """
     Multi-layer perceptron
     """
-    def __init__(self, input_dim, output_dim, width, layers, activation=nn.ReLU):
+    def __init__(self, input_dim, output_dim, width, layers, activation=nn.ReLU, link_fn=lambda x: x):
         super(MLP, self).__init__()
         hidden_layers = lambda: [layer for _ in range(0, layers - 2) for layer in (nn.Linear(width, width), activation())]
         mlp_layers = [nn.Linear(input_dim, width), activation()] + hidden_layers() + [nn.Linear(width, output_dim)]
         self.mlp = nn.Sequential(*mlp_layers)
+        self.link_fn = link_fn
 
     def forward(self, x):
         ret = self.mlp(x)
-        return ret
+        return self.link_fn(ret)
