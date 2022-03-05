@@ -339,32 +339,28 @@ class TasksplitContextualizedRegression(ContextualizedRegressionBase):
         return MSE(beta_hat, mu_hat, X, Y)
      
     def predict_step(self, batch, batch_idx):
-        C, T, X, Y, _, _, _ = batch
+        C, T, X, Y, _, _ = batch
         beta_hat, mu_hat = self(C, T)
         return beta_hat, mu_hat
     
-    def _coef_preds(self, preds, dataloader):
+    def _params_reshape(self, preds, dataloader):
         ds = dataloader.dataset.dataset
-        betas = np.zeros((ds.n, 
-                          ds.x_dim, 
-                          ds.y_dim))
-        mus = betas.copy()
+        betas = np.zeros((ds.n, ds.x_dim, ds.y_dim))
+        mus = np.zeros((ds.n, ds.y_dim))
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
-            _, _, _, _, n_idx, x_idx, y_idx = data
-            for beta_hat, mu_hat, n_i, x_i, y_i in zip(beta_hats, mu_hats, n_idx, x_idx, y_idx):
-                betas[n_i, x_i, y_i] = beta_hat
-                mus[n_i, x_i, y_i] = mu_hat
+            _, _, _, _, n_idx, y_idx = data
+            for beta_hat, mu_hat, n_i, y_i in zip(beta_hats, mu_hats, n_idx, y_idx):
+                betas[n_i, :, y_i] = beta_hat
+                mus[n_i, y_i] = mu_hat.squeeze()
         return betas, mus
     
-    def _y_preds(self, preds, dataloader):
+    def _y_reshape(self, preds, dataloader):
         ds = dataloader.dataset.dataset
-        ys = np.zeros((ds.n, 
-                       ds.x_dim, 
-                       ds.y_dim))
+        ys = np.zeros((ds.n, ds.y_dim))
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
-            _, _, X, Y, n_idx, x_idx, y_idx = data
-            for beta_hat, mu_hat, x, y, n_i, x_i, y_i in zip(beta_hats, mu_hats, X, Y, n_idx, x_idx, y_idx):
-                ys[n_i, x_i, y_i] = beta_hat * y + mu_hat
+            _, _, X, Y, n_idx, y_idx = data
+            for beta_hat, mu_hat, x, y, n_i, y_i in zip(beta_hats, mu_hats, X, Y, n_idx, y_idx):
+                ys[n_i, y_i] = ((beta_hat * x).sum(axis=-1).unsqueeze(-1) + mu_hat).squeeze()
         return ys
     
     def dataloader(self, C, X, Y, batch_size=32):
