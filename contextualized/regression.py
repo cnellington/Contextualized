@@ -189,13 +189,13 @@ class NaiveMetamodel(nn.Module):
         self.y_dim = y_dim
 
         encoder = ENCODERS[encoder_type]
-        mu_dim = x_dim if univariate else 1
-        out_dim = (x_dim + mu_dim) * y_dim
+        self.mu_dim = x_dim if univariate else 1
+        out_dim = (x_dim + self.mu_dim) * y_dim
         self.context_encoder = encoder(context_dim, out_dim, **encoder_kwargs)
 
     def forward(self, C):
         W = self.context_encoder(C)
-        W = torch.reshape(out, (out.shape[0], self.y_dim, x_dim + mu_dim))
+        W = torch.reshape(W, (W.shape[0], self.y_dim, self.x_dim + self.mu_dim))
         beta = W[:, :, :self.x_dim]
         mu = W[:, :, self.x_dim:]
         return beta, mu
@@ -323,15 +323,91 @@ class ContextualizedRegressionBase(pl.LightningModule):
         return loss
 
 
-class TasksplitContextualizedRegression(ContextualizedRegressionBase):
+class NaiveContextualizedRegression(ContextualizedRegressionBase):
     def __init__(self, *args, **kwargs):
         super().__init__()
         kwargs['univariate'] = False
-        self.metamodel = TasksplitMetamodel(*args, **kwargs)
+        self.metamodel = NaiveMetamodel(*args, **kwargs)
+
+    def _batch_loss(self, batch, batch_idx):
+        C, X, Y, _ = batch
+        beta_hat, mu_hat = self.metamodel(C)
+        return MSE(beta_hat, mu_hat, X, Y)
+     
+    def predict_step(self, batch, batch_idx):
+        C, X, Y, _ = batch
+        beta_hat, mu_hat = self(C)
+        return beta_hat, mu_hat
     
-    def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
-        return optimizer
+    def _params_reshape(self, preds, dataloader):
+        ds = dataloader.dataset.dataset
+        betas = np.zeros((ds.n, ds.y_dim, ds.x_dim))
+        mus = np.zeros((ds.n, ds.y_dim))
+        for (beta_hats, mu_hats), data in zip(preds, dataloader):
+            _, _, _, n_idx = data
+            for beta_hat, mu_hat, n_i in zip(beta_hats, mu_hats, n_idx):
+                betas[n_i] = beta_hat
+                mus[n_i] = mu_hat.squeeze(-1)
+        return betas, mus
+    
+    def _y_reshape(self, preds, dataloader):
+        ds = dataloader.dataset.dataset
+        ys = np.zeros((ds.n, ds.y_dim))
+        for (beta_hats, mu_hats), data in zip(preds, dataloader):
+            _, X, _, n_idx = data
+            for beta_hat, mu_hat, x, n_i in zip(beta_hats, mu_hats, X, n_idx):
+                ys[n_i] = ((beta_hat * x).sum(axis=-1).unsqueeze(-1) + mu_hat).squeeze(-1)
+        return ys
+    
+    def dataloader(self, C, X, Y, batch_size=32):
+        return DataLoader(dataset=DataIterable(MultivariateDataset(C, X, Y)), batch_size=batch_size)
+
+
+class SubtypeContextualizedRegression(ContextualizedRegressionBase):
+    def __init__(self, *args, **kwargs):
+        super().__init__()
+        kwargs['univariate'] = False
+        self.metamodel = SubtypeMetamodel(*args, **kwargs)
+
+    def _batch_loss(self, batch, batch_idx):
+        C, X, Y, _, = batch
+        beta_hat, mu_hat = self.metamodel(C)
+        return MSE(beta_hat, mu_hat, X, Y)
+     
+    def predict_step(self, batch, batch_idx):
+        C, X, Y, _ = batch
+        beta_hat, mu_hat = self(C)
+        return beta_hat, mu_hat
+    
+    def _params_reshape(self, preds, dataloader):
+        ds = dataloader.dataset.dataset
+        betas = np.zeros((ds.n, ds.y_dim, ds.x_dim))
+        mus = np.zeros((ds.n, ds.y_dim))
+        for (beta_hats, mu_hats), data in zip(preds, dataloader):
+            _, _, _, n_idx = data
+            for beta_hat, mu_hat, n_i in zip(beta_hats, mu_hats, n_idx):
+                betas[n_i] = beta_hat
+                mus[n_i] = mu_hat.squeeze(-1)
+        return betas, mus
+    
+    def _y_reshape(self, preds, dataloader):
+        ds = dataloader.dataset.dataset
+        ys = np.zeros((ds.n, ds.y_dim))
+        for (beta_hats, mu_hats), data in zip(preds, dataloader):
+            _, X, _, n_idx = data
+            for beta_hat, mu_hat, x, n_i in zip(beta_hats, mu_hats, X, n_idx):
+                ys[n_i] = ((beta_hat * x).sum(axis=-1).unsqueeze(-1) + mu_hat).squeeze(-1)
+        return ys
+    
+    def dataloader(self, C, X, Y, batch_size=32):
+        return DataLoader(dataset=DataIterable(MultivariateDataset(C, X, Y)), batch_size=batch_size)
+
+
+class MultitaskContextualizedRegression(ContextualizedRegressionBase):
+    def __init__(self, *args, **kwargs):
+        super().__init__()
+        kwargs['univariate'] = False
+        self.metamodel = MultitaskMetamodel(*args, **kwargs)
 
     def _batch_loss(self, batch, batch_idx):
         C, T, X, Y, _, _ = batch
@@ -345,12 +421,12 @@ class TasksplitContextualizedRegression(ContextualizedRegressionBase):
     
     def _params_reshape(self, preds, dataloader):
         ds = dataloader.dataset.dataset
-        betas = np.zeros((ds.n, ds.x_dim, ds.y_dim))
+        betas = np.zeros((ds.n, ds.y_dim, ds.x_dim))
         mus = np.zeros((ds.n, ds.y_dim))
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
             _, _, _, _, n_idx, y_idx = data
             for beta_hat, mu_hat, n_i, y_i in zip(beta_hats, mu_hats, n_idx, y_idx):
-                betas[n_i, :, y_i] = beta_hat
+                betas[n_i, y_i] = beta_hat
                 mus[n_i, y_i] = mu_hat.squeeze()
         return betas, mus
     
@@ -358,65 +434,66 @@ class TasksplitContextualizedRegression(ContextualizedRegressionBase):
         ds = dataloader.dataset.dataset
         ys = np.zeros((ds.n, ds.y_dim))
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
-            _, _, X, Y, n_idx, y_idx = data
-            for beta_hat, mu_hat, x, y, n_i, y_i in zip(beta_hats, mu_hats, X, Y, n_idx, y_idx):
+            _, _, X, _, n_idx, y_idx = data
+            for beta_hat, mu_hat, x, n_i, y_i in zip(beta_hats, mu_hats, X, n_idx, y_idx):
                 ys[n_i, y_i] = ((beta_hat * x).sum(axis=-1).unsqueeze(-1) + mu_hat).squeeze()
         return ys
     
     def dataloader(self, C, X, Y, batch_size=32):
         return DataLoader(dataset=DataIterable(MultitaskMultivariateDataset(C, X, Y)), batch_size=batch_size)
 
-    
-class TasksplitContextualizedUnivariateRegression(pl.LightningModule):
-    def __init__(self, context_dim, x_dim, y_dim, encoder_type='mlp',
-                 num_archetypes=10, encoder_width=25, encoder_layers=2, link_fn=lambda x: x):
+
+class TasksplitContextualizedRegression(ContextualizedRegressionBase):
+    def __init__(self, *args, **kwargs):
         super().__init__()
-        self.context_dim = context_dim
-        self.x_dim = x_dim
-        self.y_dim = y_dim
-        self.link_fn = link_fn
+        kwargs['univariate'] = False
+        self.metamodel = TasksplitMetamodel(*args, **kwargs)
 
-        encoder = ENCODERS[encoder_type]
-        beta_dim = 1
-        task_dim = y_dim + x_dim
-        self.context_encoder = encoder(context_dim, num_archetypes, encoder_width, encoder_layers)
-        self.task_encoder = encoder(task_dim, num_archetypes, encoder_width, encoder_layers)
-        self.explainer = SoftSelect((num_archetypes, num_archetypes), (beta_dim + 1, ))
+    def _batch_loss(self, batch, batch_idx):
+        C, T, X, Y, _, _ = batch
+        beta_hat, mu_hat = self.metamodel(C, T)
+        return MSE(beta_hat, mu_hat, X, Y)
+     
+    def predict_step(self, batch, batch_idx):
+        C, T, X, Y, _, _ = batch
+        beta_hat, mu_hat = self(C, T)
+        return beta_hat, mu_hat
+    
+    def _params_reshape(self, preds, dataloader):
+        ds = dataloader.dataset.dataset
+        betas = np.zeros((ds.n, ds.y_dim, ds.x_dim))
+        mus = np.zeros((ds.n, ds.y_dim))
+        for (beta_hats, mu_hats), data in zip(preds, dataloader):
+            _, _, _, _, n_idx, y_idx = data
+            for beta_hat, mu_hat, n_i, y_i in zip(beta_hats, mu_hats, n_idx, y_idx):
+                betas[n_i, y_i] = beta_hat
+                mus[n_i, y_i] = mu_hat.squeeze()
+        return betas, mus
+    
+    def _y_reshape(self, preds, dataloader):
+        ds = dataloader.dataset.dataset
+        ys = np.zeros((ds.n, ds.y_dim))
+        for (beta_hats, mu_hats), data in zip(preds, dataloader):
+            _, _, X, _, n_idx, y_idx = data
+            for beta_hat, mu_hat, x, n_i, y_i in zip(beta_hats, mu_hats, X, n_idx, y_idx):
+                ys[n_i, y_i] = ((beta_hat * x).sum(axis=-1).unsqueeze(-1) + mu_hat).squeeze()
+        return ys
+    
+    def dataloader(self, C, X, Y, batch_size=32):
+        return DataLoader(dataset=DataIterable(MultitaskMultivariateDataset(C, X, Y)), batch_size=batch_size)
 
-    def forward(self, C, T):
-        Z_c_pre = self.context_encoder(C) 
-        Z_t_pre = self.task_encoder(T)
-        Z_c = self.link_fn(Z_c_pre)
-        Z_t = self.link_fn(Z_t_pre)
-        W = self.explainer(Z_c, Z_t)
-        beta = W[:, :-1]
-        mu = W[:, -1:]
-        return beta, mu
-    
-    def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
-        return optimizer
-    
-    def training_step(self, batch, batch_idx):
+
+class TasksplitContextualizedUnivariateRegression(ContextualizedRegressionBase):
+    def __init__(self, *args, **kwargs):
+        super().__init__()
+        kwargs['univariate'] = True
+        self.metamodel = TasksplitMetamodel(*args, **kwargs)
+
+    def _batch_loss(self, batch, batch_idx):
         C, T, X, Y, _, _, _ = batch
-        beta_hat, mu_hat = self(C, T)
-        loss = MSE(beta_hat, mu_hat, X, Y)
-        self.log_dict({'train_loss': loss})
-        return loss
-    
-    def validation_step(self, batch, batch_idx):
-        C, T, X, Y, _, _, _ = batch
-        beta_hat, mu_hat = self(C, T)
-        loss = MSE(beta_hat, mu_hat, X, Y)
-        self.log_dict({'val_mse': loss})
-        return loss
-    
-    def test_step(self, batch, batch_idx):
-        C, T, X, Y, _, _, _ = batch
-        beta_hat, mu_hat = self(C, T)
-        loss = MSE(beta_hat, mu_hat, X, Y)
-        self.log_dict({'test_mse': loss})
-    
+        beta_hat, mu_hat = self.metamodel(C, T)
+        return MSE(beta_hat, mu_hat, X, Y)
+     
     def predict_step(self, batch, batch_idx):
         C, T, X, Y, _, _, _ = batch
         beta_hat, mu_hat = self(C, T)
@@ -424,26 +501,22 @@ class TasksplitContextualizedUnivariateRegression(pl.LightningModule):
     
     def _params_reshape(self, preds, dataloader):
         ds = dataloader.dataset.dataset
-        betas = np.zeros((ds.n, 
-                          ds.x_dim, 
-                          ds.y_dim))
+        betas = np.zeros((ds.n, ds.y_dim, ds.x_dim))
         mus = betas.copy()
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
             _, _, _, _, n_idx, x_idx, y_idx = data
             for beta_hat, mu_hat, n_i, x_i, y_i in zip(beta_hats, mu_hats, n_idx, x_idx, y_idx):
-                betas[n_i, x_i, y_i] = beta_hat
-                mus[n_i, x_i, y_i] = mu_hat
+                betas[n_i, y_i, x_i] = beta_hat.squeeze()
+                mus[n_i, y_i, x_i] = mu_hat.squeeze()
         return betas, mus
     
     def _y_reshape(self, preds, dataloader):
         ds = dataloader.dataset.dataset
-        ys = np.zeros((ds.n, 
-                       ds.x_dim, 
-                       ds.y_dim))
+        ys = np.zeros((ds.n, ds.y_dim, ds.x_dim))
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
-            _, _, X, Y, n_idx, x_idx, y_idx = data
-            for beta_hat, mu_hat, x, y, n_i, x_i, y_i in zip(beta_hats, mu_hats, X, Y, n_idx, x_idx, y_idx):
-                ys[n_i, x_i, y_i] = beta_hat * y + mu_hat
+            _, _, X, _, n_idx, x_idx, y_idx = data
+            for beta_hat, mu_hat, x, n_i, x_i, y_i in zip(beta_hats, mu_hats, X, n_idx, x_idx, y_idx):
+                ys[n_i, y_i, x_i] = (beta_hat * x + mu_hat).squeeze()
         return ys
     
     def dataloader(self, C, X, Y, batch_size=32):
