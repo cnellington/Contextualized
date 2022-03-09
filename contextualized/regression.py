@@ -1,6 +1,16 @@
-from abc import ABC, abstractmethod
+"""
+This class contains tools for solving context-specific regression problems:
+
+Y = beta(C) * X + mu(C)
+
+C: Context
+X: Target or features
+Y: Response or labels
+
+Implemented with PyTorch Lightning
+"""
+from abc import abstractmethod
 import numpy as np
-from tqdm import tqdm
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -16,29 +26,40 @@ ENCODERS = {
 }
 MODELS = ['multivariate', 'univariate']
 METAMODELS = ['simple', 'subtype', 'multitask', 'tasksplit']
-LINK_FNS = [
+LINK_FUNCTIONS = [
     lambda x: x,
-    lambda x: F.softmax(x, dim=1)
+    lambda x: F.softmax(x, dim=1),
+    lambda x: 1 / (1 + torch.exp(-x))
 ]
 
 
 class RegressionTrainer(pl.Trainer):
+    """
+    Trains the contextualized.regression models
+    """
     def predict_params(self, model, dataloader):
+        """
+        Returns context-specific regression models 
+        - beta (numpy.ndarray): (n, y_dim, x_dim)
+        - mu (numpy.ndarray): (n, y_dim, [1 if normal regression, x_dim if univariate])
+        """
         preds = super().predict(model, dataloader)
         return model._params_reshape(preds, dataloader)
     
     def predict_y(self, model, dataloader):
+        """
+        Returns context-specific predictions of the response Y
+        - y_hat (numpy.ndarray): (n, y_dim, [1 if normal regression, x_dim if univariate])
+        """
         preds = super().predict(model, dataloader)
         return model._y_reshape(preds, dataloader)
 
 
 class Dataset:
+    """
+    Superclass for datastreams (iterators) used to train contextualized.regression models 
+    """
     def __init__(self, C, X, Y, dtype=torch.float):
-        """
-        C: (n x c_dim)
-        X: (n x x_dim)
-        Y: (n x y_dim)
-        """
         self.C = torch.tensor(C, dtype=dtype)
         self.X = torch.tensor(X, dtype=dtype)
         self.Y = torch.tensor(Y, dtype=dtype)
@@ -158,6 +179,9 @@ class MultitaskUnivariateDataset(Dataset):
 
 
 class DataIterable(IterableDataset):
+    """
+    Dataset wrapper, required by PyTorch
+    """
     def __init__(self, dataset):
         self.dataset = dataset
     
@@ -167,6 +191,11 @@ class DataIterable(IterableDataset):
 
 def MSE(beta, mu, x, y, link_fn=lambda x: x):
     """
+    Returns
+    - MSE (scalar torch.tensor): the mean squared-error or L2-error 
+        of multivariate and univariate regression problems. Default
+        loss for contextualized.regression models.
+    
     MV/UV: Multivariate/Univariate
     MT/ST: Multi-task/Single-task
 
@@ -181,8 +210,23 @@ def MSE(beta, mu, x, y, link_fn=lambda x: x):
 
 
 class NaiveMetamodel(nn.Module):
+    """
+    Probabilistic assumptions as a graphical model (observed) {unobserved}:
+    (C) --> {beta, mu} --> (X, Y)
+    """
     def __init__(self, context_dim, x_dim, y_dim, univariate=False, encoder_type='mlp', 
             encoder_kwargs={'width': 25, 'layers': 2, 'link_fn': lambda x: x}):
+        """
+        context_dim (int): dimension of flattened context
+        x_dim (int): dimension of flattened features
+        y_dim (int): dimension of flattened labels
+        
+        key-word args:
+        univariate (bool: False): flag to solve a univariate regression problem instead
+            of the standard multivariate problem
+        encoder_type (str: mlp): encoder module to use
+        encoder_kwargs (dict): encoder args and kwargs
+        """
         super().__init__()
         self.context_dim = context_dim
         self.x_dim = x_dim
@@ -202,8 +246,26 @@ class NaiveMetamodel(nn.Module):
 
 
 class SubtypeMetamodel(nn.Module):
+    """
+    Probabilistic assumptions as a graphical model (observed) {unobserved}:
+    (C) <-- {Z} --> {beta, mu} --> (X)
+    
+    Z: latent variable, causal parent of both the context and regression model
+    """
     def __init__(self, context_dim, x_dim, y_dim, univariate=False, num_archetypes=10, encoder_type='mlp', 
             encoder_kwargs={'width': 25, 'layers': 2, 'link_fn': lambda x: x}):
+        """
+        context_dim (int): dimension of flattened context
+        x_dim (int): dimension of flattened features
+        y_dim (int): dimension of flattened labels
+        
+        key-word args:
+        univariate (bool: False): flag to solve a univariate regression problem instead
+            of the standard multivariate problem
+        num_archetypes (int: 10): number of atomic regression models in {Z}
+        encoder_type (str: mlp): encoder module to use
+        encoder_kwargs (dict): encoder args and kwargs
+        """
         super().__init__()
         self.context_dim = context_dim
         self.x_dim = x_dim
@@ -223,8 +285,27 @@ class SubtypeMetamodel(nn.Module):
 
 
 class MultitaskMetamodel(nn.Module):
+    """
+    Probabilistic assumptions as a graphical model (observed) {unobserved}:
+    (C) <-- {Z} --> {beta, mu} --> (X)
+    (T) <---/
+    
+    Z: latent variable, causal parent of the context, regression model, and task (T)
+    """
     def __init__(self, context_dim, x_dim, y_dim, univariate=False, num_archetypes=10, encoder_type='mlp', 
             encoder_kwargs={'width': 25, 'layers': 2, 'link_fn': lambda x: x}):
+        """
+        context_dim (int): dimension of flattened context
+        x_dim (int): dimension of flattened features
+        y_dim (int): dimension of flattened labels
+        
+        key-word args:
+        univariate (bool: False): flag to solve a univariate regression problem instead
+            of the standard multivariate problem
+        num_archetypes (int: 10): number of atomic regression models in {Z}
+        encoder_type (str: mlp): encoder module to use
+        encoder_kwargs (dict): encoder args and kwargs
+        """
         super().__init__()
         self.context_dim = context_dim
         self.x_dim = x_dim
@@ -246,6 +327,14 @@ class MultitaskMetamodel(nn.Module):
 
 
 class TasksplitMetamodel(nn.Module):
+    """
+    Probabilistic assumptions as a graphical model (observed) {unobserved}:
+    (C) <-- {Z_c} --> {beta, mu} --> (X)
+    (T) <-- {Z_t} ----^
+    
+    Z_c: latent context variable, causal parent of the context and regression model
+    Z_t: latent task variable, causal parent of the task and regression model
+    """
     def __init__(self, context_dim, x_dim, y_dim, univariate=False, 
             context_archetypes=10, task_archetypes=10,
             context_encoder_type='mlp', 
@@ -253,6 +342,21 @@ class TasksplitMetamodel(nn.Module):
             task_encoder_type='mlp',
             task_encoder_kwargs={'width': 25, 'layers': 2, 'link_fn': lambda x: x},
             ):
+        """
+        context_dim (int): dimension of flattened context
+        x_dim (int): dimension of flattened features
+        y_dim (int): dimension of flattened labels
+        
+        key-word args:
+        univariate (bool: False): flag to solve a univariate regression problem instead
+            of the standard multivariate problem
+        context_archetypes (int: 10): number of atomic regression models in {Z_c}
+        task_archetypes (int: 10): number of atomic regression models in {Z_t}
+        context_encoder_type (str: mlp): context encoder module to use
+        context_encoder_kwargs (dict): context encoder args and kwargs
+        task_encoder_type (str: mlp): task encoder module to use
+        task_encoder_kwargs (dict): task encoder args and kwargs
+        """
         super().__init__()
         self.context_dim = context_dim
         self.x_dim = x_dim
@@ -281,6 +385,7 @@ class ContextualizedRegressionBase(pl.LightningModule):
         # returns the dataloader for this class
         pass
 
+    @abstractmethod
     def _batch_loss(self, batch, batch_idx):
         # MSE loss by default
         pass
@@ -324,15 +429,19 @@ class ContextualizedRegressionBase(pl.LightningModule):
 
 
 class NaiveContextualizedRegression(ContextualizedRegressionBase):
-    def __init__(self, *args, **kwargs):
+    """
+    See NaiveMetamodel
+    """
+    def __init__(self, *args, link_fn=lambda x: x, **kwargs):
         super().__init__()
+        self.link_fn = link_fn
         kwargs['univariate'] = False
         self.metamodel = NaiveMetamodel(*args, **kwargs)
 
     def _batch_loss(self, batch, batch_idx):
         C, X, Y, _ = batch
         beta_hat, mu_hat = self.metamodel(C)
-        return MSE(beta_hat, mu_hat, X, Y)
+        return MSE(beta_hat, mu_hat, X, Y, link_fn=self.link_fn)
      
     def predict_step(self, batch, batch_idx):
         C, X, Y, _ = batch
@@ -356,23 +465,27 @@ class NaiveContextualizedRegression(ContextualizedRegressionBase):
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
             _, X, _, n_idx = data
             for beta_hat, mu_hat, x, n_i in zip(beta_hats, mu_hats, X, n_idx):
-                ys[n_i] = ((beta_hat * x).sum(axis=-1).unsqueeze(-1) + mu_hat).squeeze(-1)
+                ys[n_i] = self.link_fn((beta_hat * x).sum(axis=-1).unsqueeze(-1) + mu_hat).squeeze(-1)
         return ys
     
     def dataloader(self, C, X, Y, batch_size=32):
         return DataLoader(dataset=DataIterable(MultivariateDataset(C, X, Y)), batch_size=batch_size)
 
 
-class SubtypeContextualizedRegression(ContextualizedRegressionBase):
-    def __init__(self, *args, **kwargs):
+class ContextualizedRegression(ContextualizedRegressionBase):
+    """
+    See SubtypeMetamodel
+    """
+    def __init__(self, *args, link_fn=lambda x: x, **kwargs):
         super().__init__()
+        self.link_fn = link_fn
         kwargs['univariate'] = False
         self.metamodel = SubtypeMetamodel(*args, **kwargs)
 
     def _batch_loss(self, batch, batch_idx):
         C, X, Y, _, = batch
         beta_hat, mu_hat = self.metamodel(C)
-        return MSE(beta_hat, mu_hat, X, Y)
+        return MSE(beta_hat, mu_hat, X, Y, link_fn=self.link_fn)
      
     def predict_step(self, batch, batch_idx):
         C, X, Y, _ = batch
@@ -396,7 +509,7 @@ class SubtypeContextualizedRegression(ContextualizedRegressionBase):
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
             _, X, _, n_idx = data
             for beta_hat, mu_hat, x, n_i in zip(beta_hats, mu_hats, X, n_idx):
-                ys[n_i] = ((beta_hat * x).sum(axis=-1).unsqueeze(-1) + mu_hat).squeeze(-1)
+                ys[n_i] = self.link_fn((beta_hat * x).sum(axis=-1).unsqueeze(-1) + mu_hat).squeeze(-1)
         return ys
     
     def dataloader(self, C, X, Y, batch_size=32):
@@ -404,15 +517,19 @@ class SubtypeContextualizedRegression(ContextualizedRegressionBase):
 
 
 class MultitaskContextualizedRegression(ContextualizedRegressionBase):
-    def __init__(self, *args, **kwargs):
+    """
+    See MultitaskMetamodel
+    """
+    def __init__(self, *args, link_fn=lambda x: x, **kwargs):
         super().__init__()
+        self.link_fn = link_fn
         kwargs['univariate'] = False
         self.metamodel = MultitaskMetamodel(*args, **kwargs)
 
     def _batch_loss(self, batch, batch_idx):
         C, T, X, Y, _, _ = batch
         beta_hat, mu_hat = self.metamodel(C, T)
-        return MSE(beta_hat, mu_hat, X, Y)
+        return MSE(beta_hat, mu_hat, X, Y, link_fn=self.link_fn)
      
     def predict_step(self, batch, batch_idx):
         C, T, X, Y, _, _ = batch
@@ -436,7 +553,7 @@ class MultitaskContextualizedRegression(ContextualizedRegressionBase):
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
             _, _, X, _, n_idx, y_idx = data
             for beta_hat, mu_hat, x, n_i, y_i in zip(beta_hats, mu_hats, X, n_idx, y_idx):
-                ys[n_i, y_i] = ((beta_hat * x).sum(axis=-1).unsqueeze(-1) + mu_hat).squeeze()
+                ys[n_i, y_i] = self.link_fn((beta_hat * x).sum(axis=-1).unsqueeze(-1) + mu_hat).squeeze()
         return ys
     
     def dataloader(self, C, X, Y, batch_size=32):
@@ -444,15 +561,19 @@ class MultitaskContextualizedRegression(ContextualizedRegressionBase):
 
 
 class TasksplitContextualizedRegression(ContextualizedRegressionBase):
-    def __init__(self, *args, **kwargs):
+    """
+    See TasksplitMetamodel
+    """
+    def __init__(self, *args, link_fn=lambda x: x, **kwargs):
         super().__init__()
+        self.link_fn = link_fn
         kwargs['univariate'] = False
         self.metamodel = TasksplitMetamodel(*args, **kwargs)
 
     def _batch_loss(self, batch, batch_idx):
         C, T, X, Y, _, _ = batch
         beta_hat, mu_hat = self.metamodel(C, T)
-        return MSE(beta_hat, mu_hat, X, Y)
+        return MSE(beta_hat, mu_hat, X, Y, link_fn=self.link_fn)
      
     def predict_step(self, batch, batch_idx):
         C, T, X, Y, _, _ = batch
@@ -476,7 +597,7 @@ class TasksplitContextualizedRegression(ContextualizedRegressionBase):
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
             _, _, X, _, n_idx, y_idx = data
             for beta_hat, mu_hat, x, n_i, y_i in zip(beta_hats, mu_hats, X, n_idx, y_idx):
-                ys[n_i, y_i] = ((beta_hat * x).sum(axis=-1).unsqueeze(-1) + mu_hat).squeeze()
+                ys[n_i, y_i] = self.link_fn((beta_hat * x).sum(axis=-1).unsqueeze(-1) + mu_hat).squeeze()
         return ys
     
     def dataloader(self, C, X, Y, batch_size=32):
@@ -484,15 +605,19 @@ class TasksplitContextualizedRegression(ContextualizedRegressionBase):
 
 
 class TasksplitContextualizedUnivariateRegression(ContextualizedRegressionBase):
-    def __init__(self, *args, **kwargs):
+    """
+    See TasksplitMetamodel
+    """
+    def __init__(self, *args, link_fn=lambda x: x, **kwargs):
         super().__init__()
+        self.link_fn = link_fn
         kwargs['univariate'] = True
         self.metamodel = TasksplitMetamodel(*args, **kwargs)
 
     def _batch_loss(self, batch, batch_idx):
         C, T, X, Y, _, _, _ = batch
         beta_hat, mu_hat = self.metamodel(C, T)
-        return MSE(beta_hat, mu_hat, X, Y)
+        return MSE(beta_hat, mu_hat, X, Y, link_fn=self.link_fn)
      
     def predict_step(self, batch, batch_idx):
         C, T, X, Y, _, _, _ = batch
@@ -516,7 +641,7 @@ class TasksplitContextualizedUnivariateRegression(ContextualizedRegressionBase):
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
             _, _, X, _, n_idx, x_idx, y_idx = data
             for beta_hat, mu_hat, x, n_i, x_i, y_i in zip(beta_hats, mu_hats, X, n_idx, x_idx, y_idx):
-                ys[n_i, y_i, x_i] = (beta_hat * x + mu_hat).squeeze()
+                ys[n_i, y_i, x_i] = self.link_fn(beta_hat * x + mu_hat).squeeze()
         return ys
     
     def dataloader(self, C, X, Y, batch_size=32):

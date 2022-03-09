@@ -18,5 +18,6 @@ setuptools.setup(name='contextualized',
           'tensorflow-addons',
           'numpy>=1.19.2',
           'ipywidgets',
+          'torchvision',
       ],
 )
