@@ -1,11 +1,12 @@
 """
 This class contains tools for solving context-specific regression problems:
 
-Y = beta(C) * X + mu(C)
+Y = g(beta(C)*X + mu(C))
 
 C: Context
-X: Target or features
-Y: Response or labels
+X: Explainable features
+Y: Outcome, aka response (regreession) or labels (classification)
+g: Link Function for contextualized generalized linear models.
 
 Implemented with PyTorch Lightning
 """
