@@ -90,7 +90,6 @@ class Dataset:
 
 class MultivariateDataset(Dataset):
     def __next__(self):
-        self.n_i += 1
         if self.n_i >= self.n:
             self.n_i = 0
             raise StopIteration
@@ -100,6 +99,7 @@ class MultivariateDataset(Dataset):
             self.Y[self.n_i].unsqueeze(-1),
             self.n_i,
         )
+        self.n_i += 1
         return ret
         
     def __len(self):
@@ -108,7 +108,6 @@ class MultivariateDataset(Dataset):
 
 class UnivariateDataset(Dataset):
     def __next__(self):
-        self.n_i += 1
         if self.n_i >= self.n:
             self.n_i = 0
             raise StopIteration
@@ -118,6 +117,7 @@ class UnivariateDataset(Dataset):
             self.Y[self.n_i].expand(self.x_dim, -1).T.unsqueeze(-1),
             self.n_i,
         )
+        self.n_i += 1
         return ret
         
     def __len(self):
@@ -126,7 +126,6 @@ class UnivariateDataset(Dataset):
 
 class MultitaskMultivariateDataset(Dataset):
     def __next__(self):
-        self.y_i += 1
         if self.y_i >= self.y_dim:
             self.n_i += 1
             self.y_i = 0
@@ -143,6 +142,7 @@ class MultitaskMultivariateDataset(Dataset):
             self.n_i,
             self.y_i,
         )
+        self.y_i += 1
         return ret
         
     def __len(self):
@@ -151,7 +151,6 @@ class MultitaskMultivariateDataset(Dataset):
 
 class MultitaskUnivariateDataset(Dataset):
     def __next__(self):
-        self.y_i += 1
         if self.y_i >= self.y_dim:
             self.x_i += 1
             self.y_i = 0
@@ -173,6 +172,7 @@ class MultitaskUnivariateDataset(Dataset):
             self.x_i,
             self.y_i,
         )
+        self.y_i += 1
         return ret
     
     def __len__(self):
