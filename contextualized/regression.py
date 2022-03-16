@@ -381,6 +381,17 @@ class TasksplitMetamodel(nn.Module):
 
 
 class ContextualizedRegressionBase(pl.LightningModule):
+    def __init__(self, *args, learning_rate=1e-3, link_fn=lambda x: x, **kwargs):
+        super().__init__()
+        self.link_fn = link_fn
+        self.learning_rate = learning_rate
+        self._build_metamodel(*args, **kwargs)
+    
+    @abstractmethod
+    def _build_metamodel(*args, **kwargs):
+        # builds the metamodel
+        pass
+
     @abstractmethod
     def dataloader(self, C, X, Y, batch_size=32):
         # returns the dataloader for this class
@@ -410,7 +421,7 @@ class ContextualizedRegressionBase(pl.LightningModule):
         return self.metamodel(*args)
     
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
         return optimizer
     
     def training_step(self, batch, batch_idx):
@@ -433,9 +444,7 @@ class NaiveContextualizedRegression(ContextualizedRegressionBase):
     """
     See NaiveMetamodel
     """
-    def __init__(self, *args, link_fn=lambda x: x, **kwargs):
-        super().__init__()
-        self.link_fn = link_fn
+    def _build_metamodel(self, *args, **kwargs):
         kwargs['univariate'] = False
         self.metamodel = NaiveMetamodel(*args, **kwargs)
 
@@ -477,9 +486,7 @@ class ContextualizedRegression(ContextualizedRegressionBase):
     """
     See SubtypeMetamodel
     """
-    def __init__(self, *args, link_fn=lambda x: x, **kwargs):
-        super().__init__()
-        self.link_fn = link_fn
+    def _build_metamodel(self, *args, **kwargs):
         kwargs['univariate'] = False
         self.metamodel = SubtypeMetamodel(*args, **kwargs)
 
@@ -521,9 +528,7 @@ class MultitaskContextualizedRegression(ContextualizedRegressionBase):
     """
     See MultitaskMetamodel
     """
-    def __init__(self, *args, link_fn=lambda x: x, **kwargs):
-        super().__init__()
-        self.link_fn = link_fn
+    def _build_metamodel(self, *args, **kwargs):
         kwargs['univariate'] = False
         self.metamodel = MultitaskMetamodel(*args, **kwargs)
 
@@ -565,9 +570,7 @@ class TasksplitContextualizedRegression(ContextualizedRegressionBase):
     """
     See TasksplitMetamodel
     """
-    def __init__(self, *args, link_fn=lambda x: x, **kwargs):
-        super().__init__()
-        self.link_fn = link_fn
+    def _build_metamodel(self, *args, **kwargs):
         kwargs['univariate'] = False
         self.metamodel = TasksplitMetamodel(*args, **kwargs)
 
@@ -609,9 +612,7 @@ class TasksplitContextualizedUnivariateRegression(ContextualizedRegressionBase):
     """
     See TasksplitMetamodel
     """
-    def __init__(self, *args, link_fn=lambda x: x, **kwargs):
-        super().__init__()
-        self.link_fn = link_fn
+    def _build_metamodel(self, *args, **kwargs):
         kwargs['univariate'] = True
         self.metamodel = TasksplitMetamodel(*args, **kwargs)
 
@@ -673,6 +674,7 @@ if __name__ == '__main__':
     C, X, Y = C.numpy(), X.numpy(), Y.numpy()
 
     def quicktest(model):
+        print(f'{type(model)} quicktest')
         dataloader = model.dataloader(C, X, Y, batch_size=32)
         trainer = RegressionTrainer(max_epochs=1)
         trainer.fit(model, dataloader)
@@ -687,7 +689,7 @@ if __name__ == '__main__':
     quicktest(model)
 
     # Subtype Multivariate
-    model = SubtypeContextualizedRegression(c_dim, x_dim, y_dim)
+    model = ContextualizedRegression(c_dim, x_dim, y_dim)
     quicktest(model)
 
     # Multitask Multivariate
@@ -699,5 +701,5 @@ if __name__ == '__main__':
     quicktest(model)
 
     # Tasksplit Univariate
-    model = TasksplitContextualizedRegression(c_dim, x_dim, y_dim)
+    model = TasksplitContextualizedUnivariateRegression(c_dim, x_dim, y_dim)
     quicktest(model)
