@@ -381,6 +381,9 @@ class TasksplitMetamodel(nn.Module):
 
 
 class ContextualizedRegressionBase(pl.LightningModule):
+    def __init__(self, learning_rate=1e-3):
+        self.learning_rate = learning_rate
+    
     @abstractmethod
     def dataloader(self, C, X, Y, batch_size=32):
         # returns the dataloader for this class
@@ -410,7 +413,7 @@ class ContextualizedRegressionBase(pl.LightningModule):
         return self.metamodel(*args)
     
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
         return optimizer
     
     def training_step(self, batch, batch_idx):
