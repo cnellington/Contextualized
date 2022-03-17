@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 import pytorch_lightning as pl
 
 from contextualized.modules import NGAM, MLP, SoftSelect, Explainer
-from contextualized.regression import RegressionTrainer, TasksplitContextualizedUnivariateRegression
+from contextualized.regression import RegressionTrainer, ContextualizedUnivariateRegression, TasksplitContextualizedUnivariateRegression
 
 
 ENCODERS = {

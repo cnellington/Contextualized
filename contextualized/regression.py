@@ -273,9 +273,9 @@ class SubtypeMetamodel(nn.Module):
         self.y_dim = y_dim
 
         encoder = ENCODERS[encoder_type]
-        mu_dim = x_dim if univariate else 1
+        out_shape = (y_dim, x_dim * 2, 1) if univariate else (y_dim, x_dim + 1)
         self.context_encoder = encoder(context_dim, num_archetypes, **encoder_kwargs)
-        self.explainer = Explainer(num_archetypes, (self.y_dim, x_dim + mu_dim))
+        self.explainer = Explainer(num_archetypes, out_shape)
 
     def forward(self, C):
         Z = self.context_encoder(C)
@@ -608,6 +608,38 @@ class TasksplitContextualizedRegression(ContextualizedRegressionBase):
         return DataLoader(dataset=DataIterable(MultitaskMultivariateDataset(C, X, Y)), batch_size=batch_size)
 
 
+class ContextualizedUnivariateRegression(ContextualizedRegression):
+    """
+    See SubtypeMetamodel
+    """
+    def _build_metamodel(self, *args, **kwargs):
+        kwargs['univariate'] = True
+        self.metamodel = SubtypeMetamodel(*args, **kwargs)
+    
+    def _params_reshape(self, preds, dataloader):
+        ds = dataloader.dataset.dataset
+        betas = np.zeros((ds.n, ds.y_dim, ds.x_dim))
+        mus = np.zeros((ds.n, ds.y_dim, ds.x_dim))
+        for (beta_hats, mu_hats), data in zip(preds, dataloader):
+            _, _, _, n_idx = data
+            for beta_hat, mu_hat, n_i in zip(beta_hats, mu_hats, n_idx):
+                betas[n_i] = beta_hat.squeeze(-1)
+                mus[n_i] = mu_hat.squeeze(-1)
+        return betas, mus
+    
+    def _y_reshape(self, preds, dataloader):
+        ds = dataloader.dataset.dataset
+        ys = np.zeros((ds.n, ds.y_dim, ds.x_dim))
+        for (beta_hats, mu_hats), data in zip(preds, dataloader):
+            _, X, _, n_idx = data
+            for beta_hat, mu_hat, x, n_i in zip(beta_hats, mu_hats, X, n_idx):
+                ys[n_i] = self.link_fn((beta_hat * x).sum(axis=-1).unsqueeze(-1) + mu_hat).squeeze(-1)
+        return ys
+    
+    def dataloader(self, C, X, Y, batch_size=32):
+        return DataLoader(dataset=DataIterable(UnivariateDataset(C, X, Y)), batch_size=batch_size)
+    
+
 class TasksplitContextualizedUnivariateRegression(ContextualizedRegressionBase):
     """
     See TasksplitMetamodel
@@ -615,7 +647,7 @@ class TasksplitContextualizedUnivariateRegression(ContextualizedRegressionBase):
     def _build_metamodel(self, *args, **kwargs):
         kwargs['univariate'] = True
         self.metamodel = TasksplitMetamodel(*args, **kwargs)
-
+        
     def _batch_loss(self, batch, batch_idx):
         C, T, X, Y, _, _, _ = batch
         beta_hat, mu_hat = self.metamodel(C, T)
@@ -682,6 +714,7 @@ if __name__ == '__main__':
         trainer.test(model, dataloader)
         beta_preds, mu_preds = trainer.predict_params(model, dataloader)
         y_preds = trainer.predict_y(model, dataloader)
+        print()
 
 
     # Naive Multivariate
@@ -700,6 +733,10 @@ if __name__ == '__main__':
     model = TasksplitContextualizedRegression(c_dim, x_dim, y_dim)
     quicktest(model)
 
+    # Univariate
+    model = ContextualizedUnivariateRegression(c_dim, x_dim, y_dim)
+    quicktest(model)
+    
     # Tasksplit Univariate
     model = TasksplitContextualizedUnivariateRegression(c_dim, x_dim, y_dim)
     quicktest(model)
