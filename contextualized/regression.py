@@ -493,7 +493,6 @@ class ContextualizedRegression(ContextualizedRegressionBase):
     def _batch_loss(self, batch, batch_idx):
         C, X, Y, _, = batch
         beta_hat, mu_hat = self.metamodel(C)
-        print(X.shape, Y.shape, beta_hat.shape, mu_hat.shape)
         return MSE(beta_hat, mu_hat, X, Y, link_fn=self.link_fn)
      
     def predict_step(self, batch, batch_idx):
