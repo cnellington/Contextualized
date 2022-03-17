@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 import pytorch_lightning as pl
 
 from contextualized.modules import NGAM, MLP, SoftSelect, Explainer
-from contextualized.regression import RegressionTrainer, TasksplitContextualizedUnivariateRegression
+from contextualized.regression import RegressionTrainer, ContextualizedUnivariateRegression, TasksplitContextualizedUnivariateRegression
 
 
 ENCODERS = {
@@ -27,7 +27,7 @@ class NetworkTrainer(RegressionTrainer):
         return rhos
 
 
-class ContextualizedCorrelation(ContextualizedUnivariateRegression):
+class ContextualizedCorrelation(TasksplitContextualizedUnivariateRegression):
     def __init__(self, context_dim, x_dim, **kwargs):
         super().__init__(context_dim, x_dim, x_dim, **kwargs)
     
