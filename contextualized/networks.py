@@ -27,7 +27,7 @@ class NetworkTrainer(RegressionTrainer):
         return rhos
 
 
-class ContextualizedCorrelation(TasksplitContextualizedUnivariateRegression):
+class ContextualizedCorrelation(ContextualizedUnivariateRegression):
     def __init__(self, context_dim, x_dim, **kwargs):
         super().__init__(context_dim, x_dim, x_dim, **kwargs)
     
