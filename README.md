@@ -1,5 +1,8 @@
-# Contextualized
-A package for estimating per-sample or per-patient models using contextualized parameter estimators.
+![Preview](contextualized_logo.png)
+
+A statistical machine learning toolbox for estimating models, distributions, and functions with sample-specific parameters.
+
+Take a look at the [demo notebook](experiments/simulation/cluster_demo.ipynb) for an overview with code!
 
 Implemented by Caleb Ellington (CMU) and Ben Lengerich (MIT).
 
