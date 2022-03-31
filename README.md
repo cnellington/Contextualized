@@ -1,4 +1,4 @@
-![Preview](contextualized_logo.pdf)
+![Preview](contextualized_logo.jpg)
 
 A statistical machine learning toolbox for estimating models, distributions, and functions with sample-specific parameters.
 
