@@ -20,6 +20,7 @@ import pytorch_lightning as pl
 
 from contextualized.modules import NGAM, MLP, SoftSelect, Explainer
 from contextualized.losses import MSE
+from contextual.functions import linear_fn
 
 ENCODERS = {
     'mlp': MLP,
@@ -27,11 +28,6 @@ ENCODERS = {
 }
 MODELS = ['multivariate', 'univariate']
 METAMODELS = ['simple', 'subtype', 'multitask', 'tasksplit']
-LINK_FUNCTIONS = [
-    lambda x: x,
-    lambda x: F.softmax(x, dim=1),
-    lambda x: 1 / (1 + torch.exp(-x))
-]
 
 
 class RegressionTrainer(pl.Trainer):
@@ -197,7 +193,7 @@ class NaiveMetamodel(nn.Module):
     (C) --> {beta, mu} --> (X, Y)
     """
     def __init__(self, context_dim, x_dim, y_dim, univariate=False, encoder_type='mlp',
-            encoder_kwargs={'width': 25, 'layers': 2, 'link_fn': lambda x: x}):
+            encoder_kwargs={'width': 25, 'layers': 2, 'link_fn': linear_fn()}):
         """
         context_dim (int): dimension of flattened context
         x_dim (int): dimension of flattened features
@@ -235,7 +231,7 @@ class SubtypeMetamodel(nn.Module):
     Z: latent variable, causal parent of both the context and regression model
     """
     def __init__(self, context_dim, x_dim, y_dim, univariate=False, num_archetypes=10, encoder_type='mlp',
-            encoder_kwargs={'width': 25, 'layers': 2, 'link_fn': lambda x: x}):
+            encoder_kwargs={'width': 25, 'layers': 2, 'link_fn': linear_fn()}):
         """
         context_dim (int): dimension of flattened context
         x_dim (int): dimension of flattened features
@@ -275,7 +271,7 @@ class MultitaskMetamodel(nn.Module):
     Z: latent variable, causal parent of the context, regression model, and task (T)
     """
     def __init__(self, context_dim, x_dim, y_dim, univariate=False, num_archetypes=10, encoder_type='mlp',
-            encoder_kwargs={'width': 25, 'layers': 2, 'link_fn': lambda x: x}):
+            encoder_kwargs={'width': 25, 'layers': 2, 'link_fn': linear_fn()}):
         """
         context_dim (int): dimension of flattened context
         x_dim (int): dimension of flattened features
@@ -320,9 +316,9 @@ class TasksplitMetamodel(nn.Module):
     def __init__(self, context_dim, x_dim, y_dim, univariate=False,
             context_archetypes=10, task_archetypes=10,
             context_encoder_type='mlp',
-            context_encoder_kwargs={'width': 25, 'layers': 2, 'link_fn': lambda x: x},
+            context_encoder_kwargs={'width': 25, 'layers': 2, 'link_fn': linear_fn()},
             task_encoder_type='mlp',
-            task_encoder_kwargs={'width': 25, 'layers': 2, 'link_fn': lambda x: x},
+            task_encoder_kwargs={'width': 25, 'layers': 2, 'link_fn': linear_fn()},
             ):
         """
         context_dim (int): dimension of flattened context
@@ -362,7 +358,7 @@ class TasksplitMetamodel(nn.Module):
 
 
 class ContextualizedRegressionBase(pl.LightningModule):
-    def __init__(self, *args, learning_rate=1e-3, link_fn=lambda x: x, **kwargs):
+    def __init__(self, *args, learning_rate=1e-3, link_fn=linear_fn(), **kwargs):
         super().__init__()
         self.link_fn = link_fn
         self.learning_rate = learning_rate
