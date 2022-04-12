@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from contextual.functions import linear_fn
+from contextualized.functions import identity_link, identity
 
 
 class SoftSelect(nn.Module):
@@ -43,7 +43,7 @@ class MLP(nn.Module):
     """
     Multi-layer perceptron
     """
-    def __init__(self, input_dim, output_dim, width, layers, activation=nn.ReLU, link_fn=linear_fn()):
+    def __init__(self, input_dim, output_dim, width, layers, activation=nn.ReLU, link_fn=identity_link):
         super(MLP, self).__init__()
         hidden_layers = lambda: [layer for _ in range(0, layers - 2) for layer in (nn.Linear(width, width), activation())]
         mlp_layers = [nn.Linear(input_dim, width), activation()] + hidden_layers() + [nn.Linear(width, output_dim)]
@@ -59,7 +59,7 @@ class NGAM(nn.Module):
     """
     Neural generalized additive model
     """
-    def __init__(self, input_dim, output_dim, width, layers, activation=nn.ReLU, link_fn=linear_fn()):
+    def __init__(self, input_dim, output_dim, width, layers, activation=nn.ReLU, link_fn=identity_link):
         super(NGAM, self).__init__()
         self.intput_dim = input_dim
         self.output_dim = output_dim
@@ -81,7 +81,7 @@ class NGAMOE(nn.Module):
     NGAM with Mixture of Experts
     Each additive model includes a mixture of experts + gating function for the parameters of the final linear layer
     """
-    def __init__(self, input_dim, output_dim, k, width, layers, activation=nn.ReLU, gating_fn=linear_fn(), link_fn=linear_fn()):
+    def __init__(self, input_dim, output_dim, k, width, layers, activation=nn.ReLU, gating_fn=identity, link_fn=identity_link):
         super(NGAMOE, self).__init__()
         self.intput_dim = input_dim
         self.output_dim = output_dim

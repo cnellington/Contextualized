@@ -1,7 +1,8 @@
 import setuptools
 
 setuptools.setup(name='contextualized',
-      packages=['contextualized', 'contextualized.helpers', 'contextualized.notmad_helpers'],
+      packages=['contextualized', 'contextualized.helpers', 'contextualized.notmad_helpers',
+                'contextualized.regression'],
       version='0.0.0',
       install_requires=[
           'pytorch-lightning',
