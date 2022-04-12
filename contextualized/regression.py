@@ -358,10 +358,11 @@ class TasksplitMetamodel(nn.Module):
 
 
 class ContextualizedRegressionBase(pl.LightningModule):
-    def __init__(self, *args, learning_rate=1e-3, link_fn=linear_fn(), **kwargs):
+    def __init__(self, learning_rate=1e-3, link_fn=linear_fn(), loss_fn=MSE, *args, **kwargs):
         super().__init__()
-        self.link_fn = link_fn
         self.learning_rate = learning_rate
+        self.link_fn = link_fn
+        self.loss_fn = loss_fn
         self._build_metamodel(*args, **kwargs)
 
     @abstractmethod
@@ -431,7 +432,7 @@ class NaiveContextualizedRegression(ContextualizedRegressionBase):
     def _batch_loss(self, batch, batch_idx):
         C, X, Y, _ = batch
         beta_hat, mu_hat = self.metamodel(C)
-        return MSE(Y, self.predict_from_sample_models(X, beta_hat, mu_hat))
+        return self.loss_fn(Y, self.predict_from_sample_models(X, beta_hat, mu_hat))
 
     def predict_step(self, batch, batch_idx):
         C, X, Y, _ = batch
@@ -473,7 +474,7 @@ class ContextualizedRegression(ContextualizedRegressionBase):
     def _batch_loss(self, batch, batch_idx):
         C, X, Y, _, = batch
         beta_hat, mu_hat = self.metamodel(C)
-        return MSE(Y, self.predict_from_sample_models(X, beta_hat, mu_hat))
+        return self.loss_fn(Y, self.predict_from_sample_models(X, beta_hat, mu_hat))
 
     def predict_step(self, batch, batch_idx):
         C, X, Y, _ = batch
@@ -515,7 +516,7 @@ class MultitaskContextualizedRegression(ContextualizedRegressionBase):
     def _batch_loss(self, batch, batch_idx):
         C, T, X, Y, _, _ = batch
         beta_hat, mu_hat = self.metamodel(C, T)
-        return MSE(Y, self.predict_from_sample_models(X, beta_hat, mu_hat))
+        return self.loss_fn(Y, self.predict_from_sample_models(X, beta_hat, mu_hat))
 
     def predict_step(self, batch, batch_idx):
         C, T, X, Y, _, _ = batch
@@ -557,7 +558,7 @@ class TasksplitContextualizedRegression(ContextualizedRegressionBase):
     def _batch_loss(self, batch, batch_idx):
         C, T, X, Y, _, _ = batch
         beta_hat, mu_hat = self.metamodel(C, T)
-        return MSE(Y, self.predict_from_sample_models(X, beta_hat, mu_hat))
+        return self.loss_fn(Y, self.predict_from_sample_models(X, beta_hat, mu_hat))
 
     def predict_step(self, batch, batch_idx):
         C, T, X, Y, _, _ = batch
@@ -631,7 +632,7 @@ class TasksplitContextualizedUnivariateRegression(ContextualizedRegressionBase):
     def _batch_loss(self, batch, batch_idx):
         C, T, X, Y, _, _, _ = batch
         beta_hat, mu_hat = self.metamodel(C, T)
-        return MSE(Y, self.predict_from_sample_models(X, beta_hat, mu_hat))
+        return self.loss_fn(Y, self.predict_from_sample_models(X, beta_hat, mu_hat))
 
     def predict_step(self, batch, batch_idx):
         C, T, X, Y, _, _, _ = batch
