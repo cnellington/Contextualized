@@ -24,9 +24,8 @@ from contextualized.regression.datasets import DataIterable, MultivariateDataset
 
 
 class ContextualizedRegressionBase(pl.LightningModule):
-    def __init__(self, learning_rate=1e-3, link_fn=LINK_FUNCTIONS['identity'],
-                 loss_fn=LOSSES['mse'], model_regularizer=REGULARIZERS['none'],
-                 *args, **kwargs):
+    def __init__(self, *args, learning_rate=1e-3, link_fn=LINK_FUNCTIONS['identity'],
+                 loss_fn=LOSSES['mse'], model_regularizer=REGULARIZERS['none'], **kwargs):
         super().__init__()
         self.learning_rate = learning_rate
         self.link_fn = link_fn
@@ -127,7 +126,7 @@ class NaiveContextualizedRegression(ContextualizedRegressionBase):
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
             _, X, _, n_idx = data
             for beta_hat, mu_hat, x, n_i in zip(beta_hats, mu_hats, X, n_idx):
-                ys[n_i] = self.link_fn((beta_hat * x).sum(axis=-1).unsqueeze(-1) + mu_hat).squeeze(-1)
+                ys[n_i] = self._predict_from_models(x, beta_hat, mu_hat).squeeze(-1)
         return ys
 
     def dataloader(self, C, X, Y, batch_size=32):
@@ -171,7 +170,7 @@ class ContextualizedRegression(ContextualizedRegressionBase):
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
             _, X, _, n_idx = data
             for beta_hat, mu_hat, x, n_i in zip(beta_hats, mu_hats, X, n_idx):
-                ys[n_i] = self.link_fn((beta_hat * x).sum(axis=-1).unsqueeze(-1) + mu_hat).squeeze(-1)
+                ys[n_i] = self._predict_from_models(x, beta_hat, mu_hat).squeeze(-1)
         return ys
 
     def dataloader(self, C, X, Y, batch_size=32):
@@ -215,7 +214,7 @@ class MultitaskContextualizedRegression(ContextualizedRegressionBase):
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
             _, _, X, _, n_idx, y_idx = data
             for beta_hat, mu_hat, x, n_i, y_i in zip(beta_hats, mu_hats, X, n_idx, y_idx):
-                ys[n_i, y_i] = self.link_fn((beta_hat * x).sum(axis=-1).unsqueeze(-1) + mu_hat).squeeze()
+                ys[n_i, y_i] = self._predict_from_models(x, beta_hat, mu_hat).squeeze()
         return ys
 
     def dataloader(self, C, X, Y, batch_size=32):
@@ -259,7 +258,7 @@ class TasksplitContextualizedRegression(ContextualizedRegressionBase):
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
             _, _, X, _, n_idx, y_idx = data
             for beta_hat, mu_hat, x, n_i, y_i in zip(beta_hats, mu_hats, X, n_idx, y_idx):
-                ys[n_i, y_i] = self.link_fn((beta_hat * x).sum(axis=-1).unsqueeze(-1) + mu_hat).squeeze()
+                ys[n_i, y_i] = self._predict_from_models(x, beta_hat, mu_hat).squeeze()
         return ys
 
     def dataloader(self, C, X, Y, batch_size=32):
@@ -291,7 +290,7 @@ class ContextualizedUnivariateRegression(ContextualizedRegression):
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
             _, X, _, n_idx = data
             for beta_hat, mu_hat, x, n_i in zip(beta_hats, mu_hats, X, n_idx):
-                ys[n_i] = self.link_fn((beta_hat * x).sum(axis=-1).unsqueeze(-1) + mu_hat).squeeze(-1)
+                ys[n_i] = self._predict_from_models(x, beta_hat, mu_hat).squeeze(-1)
         return ys
 
     def dataloader(self, C, X, Y, batch_size=32):
@@ -335,7 +334,7 @@ class TasksplitContextualizedUnivariateRegression(ContextualizedRegressionBase):
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
             _, _, X, _, n_idx, x_idx, y_idx = data
             for beta_hat, mu_hat, x, n_i, x_i, y_i in zip(beta_hats, mu_hats, X, n_idx, x_idx, y_idx):
-                ys[n_i, y_i, x_i] = self.link_fn(beta_hat * x + mu_hat).squeeze()
+                ys[n_i, y_i, x_i] = self._predict_from_models(x, beta_hat, mu_hat).squeeze()
         return ys
 
     def dataloader(self, C, X, Y, batch_size=32):
