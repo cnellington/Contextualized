@@ -59,43 +59,43 @@ if __name__ == '__main__':
         print()
 
     # Naive Multivariate
-    model = NaiveContextualizedRegression(context_dim=c_dim, x_dim=x_dim, y_dim=y_dim,
+    model = NaiveContextualizedRegression(c_dim, x_dim, y_dim,
         encoder_kwargs={'width': 25, 'layers': 2, 'link_fn': LINK_FUNCTIONS['identity']},
         link_fn=LINK_FUNCTIONS['identity'])
     quicktest(model)
 
-    model = NaiveContextualizedRegression(context_dim=c_dim, x_dim=x_dim, y_dim=y_dim,
+    model = NaiveContextualizedRegression(c_dim, x_dim, y_dim,
         encoder_kwargs={'width': 25, 'layers': 2, 'link_fn': LINK_FUNCTIONS['softmax']},
         link_fn=LINK_FUNCTIONS['identity'])
     quicktest(model)
 
     # Naive Multivariate
-    model = NaiveContextualizedRegression(context_dim=c_dim, x_dim=x_dim, y_dim=y_dim,
+    model = NaiveContextualizedRegression(c_dim, x_dim, y_dim,
         encoder_kwargs={'width': 25, 'layers': 2, 'link_fn': LINK_FUNCTIONS['identity']},
         link_fn=LINK_FUNCTIONS['softmax'])
     quicktest(model)
 
-    model = NaiveContextualizedRegression(context_dim=c_dim, x_dim=x_dim, y_dim=y_dim,
+    model = NaiveContextualizedRegression(c_dim, x_dim, y_dim,
         encoder_kwargs={'width': 25, 'layers': 2, 'link_fn': LINK_FUNCTIONS['softmax']},
         link_fn=LINK_FUNCTIONS['softmax'])
     quicktest(model)
 
     # Subtype Multivariate
-    model = ContextualizedRegression(context_dim=c_dim, x_dim=x_dim, y_dim=y_dim)
+    model = ContextualizedRegression(c_dim, x_dim, y_dim)
     quicktest(model)
 
     # Multitask Multivariate
-    model = MultitaskContextualizedRegression(context_dim=c_dim, x_dim=x_dim, y_dim=y_dim)
+    model = MultitaskContextualizedRegression(c_dim, x_dim, y_dim)
     quicktest(model)
 
     # Tasksplit Multivariate
-    model = TasksplitContextualizedRegression(context_dim=c_dim, x_dim=x_dim, y_dim=y_dim)
+    model = TasksplitContextualizedRegression(c_dim, x_dim, y_dim)
     quicktest(model)
 
     # Univariate
-    model = ContextualizedUnivariateRegression(context_dim=c_dim, x_dim=x_dim, y_dim=y_dim)
+    model = ContextualizedUnivariateRegression(c_dim, x_dim, y_dim)
     quicktest(model)
 
     # Tasksplit Univariate
-    model = TasksplitContextualizedUnivariateRegression(context_dim=c_dim, x_dim=x_dim, y_dim=y_dim)
+    model = TasksplitContextualizedUnivariateRegression(c_dim, x_dim, y_dim)
     quicktest(model)

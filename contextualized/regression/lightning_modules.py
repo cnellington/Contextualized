@@ -24,9 +24,8 @@ from contextualized.regression.datasets import DataIterable, MultivariateDataset
 
 
 class ContextualizedRegressionBase(pl.LightningModule):
-    def __init__(self, learning_rate=1e-3, link_fn=LINK_FUNCTIONS['identity'],
-                 loss_fn=LOSSES['mse'], model_regularizer=REGULARIZERS['none'],
-                 *args, **kwargs):
+    def __init__(self, *args, learning_rate=1e-3, link_fn=LINK_FUNCTIONS['identity'],
+                 loss_fn=LOSSES['mse'], model_regularizer=REGULARIZERS['none'], **kwargs):
         super().__init__()
         self.learning_rate = learning_rate
         self.link_fn = link_fn
