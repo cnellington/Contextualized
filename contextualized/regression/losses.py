@@ -1,6 +1,6 @@
 
 
-def MSE(beta, mu, x, y, link_fn=lambda x: x):
+def MSE(Y_true, Y_pred):
     """
     Returns
     - MSE (scalar torch.tensor): the mean squared-error or L2-error
@@ -15,6 +15,5 @@ def MSE(beta, mu, x, y, link_fn=lambda x: x):
     UV ST: beta (y_dim, x_dim, 1), mu (y_dim, x_dim, 1), x (y_dim, x_dim, 1), y (y_dim, x_dim, 1)
     UV MT: beta (1,),              mu (1,),              x (1,),              y (1,)
     """
-    y_hat = link_fn((beta * x).sum(axis=-1).unsqueeze(-1) + mu)
-    residual = y_hat - y
+    residual = Y_true - Y_pred
     return residual.pow(2).mean()
