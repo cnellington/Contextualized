@@ -23,7 +23,6 @@ from contextualized.regression.lightning_modules import *
 from contextualized.regression.trainers import RegressionTrainer
 from contextualized.regression import ENCODERS, LINK_FUNCTIONS
 
-
 if __name__ == '__main__':
     n = 100
     c_dim = 4
@@ -51,11 +50,15 @@ if __name__ == '__main__':
         print(f'{type(model)} quicktest')
         dataloader = model.dataloader(C, X, Y, batch_size=32)
         trainer = RegressionTrainer(max_epochs=1)
+        y_preds = trainer.predict_y(model, dataloader)
+        err_init = np.linalg.norm(Y - y_preds, ord=2)
         trainer.fit(model, dataloader)
         trainer.validate(model, dataloader)
         trainer.test(model, dataloader)
         beta_preds, mu_preds = trainer.predict_params(model, dataloader)
         y_preds = trainer.predict_y(model, dataloader)
+        err_trained = np.linalg.norm(Y - y_preds, ord=2)
+        assert err_trained < err_init
         print()
 
     # Naive Multivariate
@@ -69,15 +72,14 @@ if __name__ == '__main__':
         link_fn=LINK_FUNCTIONS['identity'])
     quicktest(model)
 
-    # Naive Multivariate
     model = NaiveContextualizedRegression(c_dim, x_dim, y_dim,
         encoder_kwargs={'width': 25, 'layers': 2, 'link_fn': LINK_FUNCTIONS['identity']},
-        link_fn=LINK_FUNCTIONS['softmax'])
+        link_fn=LINK_FUNCTIONS['logistic'])
     quicktest(model)
 
     model = NaiveContextualizedRegression(c_dim, x_dim, y_dim,
         encoder_kwargs={'width': 25, 'layers': 2, 'link_fn': LINK_FUNCTIONS['softmax']},
-        link_fn=LINK_FUNCTIONS['softmax'])
+        link_fn=LINK_FUNCTIONS['logistic']())
     quicktest(model)
 
     # Subtype Multivariate
@@ -92,6 +94,7 @@ if __name__ == '__main__':
     model = TasksplitContextualizedRegression(c_dim, x_dim, y_dim)
     quicktest(model)
 
+    """
     # Univariate
     model = ContextualizedUnivariateRegression(c_dim, x_dim, y_dim)
     quicktest(model)
@@ -99,3 +102,4 @@ if __name__ == '__main__':
     # Tasksplit Univariate
     model = TasksplitContextualizedUnivariateRegression(c_dim, x_dim, y_dim)
     quicktest(model)
+    """

@@ -7,6 +7,7 @@ ENCODERS = {
 from contextualized.functions import *
 LINK_FUNCTIONS = {
     'identity': linear_link_constructor(),
+    'logistic': logistic_constructor(),
     'softmax': softmax_link_constructor()
 }
 
