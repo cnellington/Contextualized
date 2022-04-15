@@ -88,6 +88,11 @@ class ContextualizedRegressionBase(pl.LightningModule):
     def _predict_from_models(self, X, beta_hat, mu_hat):
         return self.link_fn((beta_hat * X).sum(axis=-1).unsqueeze(-1) + mu_hat)
 
+    def _dataloader(self, C, X, Y, dataset_constructor, **kwargs):
+        kwargs['num_workers'] = kwargs.get('num_workers', 0)
+        kwargs['batch_size'] = kwargs.get('batch_size', 32)
+        return DataLoader(dataset=DataIterable(dataset_constructor(C, X, Y)), **kwargs)
+
 
 class NaiveContextualizedRegression(ContextualizedRegressionBase):
     """
@@ -129,8 +134,8 @@ class NaiveContextualizedRegression(ContextualizedRegressionBase):
                 ys[n_i] = self._predict_from_models(x, beta_hat, mu_hat).squeeze(-1)
         return ys
 
-    def dataloader(self, C, X, Y, batch_size=32):
-        return DataLoader(dataset=DataIterable(MultivariateDataset(C, X, Y)), batch_size=batch_size)
+    def dataloader(self, C, X, Y, **kwargs):
+        return self._dataloader(C, X, Y, MultivariateDataset, **kwargs)
 
 
 class ContextualizedRegression(ContextualizedRegressionBase):
@@ -173,8 +178,8 @@ class ContextualizedRegression(ContextualizedRegressionBase):
                 ys[n_i] = self._predict_from_models(x, beta_hat, mu_hat).squeeze(-1)
         return ys
 
-    def dataloader(self, C, X, Y, batch_size=32):
-        return DataLoader(dataset=DataIterable(MultivariateDataset(C, X, Y)), batch_size=batch_size)
+    def dataloader(self, C, X, Y, **kwargs):
+        return self._dataloader(C, X, Y, MultivariateDataset, **kwargs)
 
 
 class MultitaskContextualizedRegression(ContextualizedRegressionBase):
@@ -217,8 +222,8 @@ class MultitaskContextualizedRegression(ContextualizedRegressionBase):
                 ys[n_i, y_i] = self._predict_from_models(x, beta_hat, mu_hat).squeeze()
         return ys
 
-    def dataloader(self, C, X, Y, batch_size=32):
-        return DataLoader(dataset=DataIterable(MultitaskMultivariateDataset(C, X, Y)), batch_size=batch_size)
+    def dataloader(self, C, X, Y, **kwargs):
+        return self._dataloader(C, X, Y, MultitaskMultivariateDataset, **kwargs)
 
 
 class TasksplitContextualizedRegression(ContextualizedRegressionBase):
@@ -261,8 +266,8 @@ class TasksplitContextualizedRegression(ContextualizedRegressionBase):
                 ys[n_i, y_i] = self._predict_from_models(x, beta_hat, mu_hat).squeeze()
         return ys
 
-    def dataloader(self, C, X, Y, batch_size=32):
-        return DataLoader(dataset=DataIterable(MultitaskMultivariateDataset(C, X, Y)), batch_size=batch_size)
+    def dataloader(self, C, X, Y, **kwargs):
+        return self._dataloader(C, X, Y, MultitaskMultivariateDataset, **kwargs)
 
 
 class ContextualizedUnivariateRegression(ContextualizedRegression):
@@ -293,8 +298,8 @@ class ContextualizedUnivariateRegression(ContextualizedRegression):
                 ys[n_i] = self._predict_from_models(x, beta_hat, mu_hat).squeeze(-1)
         return ys
 
-    def dataloader(self, C, X, Y, batch_size=32):
-        return DataLoader(dataset=DataIterable(UnivariateDataset(C, X, Y)), batch_size=batch_size)
+    def dataloader(self, C, X, Y, **kwargs):
+        return self._dataloader(C, X, Y, UnivariateDataset, **kwargs)
 
 
 class TasksplitContextualizedUnivariateRegression(ContextualizedRegressionBase):
@@ -337,5 +342,5 @@ class TasksplitContextualizedUnivariateRegression(ContextualizedRegressionBase):
                 ys[n_i, y_i, x_i] = self._predict_from_models(x, beta_hat, mu_hat).squeeze()
         return ys
 
-    def dataloader(self, C, X, Y, batch_size=32):
-        return DataLoader(dataset=DataIterable(MultitaskUnivariateDataset(C, X, Y)), batch_size=batch_size)
+    def dataloader(self, C, X, Y, **kwargs):
+        return self._dataloader(C, X, Y, MultitaskUnivariateDataset, **kwargs)
