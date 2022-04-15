@@ -27,7 +27,7 @@ def identity_link_constructor():
     return make_fn(identity_link)
 
 
-def linear_link_constructor(m=0, b=0):
+def linear_link_constructor(m=1, b=0):
     return make_fn(linear_link, m=m, b=b)
 
 
