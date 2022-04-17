@@ -285,7 +285,7 @@ class ContextualizedUnivariateRegression(ContextualizedRegression):
         ys = np.zeros((ds.n, ds.y_dim, ds.x_dim))
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
             _, X, _, n_idx = data
-            ys[n_idx] = self._predict_from_models(x, beta_hat, mu_hat).squeeze(-1)
+            ys[n_idx] = self._predict_from_models(X, beta_hats, mu_hats).squeeze(-1)
         return ys
 
     def dataloader(self, C, X, Y, **kwargs):
@@ -318,8 +318,8 @@ class TasksplitContextualizedUnivariateRegression(ContextualizedRegressionBase):
         mus = betas.copy()
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
             _, _, _, _, n_idx, x_idx, y_idx = data
-            betas[n_idx, y_idx, x_idx] = beta_hat.squeeze(-1)
-            mus[n_idx, y_idx, x_idx] = mu_hat.squeeze(-1)
+            betas[n_idx, y_idx, x_idx] = beta_hats.squeeze(-1)
+            mus[n_idx, y_idx, x_idx] = mu_hats.squeeze(-1)
         return betas, mus
 
     def _y_reshape(self, preds, dataloader):

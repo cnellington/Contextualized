@@ -46,18 +46,21 @@ if __name__ == '__main__':
     batch_size = 1
     C, X, Y = C.numpy(), X.numpy(), Y.numpy()
 
-    def quicktest(model):
+    def quicktest(model, univariate=False):
         print(f'{type(model)} quicktest')
         dataloader = model.dataloader(C, X, Y, batch_size=32)
         trainer = RegressionTrainer(max_epochs=1)
         y_preds = trainer.predict_y(model, dataloader)
-        err_init = np.linalg.norm(Y - y_preds, ord=2)
+        y_true = Y
+        if univariate:
+            y_true = np.tile(y_true[:,:,np.newaxis], (1, 1, X.shape[-1]))
+        err_init = ((y_true - y_preds)**2).mean()
         trainer.fit(model, dataloader)
         trainer.validate(model, dataloader)
         trainer.test(model, dataloader)
         beta_preds, mu_preds = trainer.predict_params(model, dataloader)
         y_preds = trainer.predict_y(model, dataloader)
-        err_trained = np.linalg.norm(Y - y_preds, ord=2)
+        err_trained = ((y_true - y_preds)**2).mean()
         assert err_trained < err_init
         print()
 
@@ -94,12 +97,10 @@ if __name__ == '__main__':
     model = TasksplitContextualizedRegression(c_dim, x_dim, y_dim)
     quicktest(model)
 
-    """
-    # Univariate
+    # Naive Univariate
     model = ContextualizedUnivariateRegression(c_dim, x_dim, y_dim)
-    quicktest(model)
+    quicktest(model, univariate=True)
 
     # Tasksplit Univariate
     model = TasksplitContextualizedUnivariateRegression(c_dim, x_dim, y_dim)
-    quicktest(model)
-    """
+    quicktest(model, univariate=True)
