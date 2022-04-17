@@ -120,9 +120,8 @@ class NaiveContextualizedRegression(ContextualizedRegressionBase):
         mus = np.zeros((ds.n, ds.y_dim))
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
             _, _, _, n_idx = data
-            for beta_hat, mu_hat, n_i in zip(beta_hats, mu_hats, n_idx):
-                betas[n_i] = beta_hat
-                mus[n_i] = mu_hat.squeeze(-1)
+            betas[n_idx] = beta_hats
+            mus[n_idx] = mu_hats.squeeze(-1)
         return betas, mus
 
     def _y_reshape(self, preds, dataloader):
@@ -130,8 +129,7 @@ class NaiveContextualizedRegression(ContextualizedRegressionBase):
         ys = np.zeros((ds.n, ds.y_dim))
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
             _, X, _, n_idx = data
-            for beta_hat, mu_hat, x, n_i in zip(beta_hats, mu_hats, X, n_idx):
-                ys[n_i] = self._predict_from_models(x, beta_hat, mu_hat).squeeze(-1)
+            ys[n_idx] = self._predict_from_models(X, beta_hats, mu_hats).squeeze(-1)
         return ys
 
     def dataloader(self, C, X, Y, **kwargs):
@@ -164,9 +162,8 @@ class ContextualizedRegression(ContextualizedRegressionBase):
         mus = np.zeros((ds.n, ds.y_dim))
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
             _, _, _, n_idx = data
-            for beta_hat, mu_hat, n_i in zip(beta_hats, mu_hats, n_idx):
-                betas[n_i] = beta_hat
-                mus[n_i] = mu_hat.squeeze(-1)
+            betas[n_idx] = beta_hats
+            mus[n_idx] = mu_hats.squeeze(-1)
         return betas, mus
 
     def _y_reshape(self, preds, dataloader):
@@ -174,8 +171,7 @@ class ContextualizedRegression(ContextualizedRegressionBase):
         ys = np.zeros((ds.n, ds.y_dim))
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
             _, X, _, n_idx = data
-            for beta_hat, mu_hat, x, n_i in zip(beta_hats, mu_hats, X, n_idx):
-                ys[n_i] = self._predict_from_models(x, beta_hat, mu_hat).squeeze(-1)
+            ys[n_idx] = self._predict_from_models(X, beta_hats, mu_hats).squeeze(-1)
         return ys
 
     def dataloader(self, C, X, Y, **kwargs):
@@ -208,9 +204,8 @@ class MultitaskContextualizedRegression(ContextualizedRegressionBase):
         mus = np.zeros((ds.n, ds.y_dim))
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
             _, _, _, _, n_idx, y_idx = data
-            for beta_hat, mu_hat, n_i, y_i in zip(beta_hats, mu_hats, n_idx, y_idx):
-                betas[n_i, y_i] = beta_hat
-                mus[n_i, y_i] = mu_hat.squeeze()
+            betas[n_idx, y_idx] = beta_hats
+            mus[n_idx, y_idx] = mu_hats.squeeze(-1)
         return betas, mus
 
     def _y_reshape(self, preds, dataloader):
@@ -218,8 +213,7 @@ class MultitaskContextualizedRegression(ContextualizedRegressionBase):
         ys = np.zeros((ds.n, ds.y_dim))
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
             _, _, X, _, n_idx, y_idx = data
-            for beta_hat, mu_hat, x, n_i, y_i in zip(beta_hats, mu_hats, X, n_idx, y_idx):
-                ys[n_i, y_i] = self._predict_from_models(x, beta_hat, mu_hat).squeeze()
+            ys[n_idx, y_idx] = self._predict_from_models(X, beta_hats, mu_hats).squeeze(-1)
         return ys
 
     def dataloader(self, C, X, Y, **kwargs):
@@ -252,9 +246,8 @@ class TasksplitContextualizedRegression(ContextualizedRegressionBase):
         mus = np.zeros((ds.n, ds.y_dim))
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
             _, _, _, _, n_idx, y_idx = data
-            for beta_hat, mu_hat, n_i, y_i in zip(beta_hats, mu_hats, n_idx, y_idx):
-                betas[n_i, y_i] = beta_hat
-                mus[n_i, y_i] = mu_hat.squeeze()
+            betas[n_idx, y_idx] = beta_hats
+            mus[n_idx, y_idx] = mu_hats.squeeze(-1)
         return betas, mus
 
     def _y_reshape(self, preds, dataloader):
@@ -262,8 +255,7 @@ class TasksplitContextualizedRegression(ContextualizedRegressionBase):
         ys = np.zeros((ds.n, ds.y_dim))
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
             _, _, X, _, n_idx, y_idx = data
-            for beta_hat, mu_hat, x, n_i, y_i in zip(beta_hats, mu_hats, X, n_idx, y_idx):
-                ys[n_i, y_i] = self._predict_from_models(x, beta_hat, mu_hat).squeeze()
+            ys[n_idx, y_idx] = self._predict_from_models(X, beta_hats, mu_hats).squeeze(-1)
         return ys
 
     def dataloader(self, C, X, Y, **kwargs):
@@ -284,9 +276,8 @@ class ContextualizedUnivariateRegression(ContextualizedRegression):
         mus = np.zeros((ds.n, ds.y_dim, ds.x_dim))
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
             _, _, _, n_idx = data
-            for beta_hat, mu_hat, n_i in zip(beta_hats, mu_hats, n_idx):
-                betas[n_i] = beta_hat.squeeze(-1)
-                mus[n_i] = mu_hat.squeeze(-1)
+            betas[n_idx] = beta_hats.squeeze(-1)
+            mus[n_idx] = mu_hats.squeeze(-1)
         return betas, mus
 
     def _y_reshape(self, preds, dataloader):
@@ -294,8 +285,7 @@ class ContextualizedUnivariateRegression(ContextualizedRegression):
         ys = np.zeros((ds.n, ds.y_dim, ds.x_dim))
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
             _, X, _, n_idx = data
-            for beta_hat, mu_hat, x, n_i in zip(beta_hats, mu_hats, X, n_idx):
-                ys[n_i] = self._predict_from_models(x, beta_hat, mu_hat).squeeze(-1)
+            ys[n_idx] = self._predict_from_models(X, beta_hats, mu_hats).squeeze(-1)
         return ys
 
     def dataloader(self, C, X, Y, **kwargs):
@@ -328,9 +318,8 @@ class TasksplitContextualizedUnivariateRegression(ContextualizedRegressionBase):
         mus = betas.copy()
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
             _, _, _, _, n_idx, x_idx, y_idx = data
-            for beta_hat, mu_hat, n_i, x_i, y_i in zip(beta_hats, mu_hats, n_idx, x_idx, y_idx):
-                betas[n_i, y_i, x_i] = beta_hat.squeeze()
-                mus[n_i, y_i, x_i] = mu_hat.squeeze()
+            betas[n_idx, y_idx, x_idx] = beta_hats.squeeze(-1)
+            mus[n_idx, y_idx, x_idx] = mu_hats.squeeze(-1)
         return betas, mus
 
     def _y_reshape(self, preds, dataloader):
@@ -338,8 +327,7 @@ class TasksplitContextualizedUnivariateRegression(ContextualizedRegressionBase):
         ys = np.zeros((ds.n, ds.y_dim, ds.x_dim))
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
             _, _, X, _, n_idx, x_idx, y_idx = data
-            for beta_hat, mu_hat, x, n_i, x_i, y_i in zip(beta_hats, mu_hats, X, n_idx, x_idx, y_idx):
-                ys[n_i, y_i, x_i] = self._predict_from_models(x, beta_hat, mu_hat).squeeze()
+            ys[n_idx, y_idx, x_idx] = self._predict_from_models(X, beta_hats, mu_hats).squeeze(-1)
         return ys
 
     def dataloader(self, C, X, Y, **kwargs):
