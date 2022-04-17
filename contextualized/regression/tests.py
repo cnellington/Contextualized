@@ -79,7 +79,7 @@ if __name__ == '__main__':
 
     model = NaiveContextualizedRegression(c_dim, x_dim, y_dim,
         encoder_kwargs={'width': 25, 'layers': 2, 'link_fn': LINK_FUNCTIONS['softmax']},
-        link_fn=LINK_FUNCTIONS['logistic']())
+        link_fn=LINK_FUNCTIONS['logistic'])
     quicktest(model)
 
     # Subtype Multivariate
