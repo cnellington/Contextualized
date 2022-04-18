@@ -7,8 +7,8 @@ import tensorflow_addons as tfa
 from tensorflow.keras.callbacks import Callback
 import igraph as ig
 
-from contextualized.notmad_helpers.tf_utils import NOTEARS_loss, DAG_loss
-from contextualized.notmad_helpers import graph_utils
+from contextualized.networks.notmad_helpers.tf_utils import NOTEARS_loss, DAG_loss
+from contextualized.networks.notmad_helpers import graph_utils
 
 
 class NGAM(tf.keras.layers.Layer):
