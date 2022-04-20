@@ -3,8 +3,8 @@ import os
 import igraph as ig
 
 from sklearn.decomposition import PCA
-from contextualized.networks.notmad_helpers import utils
-from contextualized.networks.notmad_helpers import graph_utils
+from contextualized.dags.notmad_helpers import utils
+from contextualized.dags.notmad_helpers import graph_utils
 
 
 def l2_dist(dag1, dag2):

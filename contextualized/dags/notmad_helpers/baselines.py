@@ -6,9 +6,9 @@ import tensorflow_addons as tfa
 from tqdm import tqdm
 from tensorflow.keras.callbacks import Callback
 
-from contextualized.networks.notmad_helpers import graph_utils
-from contextualized.networks.notmad_helpers.graph_utils import project_to_dag, trim_params
-from contextualized.networks.notmad_helpers.tf_utils import NOTEARS_loss, DAG_loss
+from contextualized.dags.notmad_helpers import graph_utils
+from contextualized.dags.notmad_helpers.graph_utils import project_to_dag, trim_params
+from contextualized.dags.notmad_helpers.tf_utils import NOTEARS_loss, DAG_loss
 
 # Keras NOTEARS version which takes in context and returns a single population model.
 

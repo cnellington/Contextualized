@@ -7,7 +7,7 @@ from sklearn.decomposition import PCA
 import tensorflow as tf
 
 import sys
-from contextualized.networks.notmad_helpers.tf_utils import DAG_loss
+from contextualized.dags.notmad_helpers.tf_utils import DAG_loss
 
 def break_symmetry(w):
     for i in range(w.shape[0]):
