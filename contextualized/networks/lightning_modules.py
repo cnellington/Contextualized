@@ -27,7 +27,7 @@ class ContextualizedCorrelation(ContextualizedUnivariateRegression):
 
 class MultitaskContextualizedCorrelation(TasksplitContextualizedUnivariateRegression):
     """
-    Using umultitask nivariate contextualized regression to estimate Pearson's correlation
+    Using multitask univariate contextualized regression to estimate Pearson's correlation
     See contextualized.regression.metamodels.TasksplitMetamodel for assumptions and full docstring
     """
     def __init__(self, context_dim, x_dim, **kwargs):
