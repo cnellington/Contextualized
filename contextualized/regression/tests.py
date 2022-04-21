@@ -20,7 +20,7 @@ import pytorch_lightning as pl
 
 from contextualized.modules import NGAM, MLP, SoftSelect, Explainer
 from contextualized.regression.lightning_modules import *
-from contextualized.regression.trainers import RegressionTrainer
+from contextualized.regression.trainers import *
 from contextualized.regression import ENCODERS, LINK_FUNCTIONS
 
 if __name__ == '__main__':
@@ -46,19 +46,46 @@ if __name__ == '__main__':
     batch_size = 1
     C, X, Y = C.numpy(), X.numpy(), Y.numpy()
 
-    def quicktest(model, univariate=False):
+    def quicktest(model, univariate=False, correlation=False):
         print(f'{type(model)} quicktest')
-        dataloader = model.dataloader(C, X, Y, batch_size=32)
-        trainer = RegressionTrainer(max_epochs=1)
+        dataloader = None
+        trainer = None
+        if correlation:
+            dataloader = model.dataloader(C, X, batch_size=32)
+            trainer = CorrelationTrainer(max_epochs=1)
+        else:
+            dataloader = model.dataloader(C, X, Y, batch_size=32)
+            trainer = RegressionTrainer(max_epochs=1)
         y_preds = trainer.predict_y(model, dataloader)
         y_true = Y
         if univariate:
             y_true = np.tile(y_true[:,:,np.newaxis], (1, 1, X.shape[-1]))
+        if correlation:
+            y_true = np.tile(X[:,:,np.newaxis], (1, 1, X.shape[-1]))
         err_init = ((y_true - y_preds)**2).mean()
         trainer.fit(model, dataloader)
         trainer.validate(model, dataloader)
         trainer.test(model, dataloader)
         beta_preds, mu_preds = trainer.predict_params(model, dataloader)
+        if correlation:
+            rhos = trainer.predict_correlation(model, dataloader)
+        y_preds = trainer.predict_y(model, dataloader)
+        err_trained = ((y_true - y_preds)**2).mean()
+        assert err_trained < err_init
+        print()
+        
+    def correlation_quicktest(model):
+        print(f'{type(model)} quicktest')
+        dataloader = model.dataloader(C, X, batch_size=32)
+        trainer = CorrelationTrainer(max_epochs=1)
+        y_preds = trainer.predict_y(model, dataloader)
+        y_true = np.tile(X[:,:,np.newaxis], (1, 1, X.shape[-1]))
+        err_init = ((y_true - y_preds)**2).mean()
+        trainer.fit(model, dataloader)
+        trainer.validate(model, dataloader)
+        trainer.test(model, dataloader)
+        beta_preds, mu_preds = trainer.predict_params(model, dataloader)
+        network_preds = trainer.predict_network(model, dataloader)
         y_preds = trainer.predict_y(model, dataloader)
         err_trained = ((y_true - y_preds)**2).mean()
         assert err_trained < err_init
@@ -104,3 +131,11 @@ if __name__ == '__main__':
     # Tasksplit Univariate
     model = TasksplitContextualizedUnivariateRegression(c_dim, x_dim, y_dim)
     quicktest(model, univariate=True)
+    
+    # Correlation
+    model = ContextualizedCorrelation(c_dim, x_dim)
+    quicktest(model, correlation=True)
+    
+    # Tasksplit Correlation
+    model = TasksplitContextualizedCorrelation(c_dim, x_dim)
+    quicktest(model, correlation=True)

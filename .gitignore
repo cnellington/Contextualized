@@ -1,5 +1,5 @@
-experiments/*
-*/lightning_logs/*
+experiments
+lightning_logs
 __pycache__
 nb_archive
 sergio_temp

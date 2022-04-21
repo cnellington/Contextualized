@@ -332,3 +332,27 @@ class TasksplitContextualizedUnivariateRegression(ContextualizedRegressionBase):
 
     def dataloader(self, C, X, Y, **kwargs):
         return self._dataloader(C, X, Y, MultitaskUnivariateDataset, **kwargs)
+
+
+class ContextualizedCorrelation(ContextualizedUnivariateRegression):
+    """
+    Using univariate contextualized regression to estimate Pearson's correlation
+    See SubtypeMetamodel for assumptions and full docstring
+    """
+    def __init__(self, context_dim, x_dim, **kwargs):
+        super().__init__(context_dim, x_dim, x_dim, **kwargs)
+    
+    def dataloader(self, C, X, **kwargs):
+        return super().dataloader(C, X, X, **kwargs)
+
+
+class TasksplitContextualizedCorrelation(TasksplitContextualizedUnivariateRegression):
+    """
+    Using multitask univariate contextualized regression to estimate Pearson's correlation
+    See TasksplitMetamodel for assumptions and full docstring
+    """
+    def __init__(self, context_dim, x_dim, **kwargs):
+        super().__init__(context_dim, x_dim, x_dim, **kwargs)
+    
+    def dataloader(self, C, X, **kwargs):
+        return super().dataloader(C, X, X, **kwargs)
