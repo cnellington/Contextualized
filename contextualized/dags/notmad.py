@@ -310,7 +310,7 @@ class NOTMAD: # TODO: Only difference between low-rank and full-rank version sho
             self.outputs += self.base_W
         self.model = tf.keras.models.Model(inputs=(self.context, self.base_W),
                                            outputs=self.outputs)
-        self.model.explainere = self.explainer
+        self.model.explainer = self.explainer
 
         # Compile the model
         self.opt = tf.keras.optimizers.Adam(learning_rate=learning_rate)
