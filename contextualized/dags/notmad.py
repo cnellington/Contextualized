@@ -60,13 +60,20 @@ class DynamicAlphaRho(Callback):
 
     def on_epoch_begin(self, epoch, logs=None):
         if self.base_predictor is not None:
-            pred = np.squeeze(self.model.predict(
-                {"C": self.C_train,
-                 "base_W": self.base_predictor.predict_w(self.C_train, project_to_dag=False)}))
+            base_W = self.base_predictor.predict_w(self.C_train, project_to_dag=False)
         else:
-            pred = np.squeeze(self.model.predict(
+            base_W = np.zeros((len(self.C_train), 1))
+        pred = np.squeeze(self.model.predict(
                 {"C": self.C_train,
-                 "base_W": None}))
+                 "base_W": base_W}))
+#         if self.base_predictor is not None:
+#             pred = np.squeeze(self.model.predict(
+#                 {"C": self.C_train,
+#                  "base_W": self.base_predictor.predict_w(self.C_train, project_to_dag=False)}))
+#         else:
+#             pred = np.squeeze(self.model.predict(
+#                 {"C": self.C_train,
+#                  "base_W": np.zeros((len(self.C_train), 1))}))
         #pred = np.squeeze(self.model.predict(np.expand_dims(
         #    self.C_train[np.random.choice(self.C_train.shape[0])], 0)))
         #pred = trim_params(pred, thresh=0.1)
