@@ -7,8 +7,8 @@ import tensorflow_addons as tfa
 from tensorflow.keras.callbacks import Callback
 import igraph as ig
 
-from contextualized.notmad_helpers.tf_utils import NOTEARS_loss, DAG_loss
-from contextualized.notmad_helpers import graph_utils
+from contextualized.dags.notmad_helpers.tf_utils import NOTEARS_loss, DAG_loss
+from contextualized.dags.notmad_helpers import graph_utils
 
 
 class NGAM(tf.keras.layers.Layer):
@@ -60,13 +60,20 @@ class DynamicAlphaRho(Callback):
 
     def on_epoch_begin(self, epoch, logs=None):
         if self.base_predictor is not None:
-            pred = np.squeeze(self.model.predict(
-                {"C": self.C_train,
-                 "base_W": self.base_predictor.predict_w(self.C_train, project_to_dag=False)}))
+            base_W = self.base_predictor.predict_w(self.C_train, project_to_dag=False)
         else:
-            pred = np.squeeze(self.model.predict(
+            base_W = np.zeros((len(self.C_train), 1))
+        pred = np.squeeze(self.model.predict(
                 {"C": self.C_train,
-                 "base_W": None}))
+                 "base_W": base_W}))
+#         if self.base_predictor is not None:
+#             pred = np.squeeze(self.model.predict(
+#                 {"C": self.C_train,
+#                  "base_W": self.base_predictor.predict_w(self.C_train, project_to_dag=False)}))
+#         else:
+#             pred = np.squeeze(self.model.predict(
+#                 {"C": self.C_train,
+#                  "base_W": np.zeros((len(self.C_train), 1))}))
         #pred = np.squeeze(self.model.predict(np.expand_dims(
         #    self.C_train[np.random.choice(self.C_train.shape[0])], 0)))
         #pred = trim_params(pred, thresh=0.1)
@@ -303,7 +310,7 @@ class NOTMAD: # TODO: Only difference between low-rank and full-rank version sho
             self.outputs += self.base_W
         self.model = tf.keras.models.Model(inputs=(self.context, self.base_W),
                                            outputs=self.outputs)
-        self.model.explainere = self.explainer
+        self.model.explainer = self.explainer
 
         # Compile the model
         self.opt = tf.keras.optimizers.Adam(learning_rate=learning_rate)
