@@ -1,6 +1,6 @@
 ![Preview](contextualized_logo.png)
 
-A statistical machine learning toolbox for estimating models, distributions, and functions with sample-specific parameters.
+A statistical machine learning toolbox for estimating models, distributions, and functions with context-specific parameters.
 
 Take a look at the [main demo](demos/main_demo.ipynb) for a complete overview with code, or the [easy demo](demos/Easy-demo/easy_demo.ipynb) for a quickstart with sklearn-style wrappers!
 
