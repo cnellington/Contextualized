@@ -16,4 +16,7 @@ Lengerich, Ben, Caleb Ellington, Bryon Aragam, Eric P. Xing, and Manolis Kellis.
 
 Lengerich, Benjamin J., Maruan Al-Shedivat, Amir Alavi, Jennifer Williams, Sami Labbaki, and Eric P. Xing. 2020. “Discriminative Subtyping of Lung Cancers from Histopathology Images via Contextual Deep Learning.” medRxiv. https://www.medrxiv.org/content/10.1101/2020.06.25.20140053v1.abstract.
 
-Al-Shedivat, Maruan, Avinava Dubey, and Eric P. Xing. 2017. “Contextual Explanation Networks.” arXiv [cs.LG]. arXiv. http://arxiv.org/abs/1705.10301.
+Al-Shedivat, Maruan, Avinava Dubey, and Eric P. Xing. 2018. “Personalized Survival Prediction with Contextual Explanation Networks.” arXiv [cs.LG]. arXiv. http://arxiv.org/abs/1801.09810.
+
+Al-Shedivat, Maruan, Avinava Dubey, and Eric Xing. 2020. “Contextual Explanation Networks.” Journal of Machine Learning Research: JMLR 21 (194): 1–44.
+https://jmlr.org/papers/v21/18-856.html
