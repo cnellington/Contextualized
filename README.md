@@ -11,6 +11,18 @@ Implemented by [Caleb Ellington](https://calebellington.com/) (CMU) and [Ben Len
 pip install git+https://github.com/cnellington/Contextualized.git
 ```
 
+## Contextualized Family
+Context-dependent modeling is a universal problem, all every domain presents unique challenges and opportunities. 
+Here are some layers that others have added on top of Contextualized.
+Feel free to add your own page(s) by sending a PR.
+
+<table>
+<tr>
+<td><a href="http://bio-contextualized.ml/">bio-contextualized.ml</a></td>
+<td>Contextualized and analytical tools for modeling medical and biological heterogeneity</td>
+</tr>
+</table>
+
 ## Related Publications and Pre-prints
 Lengerich, Ben, Caleb Ellington, Bryon Aragam, Eric P. Xing, and Manolis Kellis. 2021. “NOTMAD: Estimating Bayesian Networks with Sample-Specific Structures and Parameters.” arXiv [stat.ML]. arXiv. http://arxiv.org/abs/2111.01104.
 
