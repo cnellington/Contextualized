@@ -24,6 +24,8 @@ Feel free to add your own page(s) by sending a PR.
 </table>
 
 ## Related Publications and Pre-prints
+Lengerich, Benjamin J., Mark E. Nunally, Yin Aphinyanaphongs, Caleb Ellington, and Rich Caruana. 2022. “Automated Interpretable Discovery of Heterogeneous Treatment Effectiveness: A Covid-19 Case Study.” Journal of Biomedical Informatics. [Received for Production](https://authors.elsevier.com/tracking/article/details.do?aid=104086&jid=YJBIN&surname=Lengerich).
+
 Lengerich, Ben, Caleb Ellington, Bryon Aragam, Eric P. Xing, and Manolis Kellis. 2021. “NOTMAD: Estimating Bayesian Networks with Sample-Specific Structures and Parameters.” arXiv [stat.ML]. arXiv. http://arxiv.org/abs/2111.01104.
 
 Lengerich, Benjamin J., Maruan Al-Shedivat, Amir Alavi, Jennifer Williams, Sami Labbaki, and Eric P. Xing. 2020. “Discriminative Subtyping of Lung Cancers from Histopathology Images via Contextual Deep Learning.” medRxiv. https://www.medrxiv.org/content/10.1101/2020.06.25.20140053v1.abstract.
