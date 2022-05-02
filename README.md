@@ -24,7 +24,7 @@ Feel free to add your own page(s) by sending a PR.
 </table>
 
 ## Related Publications and Pre-prints
-Lengerich, Benjamin J., Mark E. Nunally, Yin Aphinyanaphongs, Caleb Ellington, and Rich Caruana. 2022. “Automated Interpretable Discovery of Heterogeneous Treatment Effectiveness: A Covid-19 Case Study.” Journal of Biomedical Informatics. [Received for Production](https://authors.elsevier.com/tracking/article/details.do?aid=104086&jid=YJBIN&surname=Lengerich).
+Lengerich, Benjamin J., Mark E. Nunnally, Yin Aphinyanaphongs, Caleb Ellington, and Rich Caruana. 2022. “Automated Interpretable Discovery of Heterogeneous Treatment Effectiveness: A COVID-19 Case Study.” Journal of Biomedical Informatics, April, 104086. https://www.sciencedirect.com/science/article/pii/S1532046422001022
 
 Lengerich, Ben, Caleb Ellington, Bryon Aragam, Eric P. Xing, and Manolis Kellis. 2021. “NOTMAD: Estimating Bayesian Networks with Sample-Specific Structures and Parameters.” arXiv [stat.ML]. arXiv. http://arxiv.org/abs/2111.01104.
 
