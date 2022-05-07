@@ -133,5 +133,4 @@ class SKLearnInterface():
         mus = np.array([self.trainers[i].predict_params(self.models[i], get_dataloader(i))[1] for i in range(len(self.models))])
         if individual_preds:
             return models, mus
-        print(models.shape)
         return np.mean(models, axis=0), np.mean(mus, axis=0)

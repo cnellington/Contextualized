@@ -13,6 +13,10 @@ class ContextualizedClassifier(ContextualizedRegressor):
         kwargs['link_fn'] = LINK_FUNCTIONS['logistic']
         super().__init__(**kwargs)
 
+    def predict(self, C, X, **kwargs):
+        return np.round(super().predict(C, X, **kwargs))
+
     def predict_proba(self, C, X, **kwargs):
-        probs = inv_sigmoid(self.predict(C, X, **kwargs))
-        return np.vstack((1-probs, probs))
+        # Returns a np array of shape N samples, K outcomes, 2.
+        probs = super().predict(C, X, **kwargs)
+        return np.array([1-probs, probs]).T.swapaxes(0, 1)
