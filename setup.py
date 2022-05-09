@@ -8,7 +8,7 @@ setuptools.setup(name='contextualized',
         'contextualized.dags.notmad_helpers',
         'contextualized.easy',
     ],
-    version='0.1.0',
+    version='0.1.1',
     install_requires=[
         'pytorch-lightning',
         'torch',
