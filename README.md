@@ -12,7 +12,7 @@ pip install git+https://github.com/cnellington/Contextualized.git
 ```
 
 ## Contextualized Family
-Context-dependent modeling is a universal problem, all every domain presents unique challenges and opportunities. 
+Context-dependent modeling is a universal problem, but every domain presents unique challenges and opportunities. 
 Here are some layers that others have added on top of Contextualized.
 Feel free to add your own page(s) by sending a PR.
 
