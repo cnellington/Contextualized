@@ -38,3 +38,4 @@ def tasksplit_self_reg(alpha):
         diag_beta = beta[diag_idx]
         return alpha * torch.norm(diag_beta - torch.ones_like(diag_beta), p=2)
     return reg
+
