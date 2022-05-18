@@ -9,6 +9,16 @@ from contextualized.regression.trainers import *
 from contextualized.regression import ENCODERS, LINK_FUNCTIONS
 
 
+class DummyBasePredictor:
+    def __init__(self, beta_dim, mu_dim):
+        self.beta_dim = beta_dim
+        self.mu_dim = mu_dim
+
+    def predict_params(self, *args):
+        n = len(args[0])
+        return torch.zeros((n, *self.beta_dim)), torch.zeros((n, *self.mu_dim))
+
+
 class TestRegression(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestRegression, self).__init__(*args, **kwargs)
@@ -85,40 +95,53 @@ class TestRegression(unittest.TestCase):
             encoder_kwargs={'width': 25, 'layers': 2, 'link_fn': LINK_FUNCTIONS['softmax']},
             link_fn=LINK_FUNCTIONS['logistic'])
         self._quicktest(model)
+        
+        dummybase = DummyBasePredictor((self.y_dim, self.x_dim), (self.y_dim, 1))
+        model = NaiveContextualizedRegression(self.c_dim, self.x_dim, self.y_dim,
+            encoder_kwargs={'width': 25, 'layers': 2, 'link_fn': LINK_FUNCTIONS['softmax']},
+            link_fn=LINK_FUNCTIONS['logistic'], base_predictor=dummybase)
+        self._quicktest(model)
 
     def test_subtype(self):
         # Subtype Multivariate
-        model = ContextualizedRegression(self.c_dim, self.x_dim, self.y_dim)
+        dummybase = DummyBasePredictor((self.y_dim, self.x_dim), (self.y_dim, 1))
+        model = ContextualizedRegression(self.c_dim, self.x_dim, self.y_dim, base_predictor=dummybase)
         self._quicktest(model)
 
     def test_multitask(self):
         # Multitask Multivariate
-        model = MultitaskContextualizedRegression(self.c_dim, self.x_dim, self.y_dim)
+        dummybase = DummyBasePredictor((self.x_dim,), (1,))
+        model = MultitaskContextualizedRegression(self.c_dim, self.x_dim, self.y_dim, base_predictor=dummybase)
         self._quicktest(model)
 
     def test_tasksplit(self):
         # Tasksplit Multivariate
-        model = TasksplitContextualizedRegression(self.c_dim, self.x_dim, self.y_dim)
+        dummybase = DummyBasePredictor((self.x_dim,), (1,))
+        model = TasksplitContextualizedRegression(self.c_dim, self.x_dim, self.y_dim, base_predictor=dummybase)
         self._quicktest(model)
 
     def test_univariate_subtype(self):
         # Naive Univariate
-        model = ContextualizedUnivariateRegression(self.c_dim, self.x_dim, self.y_dim)
+        dummybase = DummyBasePredictor((self.y_dim, self.x_dim, 1), (self.y_dim, self.x_dim, 1))
+        model = ContextualizedUnivariateRegression(self.c_dim, self.x_dim, self.y_dim, base_predictor=dummybase)
         self._quicktest(model, univariate=True)
 
     def test_univariate_tasksplit(self):
         # Tasksplit Univariate
-        model = TasksplitContextualizedUnivariateRegression(self.c_dim, self.x_dim, self.y_dim)
+        dummybase = DummyBasePredictor((1,), (1,))
+        model = TasksplitContextualizedUnivariateRegression(self.c_dim, self.x_dim, self.y_dim, base_predictor=dummybase)
         self._quicktest(model, univariate=True)
 
     def test_correlation_subtype(self):
         # Correlation
-        model = ContextualizedCorrelation(self.c_dim, self.x_dim)
+        dummybase = DummyBasePredictor((self.x_dim, self.x_dim, 1), (self.x_dim, self.x_dim, 1))
+        model = ContextualizedCorrelation(self.c_dim, self.x_dim, base_predictor=dummybase)
         self._quicktest(model, correlation=True)
 
     def test_correlation_tasksplit(self):
         # Tasksplit Correlation
-        model = TasksplitContextualizedCorrelation(self.c_dim, self.x_dim)
+        dummybase = DummyBasePredictor((1,), (1,))
+        model = TasksplitContextualizedCorrelation(self.c_dim, self.x_dim, base_predictor=dummybase)
         self._quicktest(model, correlation=True)
 
 

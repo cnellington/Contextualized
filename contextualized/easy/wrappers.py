@@ -18,7 +18,7 @@ class SKLearnInterface():
         acceptable_model_kwargs = [
             'loss_fn', 'link_fn', 'univariate', 'encoder_type',
             'encoder_kwargs', 'model_regularizer', 'num_archetypes',
-            'learning_rate'
+            'learning_rate', 'base_predictor'
         ]
         acceptable_trainer_kwargs = [
             'max_epochs', 'check_val_every_n_epoch', 'val_check_interval',
