@@ -72,7 +72,9 @@ def project_to_dag(w):
             return -1
 
     idx = binary_search(vals, low, high, w_dag) + 1
-    thresh = vals[idx]
+    thresh = np.max(vals) + 0.1
+    if idx > -1 and idx < len(vals):
+        thresh = vals[idx]
     w_dag = trim_params(w_dag, thresh)
     
     # Now add back in edges with weights smaller than the thresh that don't violate DAG-ness.
