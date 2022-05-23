@@ -394,7 +394,7 @@ class NOTMAD: # TODO: Only difference between low-rank and full-rank version sho
             #        base_W = self.transform_to_low_rank(base_W)
         else:
             base_W = np.zeros((len(C), X.shape[-1], X.shape[-1])) # TODO: this is expensive.
-        self.model.fit({"C":C, "base_W": base_W},
+        self.history = self.model.fit({"C":C, "base_W": base_W},
                        y=X, batch_size=batch_size, epochs=epochs,
             callbacks=callbacks, validation_split=val_split, verbose=0)
 
