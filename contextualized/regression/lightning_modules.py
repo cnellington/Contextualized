@@ -26,13 +26,15 @@ from contextualized.regression.datasets import DataIterable, MultivariateDataset
 class ContextualizedRegressionBase(pl.LightningModule):
     def __init__(self, *args, learning_rate=1e-3, link_fn=LINK_FUNCTIONS['identity'],
                  loss_fn=LOSSES['mse'], model_regularizer=REGULARIZERS['none'], 
-                 base_predictor=None, **kwargs):
+                 base_y_predictor=None, base_param_predictor=None, 
+                 **kwargs):
         super().__init__()
         self.learning_rate = learning_rate
         self.link_fn = link_fn
         self.loss_fn = loss_fn
         self.model_regularizer = model_regularizer
-        self.base_predictor = base_predictor
+        self.base_y_predictor = base_y_predictor
+        self.base_param_predictor = base_param_predictor
         self._build_metamodel(*args, **kwargs)
 
     @abstractmethod
@@ -67,8 +69,8 @@ class ContextualizedRegressionBase(pl.LightningModule):
 
     def forward(self, *args):
         beta, mu = self.metamodel(*args)
-        if self.base_predictor is not None:
-            base_beta, base_mu = self.base_predictor.predict_params(*args)
+        if self.base_param_predictor is not None:
+            base_beta, base_mu = self.base_param_predictor.predict_params(*args)
             beta = beta + base_beta
             mu = mu + base_mu
         return beta, mu
@@ -95,6 +97,12 @@ class ContextualizedRegressionBase(pl.LightningModule):
     def _predict_from_models(self, X, beta_hat, mu_hat):
         return self.link_fn((beta_hat * X).sum(axis=-1).unsqueeze(-1) + mu_hat)
 
+    def _predict_y(self, C, X, beta_hat, mu_hat):
+        Y = self._predict_from_models(X, beta_hat, mu_hat)
+        if self.base_y_predictor is not None:
+            Y = Y + self.base_y_predictor.predict_y(C, X)
+        return Y
+    
     def _dataloader(self, C, X, Y, dataset_constructor, **kwargs):
         kwargs['num_workers'] = kwargs.get('num_workers', 0)
         kwargs['batch_size'] = kwargs.get('batch_size', 32)
@@ -112,7 +120,7 @@ class NaiveContextualizedRegression(ContextualizedRegressionBase):
     def _batch_loss(self, batch, batch_idx):
         C, X, Y, _ = batch
         beta_hat, mu_hat = self(C)
-        pred_loss = self.loss_fn(Y, self._predict_from_models(X, beta_hat, mu_hat))
+        pred_loss = self.loss_fn(Y, self._predict_y(C, X, beta_hat, mu_hat))
         reg_loss  = self.model_regularizer(beta_hat, mu_hat)
         return pred_loss + reg_loss
 
@@ -135,8 +143,8 @@ class NaiveContextualizedRegression(ContextualizedRegressionBase):
         ds = dataloader.dataset.dataset
         ys = np.zeros((ds.n, ds.y_dim))
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
-            _, X, _, n_idx = data
-            ys[n_idx] = self._predict_from_models(X, beta_hats, mu_hats).squeeze(-1)
+            C, X, _, n_idx = data
+            ys[n_idx] = self._predict_y(C, X, beta_hats, mu_hats).squeeze(-1)
         return ys
 
     def dataloader(self, C, X, Y, **kwargs):
@@ -154,7 +162,7 @@ class ContextualizedRegression(ContextualizedRegressionBase):
     def _batch_loss(self, batch, batch_idx):
         C, X, Y, _, = batch
         beta_hat, mu_hat = self(C)
-        pred_loss = self.loss_fn(Y, self._predict_from_models(X, beta_hat, mu_hat))
+        pred_loss = self.loss_fn(Y, self._predict_y(C, X, beta_hat, mu_hat))
         reg_loss  = self.model_regularizer(beta_hat, mu_hat)
         return pred_loss + reg_loss
 
@@ -177,8 +185,8 @@ class ContextualizedRegression(ContextualizedRegressionBase):
         ds = dataloader.dataset.dataset
         ys = np.zeros((ds.n, ds.y_dim))
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
-            _, X, _, n_idx = data
-            ys[n_idx] = self._predict_from_models(X, beta_hats, mu_hats).squeeze(-1)
+            C, X, _, n_idx = data
+            ys[n_idx] = self._predict_y(C, X, beta_hats, mu_hats).squeeze(-1)
         return ys
 
     def dataloader(self, C, X, Y, **kwargs):
@@ -196,7 +204,7 @@ class MultitaskContextualizedRegression(ContextualizedRegressionBase):
     def _batch_loss(self, batch, batch_idx):
         C, T, X, Y, _, _ = batch
         beta_hat, mu_hat = self(C, T)
-        pred_loss = self.loss_fn(Y, self._predict_from_models(X, beta_hat, mu_hat))
+        pred_loss = self.loss_fn(Y, self._predict_y(C, X, beta_hat, mu_hat))
         reg_loss  = self.model_regularizer(beta_hat, mu_hat)
         return pred_loss + reg_loss
 
@@ -219,8 +227,8 @@ class MultitaskContextualizedRegression(ContextualizedRegressionBase):
         ds = dataloader.dataset.dataset
         ys = np.zeros((ds.n, ds.y_dim))
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
-            _, _, X, _, n_idx, y_idx = data
-            ys[n_idx, y_idx] = self._predict_from_models(X, beta_hats, mu_hats).squeeze(-1)
+            C, _, X, _, n_idx, y_idx = data
+            ys[n_idx, y_idx] = self._predict_y(C, X, beta_hats, mu_hats).squeeze(-1)
         return ys
 
     def dataloader(self, C, X, Y, **kwargs):
@@ -238,7 +246,7 @@ class TasksplitContextualizedRegression(ContextualizedRegressionBase):
     def _batch_loss(self, batch, batch_idx):
         C, T, X, Y, _, _ = batch
         beta_hat, mu_hat = self(C, T)
-        pred_loss = self.loss_fn(Y, self._predict_from_models(X, beta_hat, mu_hat))
+        pred_loss = self.loss_fn(Y, self._predict_y(C, X, beta_hat, mu_hat))
         reg_loss  = self.model_regularizer(beta_hat, mu_hat)
         return pred_loss + reg_loss
 
@@ -261,8 +269,8 @@ class TasksplitContextualizedRegression(ContextualizedRegressionBase):
         ds = dataloader.dataset.dataset
         ys = np.zeros((ds.n, ds.y_dim))
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
-            _, _, X, _, n_idx, y_idx = data
-            ys[n_idx, y_idx] = self._predict_from_models(X, beta_hats, mu_hats).squeeze(-1)
+            C, _, X, _, n_idx, y_idx = data
+            ys[n_idx, y_idx] = self._predict_y(C, X, beta_hats, mu_hats).squeeze(-1)
         return ys
 
     def dataloader(self, C, X, Y, **kwargs):
@@ -291,8 +299,8 @@ class ContextualizedUnivariateRegression(ContextualizedRegression):
         ds = dataloader.dataset.dataset
         ys = np.zeros((ds.n, ds.y_dim, ds.x_dim))
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
-            _, X, _, n_idx = data
-            ys[n_idx] = self._predict_from_models(X, beta_hats, mu_hats).squeeze(-1)
+            C, X, _, n_idx = data
+            ys[n_idx] = self._predict_y(C, X, beta_hats, mu_hats).squeeze(-1)
         return ys
 
     def dataloader(self, C, X, Y, **kwargs):
@@ -310,7 +318,7 @@ class TasksplitContextualizedUnivariateRegression(ContextualizedRegressionBase):
     def _batch_loss(self, batch, batch_idx):
         C, T, X, Y, _, _, _ = batch
         beta_hat, mu_hat = self.metamodel(C, T)
-        pred_loss = self.loss_fn(Y, self._predict_from_models(X, beta_hat, mu_hat))
+        pred_loss = self.loss_fn(Y, self._predict_y(C, X, beta_hat, mu_hat))
         reg_loss  = self.model_regularizer(beta_hat, mu_hat)
         return pred_loss + reg_loss
 
@@ -333,8 +341,8 @@ class TasksplitContextualizedUnivariateRegression(ContextualizedRegressionBase):
         ds = dataloader.dataset.dataset
         ys = np.zeros((ds.n, ds.y_dim, ds.x_dim))
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
-            _, _, X, _, n_idx, x_idx, y_idx = data
-            ys[n_idx, y_idx, x_idx] = self._predict_from_models(X, beta_hats, mu_hats).squeeze(-1)
+            C, _, X, _, n_idx, x_idx, y_idx = data
+            ys[n_idx, y_idx, x_idx] = self._predict_y(C, X, beta_hats, mu_hats).squeeze(-1)
         return ys
 
     def dataloader(self, C, X, Y, **kwargs):
