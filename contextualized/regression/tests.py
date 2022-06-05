@@ -120,43 +120,50 @@ class TestRegression(unittest.TestCase):
     def test_subtype(self):
         # Subtype Multivariate
         parambase = DummyParamPredictor((self.y_dim, self.x_dim), (self.y_dim, 1))
-        model = ContextualizedRegression(self.c_dim, self.x_dim, self.y_dim, base_param_predictor=parambase)
+        ybase = DummyYPredictor((self.y_dim, 1))
+        model = ContextualizedRegression(self.c_dim, self.x_dim, self.y_dim, base_param_predictor=parambase, base_y_predictor=ybase)
         self._quicktest(model)
 
     def test_multitask(self):
         # Multitask Multivariate
         parambase = DummyParamPredictor((self.x_dim,), (1,))
-        model = MultitaskContextualizedRegression(self.c_dim, self.x_dim, self.y_dim, base_param_predictor=parambase)
+        ybase = DummyYPredictor((1,))
+        model = MultitaskContextualizedRegression(self.c_dim, self.x_dim, self.y_dim, base_param_predictor=parambase, base_y_predictor=ybase)
         self._quicktest(model)
 
     def test_tasksplit(self):
         # Tasksplit Multivariate
         parambase = DummyParamPredictor((self.x_dim,), (1,))
-        model = TasksplitContextualizedRegression(self.c_dim, self.x_dim, self.y_dim, base_param_predictor=parambase)
+        ybase = DummyYPredictor((1,))
+        model = TasksplitContextualizedRegression(self.c_dim, self.x_dim, self.y_dim, base_param_predictor=parambase, base_y_predictor=ybase)
         self._quicktest(model)
 
     def test_univariate_subtype(self):
         # Naive Univariate
         parambase = DummyParamPredictor((self.y_dim, self.x_dim, 1), (self.y_dim, self.x_dim, 1))
-        model = ContextualizedUnivariateRegression(self.c_dim, self.x_dim, self.y_dim, base_param_predictor=parambase)
+        ybase = DummyYPredictor((self.y_dim, self.x_dim, 1))
+        model = ContextualizedUnivariateRegression(self.c_dim, self.x_dim, self.y_dim, base_param_predictor=parambase, base_y_predictor=ybase)
         self._quicktest(model, univariate=True)
 
     def test_univariate_tasksplit(self):
         # Tasksplit Univariate
         parambase = DummyParamPredictor((1,), (1,))
-        model = TasksplitContextualizedUnivariateRegression(self.c_dim, self.x_dim, self.y_dim, base_param_predictor=parambase)
+        ybase = DummyYPredictor((1,))
+        model = TasksplitContextualizedUnivariateRegression(self.c_dim, self.x_dim, self.y_dim, base_param_predictor=parambase, base_y_predictor=ybase)
         self._quicktest(model, univariate=True)
 
     def test_correlation_subtype(self):
         # Correlation
         parambase = DummyParamPredictor((self.x_dim, self.x_dim, 1), (self.x_dim, self.x_dim, 1))
-        model = ContextualizedCorrelation(self.c_dim, self.x_dim, base_param_predictor=parambase)
+        ybase = DummyYPredictor((self.x_dim, self.x_dim, 1))
+        model = ContextualizedCorrelation(self.c_dim, self.x_dim, base_param_predictor=parambase, base_y_predictor=ybase)
         self._quicktest(model, correlation=True)
 
     def test_correlation_tasksplit(self):
         # Tasksplit Correlation
         parambase = DummyParamPredictor((1,), (1,))
-        model = TasksplitContextualizedCorrelation(self.c_dim, self.x_dim, base_param_predictor=parambase)
+        ybase = DummyYPredictor((1,))
+        model = TasksplitContextualizedCorrelation(self.c_dim, self.x_dim, base_param_predictor=parambase, base_y_predictor=ybase)
         self._quicktest(model, correlation=True)
 
 
