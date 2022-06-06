@@ -24,8 +24,11 @@ class SKLearnInterface():
             'max_epochs', 'check_val_every_n_epoch', 'val_check_interval',
             'callbacks'
         ]
+        acceptable_wrapper_kwargs = [
+            'n_bootstraps'
+        ]
         acceptable_fit_kwargs = []
-        data_kwargs, model_kwargs, trainer_kwargs, fit_kwargs = {}, {}, {}, {}
+        data_kwargs, model_kwargs, trainer_kwargs, fit_kwargs, wrapper_kwargs = {}, {}, {}, {}, {}
         for k, v in kwargs.items():
             if k in acceptable_data_kwargs:
                 data_kwargs[k] = v
@@ -35,6 +38,8 @@ class SKLearnInterface():
                 trainer_kwargs[k] = v
             elif k in acceptable_fit_kwargs:
                 fit_kwargs[k] = v
+            elif k in acceptable_wrapper_kwargs:
+                wrapper_kwargs[k] = v
             else:
                 print("Received unknown keyword argument {}, probably ignoring.".format(k))
 
@@ -44,7 +49,7 @@ class SKLearnInterface():
         model_kwargs['context_dim'] = self.context_dim
         model_kwargs['x_dim'] = self.x_dim
         model_kwargs['y_dim'] = self.y_dim
-        self.n_bootstraps = kwargs.get("n_bootstraps", 1)
+        self.n_bootstraps = wrapper_kwargs.get("n_bootstraps", 1)
 
         # Data kwargs
         data_kwargs['context_dim'] = self.context_dim
@@ -53,8 +58,8 @@ class SKLearnInterface():
         if 'C_val' not in data_kwargs or 'X_val' not in data_kwargs or 'Y_val' not in data_kwargs:
             data_kwargs['val_split'] = data_kwargs.get('val_split', 0.2)
 
-        trainer_kwargs['callbacks'] = trainer_kwargs.get('callbacks',
-            [EarlyStopping(monitor='val_loss', mode='min', patience=1)]
+        trainer_kwargs['callback_constructors'] = trainer_kwargs.get('callback_constructors',
+            [lambda: EarlyStopping(monitor='val_loss', mode='min', patience=1)]
         )
 
         return data_kwargs, model_kwargs, trainer_kwargs, fit_kwargs
@@ -72,9 +77,12 @@ class SKLearnInterface():
         for i in range(self.n_bootstraps):
             model = self.base_constructor(**model_kwargs)
             train_dataloader, val_dataloader = self._build_dataloaders(C, X, Y, model, **data_kwargs)
-
-            # Makes a new trainer for each call to fit - bad practice, but necessary here.
-            trainer = RegressionTrainer(**trainer_kwargs)
+            # Makes a new trainer for each bootstrap fit - bad practice, but necessary here.
+            my_trainer_kwargs = {k: v for k, v in trainer_kwargs.items()}
+            # Must reconstruct the callbacks because they save state from fitting trajectories.
+            my_trainer_kwargs['callbacks'] = [f() for f in trainer_kwargs['callback_constructors']]
+            del my_trainer_kwargs['callback_constructors']
+            trainer = RegressionTrainer(**my_trainer_kwargs)
             try:
                 trainer.fit(model, train_dataloader, val_dataloader, **fit_kwargs)
             except:
