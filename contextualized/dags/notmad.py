@@ -1,3 +1,5 @@
+import os
+import dill as pickle
 import numpy as np
 import copy
 from sklearn.model_selection import train_test_split
@@ -9,6 +11,7 @@ import igraph as ig
 
 from contextualized.dags.notmad_helpers.tf_utils import NOTEARS_loss, DAG_loss
 from contextualized.dags.notmad_helpers import graph_utils
+from contextualized.dags.notmad_helpers.baselines import save_clusterednotears, load_clusterednotears
 
 
 class NGAM(tf.keras.layers.Layer):
@@ -263,6 +266,32 @@ class NOTMAD: # TODO: Only difference between low-rank and full-rank version sho
                  init_compat=None,
                  freeze_compat=False
                 ):
+        self.kwargs = {
+            'context_shape': context_shape, 
+            'data_shape': data_shape, 
+            'n_archetypes': n_archetypes,
+            'sample_specific_loss_params': sample_specific_loss_params, 
+            'archetype_loss_params': archetype_loss_params,
+            'n_encoder_layers': n_encoder_layers, 
+            'encoder_width': encoder_width,
+            'context_activity_regularizer': context_activity_regularizer,
+            'activation': activation, 
+            'rank': rank,
+            'init_mat': init_mat, 
+            'init_archs': init_archs, 
+            'freeze_archs': freeze_archs,
+            'learning_rate': learning_rate, 
+            'project_archs_to_dag': project_archs_to_dag,
+            'project_distance': project_distance,
+            'tf_dtype': tf_dtype,
+            'use_compatibility': use_compatibility,
+            'update_compat_by_grad': update_compat_by_grad,
+            'pop_model': pop_model,
+            'base_predictor': base_predictor,
+            'encoder_type': encoder_type,
+            'init_compat': init_compat,
+            'freeze_compat': freeze_compat,
+        }                          
         super(NOTMAD, self).__init__()
         encoder_input_shape = (context_shape[1], 1)
         encoder_output_shape = (n_archetypes, )
@@ -454,3 +483,28 @@ class NOTMAD: # TODO: Only difference between low-rank and full-rank version sho
             return np.array([graph_utils.project_to_dag(w)[0] for w in preds])
         else:
             return preds
+
+
+def save_notmad(notmad, path):
+    if path[-1] != '/':
+        path += '/'
+    os.makedirs(path, exist_ok=True)
+    kwargs = notmad.kwargs.copy()
+    if kwargs['base_predictor'] is not None:
+        save_clusterednotears(kwargs['base_predictor'], path + 'base_predictor')
+        kwargs['base_predictor'] = True
+    pickle.dump(kwargs, open(path + 'kwargs.pkl', 'wb'))
+    notmad.model.save_weights(path + 'weights')
+
+
+def load_notmad(path):
+    if path[-1] != '/':
+        path += '/'
+    kwargs = pickle.load(open(path + 'kwargs.pkl', 'rb'))
+    if kwargs['base_predictor'] is not None:
+        base_predictor = load_clusterednotears(path + 'base_predictor')
+        kwargs['base_predictor'] = base_predictor
+    notmad = NOTMAD(**kwargs)
+    notmad.model.load_weights(path + 'weights')
+    return notmad
+
