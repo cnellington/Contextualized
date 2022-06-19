@@ -1,4 +1,6 @@
 import copy
+import os
+import dill as pickle
 import numpy as np
 from sklearn.cluster import KMeans
 import tensorflow as tf
@@ -61,6 +63,13 @@ class NOTEARS:
                  learning_rate=1e-3,
                  tf_dtype=tf.dtypes.float32):
 #         super(NOTEARS, self).__init__()
+        self.kwargs = {
+            'loss_params': loss_params,
+            'context_shape': context_shape,
+            'W_shape': W_shape,
+            'learning_rate': learning_rate,
+            'tf_dtype': tf_dtype,
+        }
         encoder_input_shape = (context_shape[1], 1)
         self.context = tf.keras.layers.Input(
             shape=encoder_input_shape, dtype=tf_dtype, name="C")
@@ -115,6 +124,23 @@ class NOTEARS:
         return self.W.W.numpy()
 
 
+def save_notears(notears, path):
+    if path[-1] != '/':
+        path += '/'
+    os.makedirs(path, exist_ok=True)
+    pickle.dump(notears.kwargs, open(path + 'kwargs.pkl', 'wb'))
+    notears.model.save_weights(path + 'weights')
+
+
+def load_notears(path):
+    if path[-1] != '/':
+        path += '/'
+    kwargs = pickle.load(open(path + 'kwargs.pkl', 'rb'))
+    notears = NOTEARS(**kwargs)
+    notears.model.load_weights(path + 'weights')
+    return notears
+
+
 class ClusteredNOTEARS:
     """
     Learn several NO-TEARS optimized DAGs based on a clustering function
@@ -124,6 +150,16 @@ class ClusteredNOTEARS:
                  learning_rate=1e-3, clusterer=None, clusterer_fitted=False,
                  tf_dtype=tf.dtypes.float32):
 #         super(ClusteredNOTEARS, self).__init__()
+        self.kwargs = {
+            'n_clusters': n_clusters,
+            'loss_params': loss_params,
+            'context_shape': context_shape,
+            'W_shape': W_shape,
+            'learning_rate': learning_rate,
+            'clusterer': clusterer,
+            'clusterer_fitted': clusterer_fitted,
+            'tf_dtype': tf_dtype,
+        }
         if clusterer is None:
             self.clusterer = KMeans(n_clusters=n_clusters)
         else:
@@ -161,3 +197,26 @@ class ClusteredNOTEARS:
     def get_ws(self, project_to_dag=False):
         # Already projected to DAG space, nothing to do here.
         return np.array([model.get_w() for model in self.notears_models])
+
+
+def save_clusterednotears(clusterednotears, path):
+    if path[-1] != '/':
+        path += '/'
+    os.makedirs(path, exist_ok=True)
+    kwargs = clusterednotears.kwargs.copy()
+    kwargs['clusterer'] = clusterednotears.clusterer
+    kwargs['clusterer_fitted'] = clusterednotears.clusterer_fitted
+    pickle.dump(kwargs, open(path + 'kwargs.pkl', 'wb'))
+    for i, notears in enumerate(clusterednotears.notears_models):
+        save_notears(notears, path + f'notears{i}')
+
+
+def load_clusterednotears(path):
+    if path[-1] != '/':
+        path += '/'
+    kwargs = pickle.load(open(path + 'kwargs.pkl', 'rb'))
+    clusterednotears = ClusteredNOTEARS(**kwargs)
+    clusters = kwargs['n_clusters']
+    notears_models = [load_notears(path + f'notears{i}') for i in range(clusters)]
+    clusterednotears.notears_models = notears_models
+    return clusterednotears
