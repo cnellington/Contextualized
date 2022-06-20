@@ -1,5 +1,3 @@
-import torch
-
 from contextualized.regression import NaiveContextualizedRegression, ContextualizedRegression
 from contextualized.regression import REGULARIZERS, LINK_FUNCTIONS, LOSSES
 
@@ -7,7 +5,7 @@ from contextualized.easy.wrappers import SKLearnInterface
 
 # TODO: Multitask metamodels
 # TODO: Task-specific link functions.
-# TODO: Easier early stopping (right now, have to pass in 'callbacks' kwargs.
+# TODO: Easier early stopping (right now, have to pass in 'callback_constructors' kwarg.
 
 
 class ContextualizedRegressor(SKLearnInterface):
@@ -42,7 +40,7 @@ class ContextualizedRegressor(SKLearnInterface):
         super().__init__(self.constructor)
 
     def fit(self, C, X, Y, **kwargs):
-        # Merge kwards and self.constructor_kwargs, prioritizing more recent kwargs.
+        # Merge kwargs and self.constructor_kwargs, prioritizing more recent kwargs.
         for k, v in self.constructor_kwargs.items():
             if k not in kwargs:
                 kwargs[k] = v

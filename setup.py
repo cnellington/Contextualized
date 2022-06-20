@@ -25,5 +25,6 @@ setuptools.setup(name='contextualized',
         'numpy>=1.19.2',
         'ipywidgets',
         'torchvision',
+        'dill',
     ],
 )

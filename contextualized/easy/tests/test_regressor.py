@@ -4,6 +4,25 @@ import torch
 from contextualized.easy import ContextualizedClassifier, ContextualizedRegressor
 
 
+class DummyParamPredictor:
+    def __init__(self, beta_dim, mu_dim):
+        self.beta_dim = beta_dim
+        self.mu_dim = mu_dim
+
+    def predict_params(self, *args):
+        n = len(args[0])
+        return torch.zeros((n, *self.beta_dim)), torch.zeros((n, *self.mu_dim))
+
+
+class DummyYPredictor:
+    def __init__(self, y_dim):
+        self.y_dim = y_dim
+
+    def predict_y(self, *args):
+        n = len(args[0])
+        return torch.zeros((n, *self.y_dim))
+
+
 def quicktest(model, C, X, Y, **kwargs):
     print(f'{type(model)} quicktest')
     model.fit(C, X, Y, max_epochs=0)
@@ -43,7 +62,9 @@ def test_regressor():
     C, X, Y = C.numpy(), X.numpy(), Y.numpy()
 
     # Naive Multivariate
-    model = ContextualizedRegressor()
+    parambase = DummyParamPredictor((y_dim, x_dim), (y_dim, 1))
+    ybase = DummyYPredictor((y_dim, 1))
+    model = ContextualizedRegressor(base_param_predictor=parambase, base_y_predictor=ybase)
     quicktest(model, C, X, Y, max_epochs=1)
 
     model = ContextualizedRegressor(num_archetypes=0)
@@ -59,7 +80,7 @@ def test_regressor():
 
     # With bootstrap
     model = ContextualizedRegressor(num_archetypes=4, alpha=0.1,
-        l1_ratio=0.5, mu_ratio=0.9)
+        l1_ratio=0.5, mu_ratio=0.9, base_param_predictor=parambase, base_y_predictor=ybase)
     quicktest(model, C, X, Y, max_epochs=1, n_bootstraps=2,
         learning_rate=1e-3)
 
