@@ -8,3 +8,6 @@ sergio_temp
 .pyc
 .ipynb_checkpoints
 .DS_Store
+
+# Pytorch Checkpoints
+*.pt
