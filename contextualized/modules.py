@@ -45,8 +45,11 @@ class MLP(nn.Module):
     """
     def __init__(self, input_dim, output_dim, width, layers, activation=nn.ReLU, link_fn=identity_link):
         super(MLP, self).__init__()
-        hidden_layers = lambda: [layer for _ in range(0, layers - 2) for layer in (nn.Linear(width, width), activation())]
-        mlp_layers = [nn.Linear(input_dim, width), activation()] + hidden_layers() + [nn.Linear(width, output_dim)]
+        if layers > 0:
+            hidden_layers = lambda: [layer for _ in range(0, layers - 1) for layer in (nn.Linear(width, width), activation())]
+            mlp_layers = [nn.Linear(input_dim, width), activation()] + hidden_layers() + [nn.Linear(width, output_dim)]
+        else:  # Linear encoder
+            mlp_layers = [nn.Linear(input_dim, output_dim)]
         self.mlp = nn.Sequential(*mlp_layers)
         self.link_fn = link_fn
 
@@ -63,9 +66,7 @@ class NGAM(nn.Module):
         super(NGAM, self).__init__()
         self.intput_dim = input_dim
         self.output_dim = output_dim
-        hidden_layers = lambda: [layer for _ in range(0, layers - 2) for layer in (nn.Linear(width, width), activation())]
-        nam_layers = lambda: [nn.Linear(1, width), activation()] + hidden_layers() + [nn.Linear(width, output_dim)]
-        self.nams = nn.ModuleList([nn.Sequential(*nam_layers()) for _ in range(input_dim)])
+        self.nams = nn.ModuleList([MLP(1, output_dim, width, layers, activation=activation, link_fn=link_fn) for _ in range(input_dim)])
         self.link_fn = link_fn
 
     def forward(self, x):
@@ -85,7 +86,7 @@ class NGAMOE(nn.Module):
         super(NGAMOE, self).__init__()
         self.intput_dim = input_dim
         self.output_dim = output_dim
-        hidden_layers = lambda: [layer for _ in range(0, layers - 3) for layer in (nn.Linear(width, width), activation())]
+        hidden_layers = lambda: [layer for _ in range(0, layers - 1) for layer in (nn.Linear(width, width), activation())]
         nam_layers = lambda: [nn.Linear(1, width), activation()] + hidden_layers() + [nn.Linear(width, width), activation()]
         expert_layers = lambda: [nn.Linear(1, width), activation()] + hidden_layers() + [nn.Linear(width, k), activation()]
         self.nams = nn.ModuleList([nn.Sequential(*nam_layers()) for _ in range(input_dim)])
