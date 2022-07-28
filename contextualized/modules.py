@@ -46,8 +46,9 @@ class MLP(nn.Module):
     def __init__(self, input_dim, output_dim, width, layers, activation=nn.ReLU, link_fn=identity_link):
         super(MLP, self).__init__()
         if layers > 0:
-            hidden_layers = lambda: [layer for _ in range(0, layers - 1) for layer in (nn.Linear(width, width), activation())]
-            mlp_layers = [nn.Linear(input_dim, width), activation()] + hidden_layers() + [nn.Linear(width, output_dim)]
+            mlp_layers = [nn.Linear(input_dim, width), activation()] + \
+                    [layer for _ in range(0, layers - 1) for layer in (nn.Linear(width, width), activation())] + \
+                    [nn.Linear(width, output_dim)]
         else:  # Linear encoder
             mlp_layers = [nn.Linear(input_dim, output_dim)]
         self.mlp = nn.Sequential(*mlp_layers)
@@ -66,7 +67,7 @@ class NGAM(nn.Module):
         super(NGAM, self).__init__()
         self.intput_dim = input_dim
         self.output_dim = output_dim
-        self.nams = nn.ModuleList([MLP(1, output_dim, width, layers, activation=activation, link_fn=link_fn) for _ in range(input_dim)])
+        self.nams = nn.ModuleList([MLP(1, output_dim, width, layers, activation=activation, link_fn=identity_link) for _ in range(input_dim)])
         self.link_fn = link_fn
 
     def forward(self, x):
