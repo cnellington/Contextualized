@@ -61,10 +61,10 @@ class TestRegression(unittest.TestCase):
         dataloader = None
         trainer = None
         if correlation:
-            dataloader = model.dataloader(self.C, self.X, batch_size=self.batch_size)
+            dataloader = model.dataloader(self.C, self.X, batch_size=self.batch_size, num_workers=2)
             trainer = CorrelationTrainer(max_epochs=self.epochs)
         else:
-            dataloader = model.dataloader(self.C, self.X, self.Y, batch_size=self.batch_size)
+            dataloader = model.dataloader(self.C, self.X, self.Y, batch_size=self.batch_size, num_workers=2)
             trainer = RegressionTrainer(max_epochs=self.epochs)
         y_preds = trainer.predict_y(model, dataloader)
         y_true = self.Y

@@ -37,7 +37,7 @@ class Dataset:
 
 class MultivariateDataset(Dataset):
     def __next__(self):
-        if self.n_i >= self.n:
+        if self.n_i >= self.C.shape[0]:
             self.n_i = 0
             raise StopIteration
         ret = (
@@ -49,7 +49,7 @@ class MultivariateDataset(Dataset):
         self.n_i += 1
         return ret
 
-    def __len(self):
+    def __len__(self):
         return self.n
 
 
@@ -67,7 +67,7 @@ class UnivariateDataset(Dataset):
         self.n_i += 1
         return ret
 
-    def __len(self):
+    def __len__(self):
         return self.n
 
 
@@ -92,7 +92,7 @@ class MultitaskMultivariateDataset(Dataset):
         self.y_i += 1
         return ret
 
-    def __len(self):
+    def __len__(self):
         return self.n * self.y_dim
 
 
@@ -135,3 +135,12 @@ class DataIterable(IterableDataset):
 
     def __iter__(self):
         return iter(self.dataset)
+
+
+def worker_init_fn(worker_id):
+    worker_info = torch.utils.data.get_worker_info()
+    dataset = worker_info.dataset
+    split_size = len(dataset.dataset.C) // worker_info.num_workers  # divide equally among workers
+    dataset.dataset.C = dataset.dataset.C[worker_id*split_size: (worker_id+1)*split_size]
+    dataset.dataset.X = dataset.dataset.X[worker_id*split_size: (worker_id+1)*split_size]
+    dataset.dataset.Y = dataset.dataset.Y[worker_id*split_size: (worker_id+1)*split_size]

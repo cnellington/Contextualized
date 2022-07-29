@@ -20,8 +20,8 @@ import pytorch_lightning as pl
 
 from contextualized.regression import LINK_FUNCTIONS, LOSSES, REGULARIZERS
 from contextualized.regression.metamodels import NaiveMetamodel, SubtypeMetamodel, MultitaskMetamodel, TasksplitMetamodel
-from contextualized.regression.datasets import DataIterable, MultivariateDataset, UnivariateDataset, MultitaskMultivariateDataset, MultitaskUnivariateDataset
-
+# from contextualized.regression.datasets import DataIterable, MultivariateDataset, UnivariateDataset, MultitaskMultivariateDataset, MultitaskUnivariateDataset
+from contextualized.regression.datasets import *
 
 class ContextualizedRegressionBase(pl.LightningModule):
     def __init__(self, *args, learning_rate=1e-3, link_fn=LINK_FUNCTIONS['identity'],
@@ -148,7 +148,7 @@ class NaiveContextualizedRegression(ContextualizedRegressionBase):
         return ys
 
     def dataloader(self, C, X, Y, **kwargs):
-        return self._dataloader(C, X, Y, MultivariateDataset, **kwargs)
+        return self._dataloader(C, X, Y, MultivariateDataset, worker_init_fn=worker_init_fn, **kwargs)
 
 
 class ContextualizedRegression(ContextualizedRegressionBase):
@@ -190,7 +190,7 @@ class ContextualizedRegression(ContextualizedRegressionBase):
         return ys
 
     def dataloader(self, C, X, Y, **kwargs):
-        return self._dataloader(C, X, Y, MultivariateDataset, **kwargs)
+        return self._dataloader(C, X, Y, MultivariateDataset, worker_init_fn=worker_init_fn, **kwargs)
 
 
 class MultitaskContextualizedRegression(ContextualizedRegressionBase):
