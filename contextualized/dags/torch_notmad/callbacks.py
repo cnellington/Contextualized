@@ -28,14 +28,6 @@ class DynamicAlphaRho(Callback):
             plmodule.rho = plmodule.rho*1.1
         self.h_old = my_dag_loss
 
-
-class MyPrintingCallback(Callback):
-    def on_train_start(self, trainer, pl_module):
-        print("Training is starting")
-
-    def on_train_end(self, trainer, pl_module):
-        print("Training is ending")
-
 class ProjectToDAG(Callback):
     """
     Project archetypes in NOTMAD to DAG's for each epoch

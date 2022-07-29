@@ -25,6 +25,7 @@ class NGAM(nn.Module):
             activation (nn.Module: nn.SiLU): Activation function to use.
             link_fn (lambda: identity_link): Link function to use.
         """
+        
         super(NGAM, self).__init__()
         self.input_dim = input_dim
         self.output_dim = output_dim
@@ -57,7 +58,6 @@ class NGAM(nn.Module):
             return nn.parameter.Parameter(
                     torch.tensor(np.random.uniform(-0.01, 0.01, size=layer_.weight.shape)).float()
                 )
-    
 
 class Explainer(nn.Module):
     """
@@ -105,13 +105,10 @@ class NOTMAD_model(pl.LightningModule):
                  n_archetypes = 4,
                  sample_specific_loss_params = {'l1': 0., 'alpha': 1e-1, 'rho': 1e-2},
                  archetype_loss_params = {'l1': 0., 'alpha': 1e-1, 'rho': 1e-2},
-                 opt_lr = 1e-3,
-                 opt_step= 50,
-                 n_encoder_hidden_layers=2,
-                 encoder_width=32,
+                 learning_rate = 1e-3,
+                 opt_step = 50,
+                 encoder_kwargs={'width':32, 'layers':2, 'link_fn':identity_link},
                  init_mat=None,
-                 auto_opt=True,
-                 encoder_type="NGAM"
             ):
         """ Initialize NOTMAD.
         
@@ -126,14 +123,11 @@ class NOTMAD_model(pl.LightningModule):
             
             Encoder Kwargs
             ----------------
-            n_encoder_hidden_layers(int:2): Number encoder hidden layers
-            encoder_width(int:32): Width of encoder hidden layers
-            encoder_type (str: NGAM): Encoder module to use
+            encoder_kwargs(dict): Dictionary of width, layers, and link_fn associated with encoder.
             
             Optimization Kwargs
             -------------------
-            auto_opt(bool: True): Use torch's backprop vs manual (customizable backprop in self.training_step)
-            opt_lr(float): Optimizer learning rate
+            learning_rate(float): Optimizer learning rate
             opt_step(int): Optimizer step size
             
             Loss Kwargs
@@ -155,12 +149,6 @@ class NOTMAD_model(pl.LightningModule):
         self.archetype_loss_params = archetype_loss_params
         self.alpha, self.rho, self.use_dynamic_alpha_rho = self._parse_alpha_rho(sample_specific_loss_params)
 
-        #torch params
-        self.opt_lr = opt_lr
-        self.opt_step = opt_step
-        self.automatic_optimization = auto_opt
-        self.encoder_type = encoder_type
-
         #layer shapes 
         encoder_input_shape = (self.context_shape[1], 1)
         encoder_output_shape = (self.n_archetypes, )
@@ -169,14 +157,14 @@ class NOTMAD_model(pl.LightningModule):
         #layer params
         self.init_mat = init_mat
 
+        #opt params
+        self.learning_rate = learning_rate
+        self.opt_step = opt_step
+        
         #layers
-        if self.encoder_type == "NGAM":
-            self.encoder = NGAM(encoder_input_shape[0], encoder_output_shape[0],
-                                n_hidden_layers=n_encoder_hidden_layers, 
-                                width=encoder_width)
-        else:
-            self.encoder = self._build_encoder(encoder_input_shape[0], 
-                                                encoder_output_shape[0])
+        self.encoder = NGAM(encoder_input_shape[0], encoder_output_shape[0],
+                                layers=encoder_kwargs['layers'], 
+                                width=encoder_kwargs['width'])
         self.explainer = Explainer(arch_shape, init_mat=self.init_mat) 
         
         #loss
@@ -192,7 +180,7 @@ class NOTMAD_model(pl.LightningModule):
         return out.float()
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr = self.opt_lr)
+        optimizer = torch.optim.Adam(self.parameters(), lr = self.learning_rate)
         sch = torch.optim.lr_scheduler.StepLR(
         optimizer, step_size  = self.opt_step , gamma = 0.5)
         # learning rate scheduler
@@ -210,12 +198,6 @@ class NOTMAD_model(pl.LightningModule):
         w_pred = self.forward(C).float()
         loss = self.my_loss(x_true.float(), w_pred.float()).float()
         self.log("train_loss", loss)
-
-        if not self.automatic_optimization: #custom backwards
-            opt = self.optimizers()
-            opt.zero_grad()
-            loss.backward()        
-            opt.step()
         
         return loss
     
@@ -268,19 +250,3 @@ class NOTMAD_model(pl.LightningModule):
                 for i in range(self.explainer.k)
             ]))
         return arch_loss
-    
-    def _build_encoder(self,in_dim,out_dim):
-        #builds a linear encoder
-        encoder = nn.Linear(in_dim, out_dim)
-            
-        with torch.no_grad(): #adjust weights to use uniform distribution
-            self.encoder.weight =  torch.nn.parameter.Parameter(
-                        torch.tensor(np.random.uniform(low=-0.01, high=0.01, size = self.encoder.weight.shape)).float(),
-                        requires_grad=True
-                        )
-            self.encoder.bias =  torch.nn.parameter.Parameter(
-                        torch.tensor(np.random.uniform(low=-0.01, high=0.01, size = self.encoder.bias.shape)).float(),
-                        requires_grad=True
-                        )
-        
-        return encoder
