@@ -137,10 +137,12 @@ class DataIterable(IterableDataset):
         return iter(self.dataset)
 
 
-def worker_init_fn(worker_id):
+def singletask_worker_init_fn(worker_id):
     worker_info = torch.utils.data.get_worker_info()
     dataset = worker_info.dataset
     split_size = len(dataset.dataset.C) // worker_info.num_workers  # divide equally among workers
-    dataset.dataset.C = dataset.dataset.C[worker_id*split_size: (worker_id+1)*split_size]
-    dataset.dataset.X = dataset.dataset.X[worker_id*split_size: (worker_id+1)*split_size]
-    dataset.dataset.Y = dataset.dataset.Y[worker_id*split_size: (worker_id+1)*split_size]
+    start = worker_id*split_size
+    end = (worker_id+1)*split_size
+    dataset.dataset.C = dataset.dataset.C[start: end]
+    dataset.dataset.X = dataset.dataset.X[start: end]
+    dataset.dataset.Y = dataset.dataset.Y[start: end]
