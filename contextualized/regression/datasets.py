@@ -37,24 +37,28 @@ class Dataset:
 
 class MultivariateDataset(Dataset):
     def __next__(self):
-        if self.n_i >= self.C.shape[0]:
+        worker_info = torch.utils.data.get_worker_info()
+        worker_id = worker_info.id if worker_info is not None else 0
+        if self.n_i >= self.C.shape[0]: # self.C.shape[0] is the size of the splitted data given to the worker
             self.n_i = 0
             raise StopIteration
         ret = (
             self.C[self.n_i],
             self.X[self.n_i].expand(self.y_dim, -1),
             self.Y[self.n_i].unsqueeze(-1),
-            self.n_i,
+            self.n_i+(self.C.shape[0]*worker_id),
         )
         self.n_i += 1
         return ret
 
     def __len__(self):
-        return self.n
+        return self.n   # the size of the complete data
 
 
 class UnivariateDataset(Dataset):
     def __next__(self):
+        worker_info = torch.utils.data.get_worker_info()
+        worker_id = worker_info.id if worker_info is not None else 0
         if self.n_i >= self.n:
             self.n_i = 0
             raise StopIteration
@@ -62,7 +66,7 @@ class UnivariateDataset(Dataset):
             self.C[self.n_i],
             self.X[self.n_i].expand(self.y_dim, -1).unsqueeze(-1),
             self.Y[self.n_i].expand(self.x_dim, -1).T.unsqueeze(-1),
-            self.n_i,
+            self.n_i + (self.C.shape[0] * worker_id)
         )
         self.n_i += 1
         return ret
@@ -73,10 +77,12 @@ class UnivariateDataset(Dataset):
 
 class MultitaskMultivariateDataset(Dataset):
     def __next__(self):
+        worker_info = torch.utils.data.get_worker_info()
+        worker_id = worker_info.id if worker_info is not None else 0
         if self.y_i >= self.y_dim:
             self.n_i += 1
             self.y_i = 0
-        if self.n_i >= self.n:
+        if self.n_i >= self.C.shape[0]:
             self.n_i = 0
             raise StopIteration
         t = torch.zeros(self.y_dim)
@@ -86,7 +92,7 @@ class MultitaskMultivariateDataset(Dataset):
             t,
             self.X[self.n_i],
             self.Y[self.n_i, self.y_i].unsqueeze(0),
-            self.n_i,
+            self.n_i+(self.C.shape[0]*worker_id),
             self.y_i,
         )
         self.y_i += 1
@@ -98,6 +104,8 @@ class MultitaskMultivariateDataset(Dataset):
 
 class MultitaskUnivariateDataset(Dataset):
     def __next__(self):
+        worker_info = torch.utils.data.get_worker_info()
+        worker_id = worker_info.id if worker_info is not None else 0
         if self.y_i >= self.y_dim:
             self.x_i += 1
             self.y_i = 0
@@ -115,7 +123,7 @@ class MultitaskUnivariateDataset(Dataset):
             t,
             self.X[self.n_i, self.x_i].unsqueeze(0),
             self.Y[self.n_i, self.y_i].unsqueeze(0),
-            self.n_i,
+            self.n_i+(self.C.shape[0]*worker_id),
             self.x_i,
             self.y_i,
         )
@@ -137,7 +145,7 @@ class DataIterable(IterableDataset):
         return iter(self.dataset)
 
 
-def singletask_worker_init_fn(worker_id):
+def distributed_worker_init_fn(worker_id):
     worker_info = torch.utils.data.get_worker_info()
     dataset = worker_info.dataset
     split_size = len(dataset.dataset.C) // worker_info.num_workers  # divide equally among workers

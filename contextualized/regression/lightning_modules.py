@@ -20,7 +20,7 @@ import pytorch_lightning as pl
 
 from contextualized.regression import LINK_FUNCTIONS, LOSSES, REGULARIZERS
 from contextualized.regression.metamodels import NaiveMetamodel, SubtypeMetamodel, MultitaskMetamodel, TasksplitMetamodel
-from contextualized.regression.datasets import DataIterable, MultivariateDataset, UnivariateDataset, MultitaskMultivariateDataset, MultitaskUnivariateDataset, singletask_worker_init_fn
+from contextualized.regression.datasets import DataIterable, MultivariateDataset, UnivariateDataset, MultitaskMultivariateDataset, MultitaskUnivariateDataset, distributed_worker_init_fn
 
 class ContextualizedRegressionBase(pl.LightningModule):
     def __init__(self, *args, learning_rate=1e-3, link_fn=LINK_FUNCTIONS['identity'],
@@ -105,7 +105,7 @@ class ContextualizedRegressionBase(pl.LightningModule):
     def _dataloader(self, C, X, Y, dataset_constructor, **kwargs):
         kwargs['num_workers'] = kwargs.get('num_workers', 0)
         kwargs['batch_size'] = kwargs.get('batch_size', 32)
-        return DataLoader(dataset=DataIterable(dataset_constructor(C, X, Y)), **kwargs)
+        return DataLoader(dataset=DataIterable(dataset_constructor(C, X, Y)), worker_init_fn=distributed_worker_init_fn, **kwargs)
 
 
 class NaiveContextualizedRegression(ContextualizedRegressionBase):
@@ -147,7 +147,7 @@ class NaiveContextualizedRegression(ContextualizedRegressionBase):
         return ys
 
     def dataloader(self, C, X, Y, **kwargs):
-        return self._dataloader(C, X, Y, MultivariateDataset, worker_init_fn=singletask_worker_init_fn, **kwargs)
+        return self._dataloader(C, X, Y, MultivariateDataset, **kwargs)
 
 
 class ContextualizedRegression(ContextualizedRegressionBase):
@@ -189,7 +189,7 @@ class ContextualizedRegression(ContextualizedRegressionBase):
         return ys
 
     def dataloader(self, C, X, Y, **kwargs):
-        return self._dataloader(C, X, Y, MultivariateDataset, worker_init_fn=singletask_worker_init_fn, **kwargs)
+        return self._dataloader(C, X, Y, MultivariateDataset, **kwargs)
 
 
 class MultitaskContextualizedRegression(ContextualizedRegressionBase):
