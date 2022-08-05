@@ -89,6 +89,12 @@ class TestRegression(unittest.TestCase):
             encoder_kwargs={'width': 25, 'layers': 2, 'link_fn': LINK_FUNCTIONS['identity']},
             link_fn=LINK_FUNCTIONS['identity'])
         self._quicktest(model)
+        
+        model = NaiveContextualizedRegression(self.c_dim, self.x_dim, self.y_dim,
+            encoder_type='ngam',
+            encoder_kwargs={'width': 25, 'layers': 2, 'link_fn': LINK_FUNCTIONS['identity']},
+            link_fn=LINK_FUNCTIONS['identity'])
+        self._quicktest(model)
 
         model = NaiveContextualizedRegression(self.c_dim, self.x_dim, self.y_dim,
             encoder_kwargs={'width': 25, 'layers': 2, 'link_fn': LINK_FUNCTIONS['softmax']},
