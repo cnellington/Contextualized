@@ -110,10 +110,12 @@ class NOTMAD_model(pl.LightningModule):
             }
         }
 
+
+
     def training_step(self,batch,batch_idx):
         C , x_true = batch
         w_pred = self.forward(C).float()
-        loss = self.my_loss(x_true.float(), w_pred.float()).float()
+        loss = self.my_loss(x_true.float(), self._mask(w_pred)).float()
         self.log("train_loss", loss)
         
         return loss
@@ -150,6 +152,11 @@ class NOTMAD_model(pl.LightningModule):
         return w_preds
 
     #helpers
+    def _mask(self,W):
+        d = W.shape[1]
+        mask = torch.ones(d).float() - torch.eye(d).float()
+        return torch.multiply(W, mask)
+    
     def _parse_alpha_rho(self, params):
         alpha = params['alpha']
         rho = params['rho']
