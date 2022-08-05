@@ -59,7 +59,7 @@ class UnivariateDataset(Dataset):
     def __next__(self):
         worker_info = torch.utils.data.get_worker_info()
         worker_id = worker_info.id if worker_info is not None else 0
-        if self.n_i >= self.n:
+        if self.n_i >= self.C.shape[0]:
             self.n_i = 0
             raise StopIteration
         ret = (
@@ -112,7 +112,7 @@ class MultitaskUnivariateDataset(Dataset):
         if self.x_i >= self.x_dim:
             self.n_i += 1
             self.x_i = 0
-        if self.n_i >= self.n:
+        if self.n_i >= self.C.shape[0]:
             self.n_i = 0
             raise StopIteration
         t = torch.zeros(self.x_dim + self.y_dim)
