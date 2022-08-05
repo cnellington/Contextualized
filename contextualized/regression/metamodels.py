@@ -12,7 +12,7 @@ class NaiveMetamodel(nn.Module):
     (C) --> {beta, mu} --> (X, Y)
     """
     def __init__(self, context_dim, x_dim, y_dim, univariate=False, encoder_type='mlp',
-                 encoder_kwargs={'width': 25, 'layers': 2, 'link_fn': LINK_FUNCTIONS['identity']}):
+                 encoder_kwargs={'width': 25, 'layers': 1, 'link_fn': LINK_FUNCTIONS['identity']}):
         """
         context_dim (int): dimension of flattened context
         x_dim (int): dimension of flattened features
@@ -50,7 +50,7 @@ class SubtypeMetamodel(nn.Module):
     Z: latent variable, causal parent of both the context and regression model
     """
     def __init__(self, context_dim, x_dim, y_dim, univariate=False, num_archetypes=10, encoder_type='mlp',
-                 encoder_kwargs={'width': 25, 'layers': 2, 'link_fn': LINK_FUNCTIONS['identity']}):
+                 encoder_kwargs={'width': 25, 'layers': 1, 'link_fn': LINK_FUNCTIONS['identity']}):
         """
         context_dim (int): dimension of flattened context
         x_dim (int): dimension of flattened features
@@ -90,7 +90,7 @@ class MultitaskMetamodel(nn.Module):
     Z: latent variable, causal parent of the context, regression model, and task (T)
     """
     def __init__(self, context_dim, x_dim, y_dim, univariate=False, num_archetypes=10, encoder_type='mlp',
-                 encoder_kwargs={'width': 25, 'layers': 2, 'link_fn': LINK_FUNCTIONS['identity']}):
+                 encoder_kwargs={'width': 25, 'layers': 1, 'link_fn': LINK_FUNCTIONS['identity']}):
         """
         context_dim (int): dimension of flattened context
         x_dim (int): dimension of flattened features
@@ -135,9 +135,9 @@ class TasksplitMetamodel(nn.Module):
     def __init__(self, context_dim, x_dim, y_dim, univariate=False,
             context_archetypes=10, task_archetypes=10,
             context_encoder_type='mlp',
-            context_encoder_kwargs={'width': 25, 'layers': 2, 'link_fn': LINK_FUNCTIONS['softmax']},
+            context_encoder_kwargs={'width': 25, 'layers': 1, 'link_fn': LINK_FUNCTIONS['softmax']},
             task_encoder_type='mlp',
-            task_encoder_kwargs={'width': 25, 'layers': 2, 'link_fn': LINK_FUNCTIONS['identity']},
+            task_encoder_kwargs={'width': 25, 'layers': 1, 'link_fn': LINK_FUNCTIONS['identity']},
             ):
         """
         context_dim (int): dimension of flattened context

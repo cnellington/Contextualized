@@ -24,7 +24,7 @@ class DummyYPredictor:
 
 
 def quicktest(model, C, X, Y, **kwargs):
-    print(f'{type(model)} quicktest')
+    print(f"{type(model)} quicktest")
     model.fit(C, X, Y, max_epochs=0)
     err_init = np.linalg.norm(Y - model.predict(C, X), ord=2)
     model.fit(C, X, Y, **kwargs)
@@ -43,14 +43,14 @@ def test_regressor():
     c_dim = 4
     x_dim = 5
     y_dim = 3
-    C = torch.rand((n, c_dim)) - .5
+    C = torch.rand((n, c_dim)) - 0.5
     W_1 = C.sum(axis=1).unsqueeze(-1) ** 2
-    W_2 = - C.sum(axis=1).unsqueeze(-1)
+    W_2 = -C.sum(axis=1).unsqueeze(-1)
     b_1 = C[:, 0].unsqueeze(-1)
     b_2 = C[:, 1].unsqueeze(-1)
     W_full = torch.cat((W_1, W_2), axis=1)
     b_full = b_1 + b_2
-    X = torch.rand((n, x_dim)) - .5
+    X = torch.rand((n, x_dim)) - 0.5
     Y_1 = X[:, 0].unsqueeze(-1) * W_1 + b_1
     Y_2 = X[:, 1].unsqueeze(-1) * W_2 + b_2
     Y_3 = X.sum(axis=1).unsqueeze(-1)
@@ -64,7 +64,9 @@ def test_regressor():
     # Naive Multivariate
     parambase = DummyParamPredictor((y_dim, x_dim), (y_dim, 1))
     ybase = DummyYPredictor((y_dim, 1))
-    model = ContextualizedRegressor(base_param_predictor=parambase, base_y_predictor=ybase)
+    model = ContextualizedRegressor(
+        base_param_predictor=parambase, base_y_predictor=ybase
+    )
     quicktest(model, C, X, Y, max_epochs=1)
 
     model = ContextualizedRegressor(num_archetypes=0)
@@ -74,15 +76,21 @@ def test_regressor():
     quicktest(model, C, X, Y, max_epochs=5)
 
     # With regularization
-    model = ContextualizedRegressor(num_archetypes=4, alpha=0.,
-        l1_ratio=0.5, mu_ratio=0.9)
+    model = ContextualizedRegressor(
+        num_archetypes=4, alpha=0.0, l1_ratio=0.5, mu_ratio=0.9
+    )
     quicktest(model, C, X, Y, max_epochs=1)
 
     # With bootstrap
-    model = ContextualizedRegressor(num_archetypes=4, alpha=0.1,
-        l1_ratio=0.5, mu_ratio=0.9, base_param_predictor=parambase, base_y_predictor=ybase)
-    quicktest(model, C, X, Y, max_epochs=1, n_bootstraps=2,
-        learning_rate=1e-3)
+    model = ContextualizedRegressor(
+        num_archetypes=4,
+        alpha=0.1,
+        l1_ratio=0.5,
+        mu_ratio=0.9,
+        base_param_predictor=parambase,
+        base_y_predictor=ybase,
+    )
+    quicktest(model, C, X, Y, max_epochs=1, n_bootstraps=2, learning_rate=1e-3)
 
 
 if __name__ == "__main__":

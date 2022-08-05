@@ -5,7 +5,14 @@ Thank you for considering to contribute to Contextualized!
 ## Pull Requests
 We welcome your pull requests (PRs).
 For minor fixes (e.g., documentation improvements), feel free to submit a PR directly.
-If you would like to implement a new feature or a bug, please make sure you (or someone else) has opened an appropriate issue first; in your PR, please mention the issue it addresses.
+If you would like to implement a new feature or a bug, please make sure you (or someone else) has opened an appropriate [issue](https://github.com/cnellington/contextualized/issues) first; in your PR, please mention the issue it addresses.
+
+### Creating a Pull Request
+1. [Fork](https://github.com/cnellington/Contextualized/fork) this repository.
+2. Make your code changes locally.
+3. Check the style using pylint and black following [these steps](https://github.com/cnellington/Contextualized/pull/111#issue-1323230194).
+4. (Optional) Include your name in alphabetical order in [ACKNOWLEDGEMENTS.md](https://github.com/cnellington/Contextualized/blob/main/ACKNOWLEDGEMENTS.md).
+5. Issue a PR to merge your changes into the `dev` branch.
 
 
 ## Issues
