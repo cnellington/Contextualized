@@ -119,13 +119,13 @@ class NaiveContextualizedRegression(ContextualizedRegressionBase):
 
     def _batch_loss(self, batch, batch_idx):
         C, X, Y, _ = batch
-        beta_hat, mu_hat = self(C)
+        beta_hat, mu_hat = self.predict_step(batch, batch_idx)
         pred_loss = self.loss_fn(Y, self._predict_y(C, X, beta_hat, mu_hat))
         reg_loss  = self.model_regularizer(beta_hat, mu_hat)
         return pred_loss + reg_loss
 
     def predict_step(self, batch, batch_idx):
-        C, X, Y, _ = batch
+        C, _, _, _ = batch
         beta_hat, mu_hat = self(C)
         return beta_hat, mu_hat
 
@@ -161,13 +161,13 @@ class ContextualizedRegression(ContextualizedRegressionBase):
 
     def _batch_loss(self, batch, batch_idx):
         C, X, Y, _, = batch
-        beta_hat, mu_hat = self(C)
+        beta_hat, mu_hat = self.predict_step(batch, batch_idx)
         pred_loss = self.loss_fn(Y, self._predict_y(C, X, beta_hat, mu_hat))
         reg_loss  = self.model_regularizer(beta_hat, mu_hat)
         return pred_loss + reg_loss
 
     def predict_step(self, batch, batch_idx):
-        C, X, Y, _ = batch
+        C, _, _, _ = batch
         beta_hat, mu_hat = self(C)
         return beta_hat, mu_hat
 
@@ -203,13 +203,13 @@ class MultitaskContextualizedRegression(ContextualizedRegressionBase):
 
     def _batch_loss(self, batch, batch_idx):
         C, T, X, Y, _, _ = batch
-        beta_hat, mu_hat = self(C, T)
+        beta_hat, mu_hat = self.predict_step(batch, batch_idx)
         pred_loss = self.loss_fn(Y, self._predict_y(C, X, beta_hat, mu_hat))
         reg_loss  = self.model_regularizer(beta_hat, mu_hat)
         return pred_loss + reg_loss
 
     def predict_step(self, batch, batch_idx):
-        C, T, X, Y, _, _ = batch
+        C, T, _, _, _, _ = batch
         beta_hat, mu_hat = self(C, T)
         return beta_hat, mu_hat
 
@@ -245,13 +245,13 @@ class TasksplitContextualizedRegression(ContextualizedRegressionBase):
 
     def _batch_loss(self, batch, batch_idx):
         C, T, X, Y, _, _ = batch
-        beta_hat, mu_hat = self(C, T)
+        beta_hat, mu_hat = self.predict_step(batch, batch_idx)
         pred_loss = self.loss_fn(Y, self._predict_y(C, X, beta_hat, mu_hat))
         reg_loss  = self.model_regularizer(beta_hat, mu_hat)
         return pred_loss + reg_loss
 
     def predict_step(self, batch, batch_idx):
-        C, T, X, Y, _, _ = batch
+        C, T, _, _, _, _ = batch
         beta_hat, mu_hat = self(C, T)
         return beta_hat, mu_hat
 
@@ -307,7 +307,7 @@ class ContextualizedUnivariateRegression(ContextualizedRegression):
         return self._dataloader(C, X, Y, UnivariateDataset, **kwargs)
 
 
-class TasksplitContextualizedUnivariateRegression(ContextualizedRegressionBase):
+class TasksplitContextualizedUnivariateRegression(TasksplitContextualizedRegression):
     """
     See TasksplitMetamodel
     """
@@ -317,13 +317,13 @@ class TasksplitContextualizedUnivariateRegression(ContextualizedRegressionBase):
 
     def _batch_loss(self, batch, batch_idx):
         C, T, X, Y, _, _, _ = batch
-        beta_hat, mu_hat = self.metamodel(C, T)
+        beta_hat, mu_hat = self.predict_step(batch, batch_idx)
         pred_loss = self.loss_fn(Y, self._predict_y(C, X, beta_hat, mu_hat))
-        reg_loss  = self.model_regularizer(beta_hat, mu_hat)
+        reg_loss = self.model_regularizer(beta_hat, mu_hat)
         return pred_loss + reg_loss
 
     def predict_step(self, batch, batch_idx):
-        C, T, X, Y, _, _, _ = batch
+        C, T, _, _, _, _, _ = batch
         beta_hat, mu_hat = self(C, T)
         return beta_hat, mu_hat
 
@@ -369,5 +369,26 @@ class TasksplitContextualizedCorrelation(TasksplitContextualizedUnivariateRegres
     def __init__(self, context_dim, x_dim, **kwargs):
         super().__init__(context_dim, x_dim, x_dim, **kwargs)
     
+    def dataloader(self, C, X, **kwargs):
+        return super().dataloader(C, X, X, **kwargs)
+
+
+class ContextualizedMarkovGraph(ContextualizedRegression):
+    """
+    Using singletask multivariate contextualized regression to do edge-regression for
+    estimating conditional dependencies
+    See SubtypeMetamodel for assumptions and full docstring
+    """
+    def __init__(self, context_dim, x_dim, **kwargs):
+        super().__init__(context_dim, x_dim, x_dim, **kwargs)
+
+    def predict_step(self, batch, batch_idx):
+        C, _, _, _ = batch
+        beta_hat, mu_hat = self(C)
+        diag_mask = torch.ones_like(beta_hat)
+        diag_mask -= torch.eye(beta_hat.shape[-1]).unsqueeze(0).expand(beta_hat.shape[0], -1, -1)
+        beta_hat = beta_hat * diag_mask
+        return beta_hat, mu_hat
+
     def dataloader(self, C, X, **kwargs):
         return super().dataloader(C, X, X, **kwargs)

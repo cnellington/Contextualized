@@ -36,3 +36,17 @@ class CorrelationTrainer(RegressionTrainer):
         betas, _ = super().predict_params(model, dataloader)
         rho_squared = betas * np.transpose(betas, (0, 2, 1))
         return rho_squared
+
+
+class MarkovTrainer(RegressionTrainer):
+    """
+    Trains the contextualized.regression markov graph lightning_modules
+    """
+    def predict_precision(self, model, dataloader):
+        """
+        Returns context-specific precision matrix under a Gaussian graphical model
+        Assumes all diagonal precisions are equal and constant over context.
+        - omegas (numpy.ndarray): (n, x_dim, x_dim)
+        """
+        betas, _ = super().predict_params(model, dataloader)
+        return -betas
