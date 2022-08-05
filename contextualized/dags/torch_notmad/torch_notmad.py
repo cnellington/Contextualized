@@ -7,94 +7,11 @@ from contextualized.functions import identity_link
 torch.set_default_tensor_type(torch.FloatTensor)
 
 #local imports
-from graph_utils import project_to_dag_torch
-from torch_utils import DAG_loss, NOTEARS_loss
+from contextualized.dags.torch_notmad.graph_utils import project_to_dag_torch
+from contextualized.dags.torch_notmad.torch_utils import DAG_loss, NOTEARS_loss
+from contextualized.modules import NGAM
+from contextualized.modules import Explainer
 
-class NGAM(nn.Module):
-    """
-    Neural Generalized Additive Model for NOTMAD
-    """
-    def __init__(self, input_dim, output_dim, width, n_hidden_layers, activation=nn.SiLU, link_fn=identity_link):
-        """ Initialize the NGAM encoder.
-
-        Args:
-            input_dim (int, 1): Input shape of Encoder
-            output_dim (int, ): Output shape of Encoder (weights for Explainer)
-            width (int): Size of hidden layers
-            n_hidden_layers (int): # of hidden layers
-            activation (nn.Module: nn.SiLU): Activation function to use.
-            link_fn (lambda: identity_link): Link function to use.
-        """
-        
-        super(NGAM, self).__init__()
-        self.input_dim = input_dim
-        self.output_dim = output_dim
-        
-        nam_input_layer = nn.Linear(1, width)
-        init_hidden_layer = nn.Linear(width, width)
-        nam_output_layer = nn.Linear(width, output_dim)
-        
-        with torch.no_grad(): #use uniform randomization
-            init_hidden_layer.weight = self._get_new_weights(init_hidden_layer)
-            nam_input_layer.weight = self._get_new_weights(nam_input_layer)
-            nam_output_layer.weight = self._get_new_weights(nam_output_layer)
-        
-        hidden_layers = lambda: [layer for layer in (init_hidden_layer, activation()) for _ in range(n_hidden_layers)]
-        nam_layers = lambda: [nam_input_layer, activation()] + hidden_layers() + [nam_output_layer]
-        
-        self.nams =  nn.ModuleList([nn.Sequential(*nam_layers()) for _ in range(self.input_dim)])
-        self.link_fn = link_fn
-
-    def forward(self, x):
-        batch_size = x.shape[0]
-        ret = torch.zeros((batch_size, self.output_dim))
-        for i, nam in enumerate(self.nams):
-            ret += nam(x[:, i].unsqueeze(-1)) #batch at contextual feature i
-        
-        return self.link_fn(ret)
-    
-    def _get_new_weights(self, layer_):
-        with torch.no_grad():
-            return nn.parameter.Parameter(
-                    torch.tensor(np.random.uniform(-0.01, 0.01, size=layer_.weight.shape)).float()
-                )
-
-class Explainer(nn.Module):
-    """
-    Explainer module for 2D archetypes
-    """
-    def __init__(self, archetypes_shape, init_mat=None):
-        """ Initialize the Explainer.
-
-        Args:
-            archetypes_shape (int, int): Shape of archetypes (n_archetypes, # features)
-            init_mat (np.array): 3D Custom initial weights for each archetype. Defaults to None.
-        """
-        super(Explainer, self).__init__()
-        self.k, self.d = archetypes_shape
-
-        if init_mat is not None:
-            self.init_mat = torch.tensor(init_mat)
-        else:
-            self.init_mat = torch.tensor(np.random.uniform(-0.01, 0.01, size=(self.k, self.d, self.d))).float()
-        
-        self.archs = nn.parameter.Parameter(self.init_mat, requires_grad=True)
-        self.mask = torch.ones(self.d).float() - torch.eye(self.d).float()
-    
-    def forward(self,batch_weights):
-        batch_size = batch_weights.shape[0]
-        archetypes = self._archetypes()
-        
-        batch_archetypes = torch.tensor(np.zeros((batch_size, self.d, self.d)))
-        for i,batch_w in enumerate(batch_weights):
-            batch_archetypes[i] = torch.tensordot(batch_w.float(), archetypes.float(), dims=1)
-        
-        return batch_archetypes
-                
-    
-    def _archetypes(self):
-        return torch.multiply(self.archs, self.mask)
-    
 
 class NOTMAD_model(pl.LightningModule):
     """
@@ -149,10 +66,10 @@ class NOTMAD_model(pl.LightningModule):
         self.archetype_loss_params = archetype_loss_params
         self.alpha, self.rho, self.use_dynamic_alpha_rho = self._parse_alpha_rho(sample_specific_loss_params)
 
-        #layer shapes 
+        #model layer shapes 
         encoder_input_shape = (self.context_shape[1], 1)
         encoder_output_shape = (self.n_archetypes, )
-        arch_shape = (self.n_archetypes, self.feature_shape[-1])
+        explainer_output_shape  = (self.feature_shape[1], self.feature_shape[1])
         
         #layer params
         self.init_mat = init_mat
@@ -165,7 +82,7 @@ class NOTMAD_model(pl.LightningModule):
         self.encoder = NGAM(encoder_input_shape[0], encoder_output_shape[0],
                                 layers=encoder_kwargs['layers'], 
                                 width=encoder_kwargs['width'])
-        self.explainer = Explainer(arch_shape, init_mat=self.init_mat) 
+        self.explainer = Explainer(self.n_archetypes, explainer_output_shape) 
         
         #loss
         self.my_loss = lambda x,y: self._build_arch_loss(archetype_loss_params) \
@@ -175,7 +92,7 @@ class NOTMAD_model(pl.LightningModule):
 
     def forward(self,c):
         c = c.float()
-        c = self.encoder(c)
+        c = self.encoder(c).float()
         out = self.explainer(c)
         return out.float()
 
@@ -240,13 +157,15 @@ class NOTMAD_model(pl.LightningModule):
         return alpha, rho, dynamic
 
     def _build_arch_loss(self, params):
-        archs = [self.explainer.archs[i] for i in range(self.explainer.k)]
+        
+        archs = self.explainer.get_archetypes()
+
         arch_loss = torch.sum(torch.tensor([
                 params['l1']*torch.linalg.norm(archs[i], ord=1) + \
                 DAG_loss(archs[i], 
                         alpha=params['alpha'],
                         rho=params['rho'], 
                     )
-                for i in range(self.explainer.k)
+                for i in range(self.explainer.in_dims[0])
             ]))
         return arch_loss
