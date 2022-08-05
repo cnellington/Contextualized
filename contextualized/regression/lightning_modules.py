@@ -381,13 +381,12 @@ class ContextualizedMarkovGraph(ContextualizedRegression):
     """
     def __init__(self, context_dim, x_dim, **kwargs):
         super().__init__(context_dim, x_dim, x_dim, **kwargs)
+        self.diag_mask = torch.ones(x_dim, x_dim) - torch.eye(x_dim)
 
     def predict_step(self, batch, batch_idx):
         C, _, _, _ = batch
         beta_hat, mu_hat = self(C)
-        diag_mask = torch.ones_like(beta_hat)
-        diag_mask -= torch.eye(beta_hat.shape[-1]).unsqueeze(0).expand(beta_hat.shape[0], -1, -1)
-        beta_hat = beta_hat * diag_mask
+        beta_hat = beta_hat * self.diag_mask.expand(beta_hat.shape[0], -1, -1)
         return beta_hat, mu_hat
 
     def dataloader(self, C, X, **kwargs):
