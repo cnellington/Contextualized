@@ -381,7 +381,7 @@ class ContextualizedMarkovGraph(ContextualizedRegression):
     """
     def __init__(self, context_dim, x_dim, **kwargs):
         super().__init__(context_dim, x_dim, x_dim, **kwargs)
-        self.diag_mask = torch.ones(x_dim, x_dim) - torch.eye(x_dim)
+        self.register_buffer("diag_mask", torch.ones(x_dim, x_dim) - torch.eye(x_dim))
 
     def predict_step(self, batch, batch_idx):
         C, _, _, _ = batch
