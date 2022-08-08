@@ -1,4 +1,3 @@
-# define Encoder
 import torch
 from torch import nn
 import pytorch_lightning as pl
@@ -7,7 +6,6 @@ from contextualized.functions import identity_link
 
 torch.set_default_tensor_type(torch.FloatTensor)
 
-# local imports
 from contextualized.dags.torch_notmad.graph_utils import project_to_dag_torch
 from contextualized.dags.torch_notmad.torch_utils import DAG_loss, NOTEARS_loss
 from contextualized.modules import NGAM
@@ -23,6 +21,7 @@ class NOTMAD_model(pl.LightningModule):
         self,
         datamodule,
         n_archetypes=4,
+        use_dynamic_alpha_rho=True,
         sample_specific_loss_params={"l1": 0.0, "alpha": 1e-1, "rho": 1e-2},
         archetype_loss_params={"l1": 0.0, "alpha": 1e-1, "rho": 1e-2},
         learning_rate=1e-3,
@@ -67,7 +66,8 @@ class NOTMAD_model(pl.LightningModule):
         # dag/loss params
         self.project_distance = 0.1
         self.archetype_loss_params = archetype_loss_params
-        self.alpha, self.rho, self.use_dynamic_alpha_rho = self._parse_alpha_rho(
+        self.use_dynamic_alpha_rho = use_dynamic_alpha_rho
+        self.alpha, self.rho = self._parse_alpha_rho(
             sample_specific_loss_params
         )
 
@@ -83,6 +83,10 @@ class NOTMAD_model(pl.LightningModule):
         self.learning_rate = learning_rate
         self.opt_step = opt_step
 
+        #dynamic alpha rho params
+        self.h_old = 0.0
+        self.tol = 0.25
+
         # layers
         self.encoder = NGAM(
             encoder_input_shape[0],
@@ -90,7 +94,9 @@ class NOTMAD_model(pl.LightningModule):
             layers=encoder_kwargs["layers"],
             width=encoder_kwargs["width"],
         )
+        
         self.explainer = Explainer(self.n_archetypes, explainer_output_shape)
+        self.explainer.set_archetypes(self._mask(self.explainer.get_archetypes())) #intialized archetypes with 0 diagonal
 
         # loss
         self.my_loss = lambda x, y: self._build_arch_loss(
@@ -158,6 +164,17 @@ class NOTMAD_model(pl.LightningModule):
 
         return w_preds
 
+    #dynamic alpha rho
+    def training_epoch_end(self, epoch, logs=None):
+        if self.use_dynamic_alpha_rho:
+            preds = self.predict_w(self.datamodule.C_train)
+            my_dag_loss = torch.mean(DAG_loss(preds, self.alpha, self.rho))
+
+            if my_dag_loss > self.tol * self.h_old:
+                self.alpha = self.alpha + self.rho * my_dag_loss.item()
+                self.rho = self.rho * 1.1
+            self.h_old = my_dag_loss
+
     # helpers
     def _mask(self, W):
         d = W.shape[1]
@@ -167,8 +184,7 @@ class NOTMAD_model(pl.LightningModule):
     def _parse_alpha_rho(self, params):
         alpha = params["alpha"]
         rho = params["rho"]
-        dynamic = False
-        return alpha, rho, dynamic
+        return alpha, rho
 
     def _build_arch_loss(self, params):
 
