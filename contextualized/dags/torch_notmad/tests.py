@@ -12,6 +12,8 @@ from contextualized.regression import ENCODERS, LINK_FUNCTIONS
 from contextualized.dags.torch_notmad.torch_notmad import NOTMAD_model
 from contextualized.dags.torch_notmad.datamodules import CX_Dataset, CX_DataModule, CXW_Dataset, CXW_DataModule
 from contextualized.dags.torch_notmad.callbacks import DynamicAlphaRho
+from pytorch_lightning import Trainer
+
 
 class TestNOTMAD(unittest.TestCase):
     def __init__(self, *args, **kwargs):
