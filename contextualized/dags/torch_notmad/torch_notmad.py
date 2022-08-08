@@ -95,8 +95,7 @@ class NOTMAD_model(pl.LightningModule):
             width=encoder_kwargs["width"],
         )
 
-        self.mask = torch.ones(self.context_shape[1]).float() - torch.eye(self.context_shape[1]).float()
-
+        self.register_buffer("diag_mask", torch.ones(self.feature_shape[1], self.feature_shape[1]) - torch.eye(self.feature_shape[1]))     
         self.explainer = Explainer(self.n_archetypes, explainer_output_shape)
         self.explainer.set_archetypes(self._mask(self.explainer.get_archetypes())) #intialized archetypes with 0 diagonal
 
@@ -179,7 +178,7 @@ class NOTMAD_model(pl.LightningModule):
 
     # helpers
     def _mask(self, W):
-        return torch.multiply(W, self.mask)
+        return torch.multiply(W, self.diag_mask)
 
     def _parse_alpha_rho(self, params):
         alpha = params["alpha"]
