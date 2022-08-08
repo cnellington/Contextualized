@@ -10,7 +10,6 @@ from contextualized.regression.trainers import *
 from contextualized.regression import ENCODERS, LINK_FUNCTIONS
 
 from contextualized.dags.torch_notmad.torch_notmad import NOTMAD_model
-from contextualized.dags.torch_notmad.trainers import *
 from contextualized.dags.torch_notmad.datamodules import CX_Dataset, CX_DataModule, CXW_Dataset, CXW_DataModule
 from contextualized.dags.torch_notmad.callbacks import DynamicAlphaRho
 
