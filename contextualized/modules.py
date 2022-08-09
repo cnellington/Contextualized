@@ -4,6 +4,7 @@ import torch.nn as nn
 from contextualized.functions import identity_link, identity
 
 
+
 class SoftSelect(nn.Module):
     """
     Parameter sharing for multiple context encoders:
