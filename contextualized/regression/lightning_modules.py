@@ -386,6 +386,7 @@ class ContextualizedMarkovGraph(ContextualizedRegression):
     def predict_step(self, batch, batch_idx):
         C, _, _, _ = batch
         beta_hat, mu_hat = self(C)
+        beta_hat = beta_hat + torch.transpose(beta_hat, 1, 2)  # hotfix to enforce symmetry
         beta_hat = beta_hat * self.diag_mask.expand(beta_hat.shape[0], -1, -1)
         return beta_hat, mu_hat
 

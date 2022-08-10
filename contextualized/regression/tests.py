@@ -178,7 +178,9 @@ class TestRegression(unittest.TestCase):
 
     def test_markov_subtype(self):
         # Markov Graph
-        model = ContextualizedMarkovGraph(self.c_dim, self.x_dim)
+        parambase = DummyParamPredictor((self.x_dim, self.x_dim), (self.x_dim, 1))
+        ybase = DummyYPredictor((self.x_dim, 1))
+        model = ContextualizedMarkovGraph(self.c_dim, self.x_dim, base_param_predictor=parambase, base_y_predictor=ybase)
         self._quicktest(model, markov=True)
 
 
