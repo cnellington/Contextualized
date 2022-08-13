@@ -145,7 +145,7 @@ class DataIterable(IterableDataset):
         return iter(self.dataset)
 
 
-def distributed_worker_init_fn(worker_id):
+def distributed_worker_init_fn(worker_id): # called once per worker
     worker_info = torch.utils.data.get_worker_info()
     dataset = worker_info.dataset
     split_size = len(dataset.dataset.C) // worker_info.num_workers  # divide equally among workers
