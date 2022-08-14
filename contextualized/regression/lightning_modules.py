@@ -105,7 +105,11 @@ class ContextualizedRegressionBase(pl.LightningModule):
     def _dataloader(self, C, X, Y, dataset_constructor, **kwargs):
         kwargs['num_workers'] = kwargs.get('num_workers', 0)
         kwargs['batch_size'] = kwargs.get('batch_size', 32)
-        return DataLoader(dataset=DataIterable(dataset_constructor(C, X, Y)), worker_init_fn=distributed_worker_init_fn, **kwargs)
+        if kwargs['num_workers'] == 0:
+            worker_init_fn = None
+        else:
+            worker_init_fn = distributed_worker_init_fn
+        return DataLoader(dataset=DataIterable(dataset_constructor(C, X, Y)), worker_init_fn=worker_init_fn, **kwargs)
 
 
 class NaiveContextualizedRegression(ContextualizedRegressionBase):

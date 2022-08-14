@@ -83,8 +83,8 @@ class TestRegression(unittest.TestCase):
         err_trained = ((y_true - y_preds)**2).mean()
         assert err_trained < err_init, "Model failed to converge"
 
-    def test_naive_workers(self):
-        # Naive Multivariate with num_workers = 1, 2, and 4
+    def test_workers(self):
+        # distributed_worker_init_fn with num_workers = 1, 2, and 4
         model = NaiveContextualizedRegression(self.c_dim, self.x_dim, self.y_dim,
                                               encoder_kwargs={'width': 25, 'layers': 2,
                                                               'link_fn': LINK_FUNCTIONS['identity']},
@@ -101,123 +101,11 @@ class TestRegression(unittest.TestCase):
                                               encoder_kwargs={'width': 25, 'layers': 2,
                                                               'link_fn': LINK_FUNCTIONS['identity']},
                                               link_fn=LINK_FUNCTIONS['identity'])
-        self._quicktest(model, num_workers=4)
-
-        model = NaiveContextualizedRegression(self.c_dim, self.x_dim, self.y_dim,
-                                              encoder_type='ngam',
-                                              encoder_kwargs={'width': 25, 'layers': 2,
-                                                              'link_fn': LINK_FUNCTIONS['identity']},
-                                              link_fn=LINK_FUNCTIONS['identity'])
-        self._quicktest(model, num_workers=1)
-
-        model = NaiveContextualizedRegression(self.c_dim, self.x_dim, self.y_dim,
-                                              encoder_type='ngam',
-                                              encoder_kwargs={'width': 25, 'layers': 2,
-                                                              'link_fn': LINK_FUNCTIONS['identity']},
-                                              link_fn=LINK_FUNCTIONS['identity'])
-        self._quicktest(model, num_workers=2)
-
-        model = NaiveContextualizedRegression(self.c_dim, self.x_dim, self.y_dim,
-                                              encoder_type='ngam',
-                                              encoder_kwargs={'width': 25, 'layers': 2,
-                                                              'link_fn': LINK_FUNCTIONS['identity']},
-                                              link_fn=LINK_FUNCTIONS['identity'])
-        self._quicktest(model, num_workers=4)
-
-        model = NaiveContextualizedRegression(self.c_dim, self.x_dim, self.y_dim,
-                                              encoder_kwargs={'width': 25, 'layers': 2,
-                                                              'link_fn': LINK_FUNCTIONS['softmax']},
-                                              link_fn=LINK_FUNCTIONS['identity'])
-        self._quicktest(model, num_workers=1)
-
-        model = NaiveContextualizedRegression(self.c_dim, self.x_dim, self.y_dim,
-                                              encoder_kwargs={'width': 25, 'layers': 2,
-                                                              'link_fn': LINK_FUNCTIONS['softmax']},
-                                              link_fn=LINK_FUNCTIONS['identity'])
-        self._quicktest(model, num_workers=2)
-
-        model = NaiveContextualizedRegression(self.c_dim, self.x_dim, self.y_dim,
-                                              encoder_kwargs={'width': 25, 'layers': 2,
-                                                              'link_fn': LINK_FUNCTIONS['softmax']},
-                                              link_fn=LINK_FUNCTIONS['identity'])
-        self._quicktest(model, num_workers=4)
-
-        model = NaiveContextualizedRegression(self.c_dim, self.x_dim, self.y_dim,
-                                              encoder_kwargs={'width': 25, 'layers': 2,
-                                                              'link_fn': LINK_FUNCTIONS['identity']},
-                                              link_fn=LINK_FUNCTIONS['logistic'])
-        self._quicktest(model, num_workers=1)
-
-        model = NaiveContextualizedRegression(self.c_dim, self.x_dim, self.y_dim,
-                                              encoder_kwargs={'width': 25, 'layers': 2,
-                                                              'link_fn': LINK_FUNCTIONS['identity']},
-                                              link_fn=LINK_FUNCTIONS['logistic'])
-        self._quicktest(model, num_workers=2)
-
-        model = NaiveContextualizedRegression(self.c_dim, self.x_dim, self.y_dim,
-                                              encoder_kwargs={'width': 25, 'layers': 2,
-                                                              'link_fn': LINK_FUNCTIONS['identity']},
-                                              link_fn=LINK_FUNCTIONS['logistic'])
-        self._quicktest(model, num_workers=4)
-
-        model = NaiveContextualizedRegression(self.c_dim, self.x_dim, self.y_dim,
-                                              encoder_kwargs={'width': 25, 'layers': 2,
-                                                              'link_fn': LINK_FUNCTIONS['softmax']},
-                                              link_fn=LINK_FUNCTIONS['logistic'])
-        self._quicktest(model, num_workers=1)
-
-        model = NaiveContextualizedRegression(self.c_dim, self.x_dim, self.y_dim,
-                                              encoder_kwargs={'width': 25, 'layers': 2,
-                                                              'link_fn': LINK_FUNCTIONS['softmax']},
-                                              link_fn=LINK_FUNCTIONS['logistic'])
-        self._quicktest(model, num_workers=2)
-
-        model = NaiveContextualizedRegression(self.c_dim, self.x_dim, self.y_dim,
-                                              encoder_kwargs={'width': 25, 'layers': 2,
-                                                              'link_fn': LINK_FUNCTIONS['softmax']},
-                                              link_fn=LINK_FUNCTIONS['logistic'])
-        self._quicktest(model, num_workers=4)
-
-        parambase = DummyParamPredictor((self.y_dim, self.x_dim), (self.y_dim, 1))
-        model = NaiveContextualizedRegression(self.c_dim, self.x_dim, self.y_dim,
-                                              encoder_kwargs={'width': 25, 'layers': 2,
-                                                              'link_fn': LINK_FUNCTIONS['softmax']},
-                                              link_fn=LINK_FUNCTIONS['logistic'], base_param_predictor=parambase)
-        self._quicktest(model, num_workers=1)
-
-        model = NaiveContextualizedRegression(self.c_dim, self.x_dim, self.y_dim,
-                                              encoder_kwargs={'width': 25, 'layers': 2,
-                                                              'link_fn': LINK_FUNCTIONS['softmax']},
-                                              link_fn=LINK_FUNCTIONS['logistic'], base_param_predictor=parambase)
-        self._quicktest(model, num_workers=2)
-
-        model = NaiveContextualizedRegression(self.c_dim, self.x_dim, self.y_dim,
-                                              encoder_kwargs={'width': 25, 'layers': 2,
-                                                              'link_fn': LINK_FUNCTIONS['softmax']},
-                                              link_fn=LINK_FUNCTIONS['logistic'], base_param_predictor=parambase)
-        self._quicktest(model, num_workers=4)
-
-        ybase = DummyYPredictor((self.y_dim, 1))
-        model = NaiveContextualizedRegression(self.c_dim, self.x_dim, self.y_dim,
-                                              encoder_kwargs={'width': 25, 'layers': 2,
-                                                              'link_fn': LINK_FUNCTIONS['softmax']},
-                                              link_fn=LINK_FUNCTIONS['logistic'], base_y_predictor=ybase)
-        self._quicktest(model, num_workers=1)
-
-        model = NaiveContextualizedRegression(self.c_dim, self.x_dim, self.y_dim,
-                                              encoder_kwargs={'width': 25, 'layers': 2,
-                                                              'link_fn': LINK_FUNCTIONS['softmax']},
-                                              link_fn=LINK_FUNCTIONS['logistic'], base_y_predictor=ybase)
-        self._quicktest(model, num_workers=2)
-
-        model = NaiveContextualizedRegression(self.c_dim, self.x_dim, self.y_dim,
-                                              encoder_kwargs={'width': 25, 'layers': 2,
-                                                              'link_fn': LINK_FUNCTIONS['softmax']},
-                                              link_fn=LINK_FUNCTIONS['logistic'], base_y_predictor=ybase)
         self._quicktest(model, num_workers=4)
 
     def test_naive(self):
         # Naive Multivariate
+        print('TESTING NAIVE')
         model = NaiveContextualizedRegression(self.c_dim, self.x_dim, self.y_dim,
             encoder_kwargs={'width': 25, 'layers': 2, 'link_fn': LINK_FUNCTIONS['identity']},
             link_fn=LINK_FUNCTIONS['identity'])
