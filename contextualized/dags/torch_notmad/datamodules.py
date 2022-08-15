@@ -33,7 +33,7 @@ class CX_DataModule(pl.LightningDataModule):
     Torch DataModule where context and features are known.
     """
 
-    def __init__(self, c, x, n=None, pre_split=False):
+    def __init__(self, c, x, batch_size=1, n=None, pre_split=False):
         """Initialize the CX_DataModule.
 
         Args:
@@ -49,6 +49,7 @@ class CX_DataModule(pl.LightningDataModule):
         self.C = c
         self.X = x
         self.n = n
+        self.batch_size = batch_size
 
         # partition data
         train_idx, test_idx, val_idx = self._create_idx(self.n)
@@ -61,16 +62,16 @@ class CX_DataModule(pl.LightningDataModule):
         self.C_val, self.X_val = self.val_dataset.unpack()
 
     def train_dataloader(self):
-        return DataLoader(self.train_dataset, batch_size=1, shuffle=True)
+        return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True)
 
     def test_dataloader(self):
-        return DataLoader(self.test_dataset, batch_size=1, shuffle=False)
+        return DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False)
 
     def predict_dataloader(self):
-        return DataLoader(self.test_dataset, batch_size=1, shuffle=False)
+        return DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False)
 
     def val_dataloader(self):
-        return DataLoader(self.val_dataset, batch_size=1, shuffle=False)
+        return DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False)
 
     def _create_idx(self, n, pct_test=0.2, pct_val=0.2):
         # create idx for test, train, and val
@@ -109,7 +110,7 @@ class CXW_DataModule(pl.LightningDataModule):
     Torch DataModule where context, features, and networks are known.
     """
 
-    def __init__(self, c, x, w, n=None):
+    def __init__(self, c, x, w, batch_size=1, n=None):
         """Initialize the CXW_DataModule.
 
         Args:
@@ -126,6 +127,7 @@ class CXW_DataModule(pl.LightningDataModule):
         self.C = c
         self.X = x
         self.W = w
+        self.batch_size = batch_size
 
         # partition data
         train_idx, test_idx, val_idx = self._create_idx(self.n)
@@ -138,16 +140,16 @@ class CXW_DataModule(pl.LightningDataModule):
         self.C_val, self.X_val, self.W_val = self.val_dataset.unpack()
 
     def train_dataloader(self):
-        return DataLoader(self.train_dataset, batch_size=1, shuffle=True)
+        return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True)
 
     def test_dataloader(self):
-        return DataLoader(self.test_dataset, batch_size=1, shuffle=False)
+        return DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False)
 
     def predict_dataloader(self):
-        return DataLoader(self.test_dataset, batch_size=1, shuffle=False)
+        return DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False)
 
     def val_dataloader(self):
-        return DataLoader(self.val_dataset, batch_size=1, shuffle=False)
+        return DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False)
 
     def _create_idx(self, n, pct_test=0.2, pct_val=0.2):
         # create idx for test, train, and val
