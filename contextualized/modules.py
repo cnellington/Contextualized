@@ -4,6 +4,7 @@ import torch.nn as nn
 from contextualized.functions import identity_link, identity
 
 
+
 class SoftSelect(nn.Module):
     """
     Parameter sharing for multiple context encoders:
@@ -92,9 +93,8 @@ class NGAM(nn.Module):
         self.link_fn = link_fn
 
     def forward(self, x):
-        batch_size = x.shape[0]
-        ret = torch.zeros((batch_size, self.output_dim))
-        for i, nam in enumerate(self.nams):
+        ret = self.nams[0](x[:, 0].unsqueeze(-1))
+        for i, nam in enumerate(self.nams[1:]):
             ret += nam(x[:, i].unsqueeze(-1))
         return self.link_fn(ret)
 
