@@ -8,8 +8,18 @@ torch.set_default_tensor_type(torch.FloatTensor)
 
 from contextualized.dags.torch_notmad.graph_utils import project_to_dag_torch
 from contextualized.dags.torch_notmad.torch_utils import DAG_loss, NOTEARS_loss
-from contextualized.modules import NGAM
+from contextualized.modules import NGAM, MLP
 from contextualized.modules import Explainer
+
+
+dag_pred = lambda X, W: torch.matmul(X.unsqueeze(1), W).squeeze(1)
+mse_loss = lambda y_true, y_pred: ((y_true - y_pred)**2).mean()
+l1_loss = lambda w, l1: l1 * torch.norm(w, p=1)
+def dag_loss(w, alpha, rho):
+    d = w.shape[-1]
+    m = torch.linalg.matrix_exp(w * w)
+    h = torch.trace(m) - d
+    return alpha * h + 0.5 * rho * h * h
 
 
 class NOTMAD_model(pl.LightningModule):
@@ -26,6 +36,7 @@ class NOTMAD_model(pl.LightningModule):
         archetype_loss_params={"l1": 0.0, "alpha": 1e-1, "rho": 1e-2},
         learning_rate=1e-3,
         opt_step=50,
+        encoder_type='mlp',
         encoder_kwargs={"width": 32, "layers": 2, "link_fn": identity_link},
         init_mat=None,
     ):
@@ -88,12 +99,20 @@ class NOTMAD_model(pl.LightningModule):
         self.tol = 0.25
 
         # layers
-        self.encoder = NGAM(
-            encoder_input_shape[0],
-            encoder_output_shape[0],
-            layers=encoder_kwargs["layers"],
-            width=encoder_kwargs["width"],
-        )
+        if encoder_type == 'ngam':
+            self.encoder = NGAM(
+                encoder_input_shape[0],
+                encoder_output_shape[0],
+                layers=encoder_kwargs["layers"],
+                width=encoder_kwargs["width"],
+            )
+        elif encoder_type == 'mlp':
+            self.encoder = MLP(
+                encoder_input_shape[0],
+                encoder_output_shape[0],
+                layers=encoder_kwargs["layers"],
+                width=encoder_kwargs["width"],
+            )
 
         self.register_buffer("diag_mask", torch.ones(self.feature_shape[1], self.feature_shape[1]) - torch.eye(self.feature_shape[1]))     
         self.explainer = Explainer(self.n_archetypes, explainer_output_shape)
@@ -141,9 +160,13 @@ class NOTMAD_model(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         C, x_true = batch
-        w_pred = self.forward(C).float()
+        w_pred = self.forward(C).float().detach()
         # print(w_pred[0])
-        loss = self.my_loss(x_true.float(), w_pred.float())
+        x_pred = dag_pred(x_true.float(), w_pred)
+        mse = mse_loss(x_true, x_pred)
+        dag = torch.mean(torch.Tensor([dag_loss(w, 1e12, 1e12) for w in w_pred]))
+        loss = mse + dag
+#         loss = self.my_loss(x_true.float(), w_pred.float())
         self.log("val_loss", loss)
         return loss
 
@@ -153,7 +176,9 @@ class NOTMAD_model(pl.LightningModule):
         return w_pred
 
     def predict_w(self, C, confirm_project_to_dag=False):
-        w_preds = self.forward(torch.tensor(C))
+        # todo: remove this, hotfix to make dynamic alpha/rho work on gpu
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        w_preds = self.forward(torch.tensor(C).to(device))
 
         if confirm_project_to_dag:
             try:
@@ -171,7 +196,7 @@ class NOTMAD_model(pl.LightningModule):
             preds = self.predict_w(self.datamodule.C_train)
             my_dag_loss = torch.mean(DAG_loss(preds, self.alpha, self.rho))
 
-            if my_dag_loss > self.tol * self.h_old:
+            if my_dag_loss > self.tol * self.h_old and self.alpha < 1e12 and self.rho < 1e12:
                 self.alpha = self.alpha + self.rho * my_dag_loss.item()
                 self.rho = self.rho * 1.1
             self.h_old = my_dag_loss

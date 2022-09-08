@@ -76,6 +76,7 @@ class TestNOTMAD(unittest.TestCase):
 
         trainer.tune(model)
         trainer.fit(model, datamodule)
+        trainer.validate(model, datamodule)
         trainer.test(model, datamodule)
         #data
         C_train = trainer.model.datamodule.C_train
