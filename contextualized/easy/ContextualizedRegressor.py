@@ -2,7 +2,8 @@ from contextualized.regression import (
     NaiveContextualizedRegression,
     ContextualizedRegression,
 )
-from contextualized.regression import REGULARIZERS, LINK_FUNCTIONS, LOSSES
+from contextualized.regression import REGULARIZERS, LOSSES
+from contextualized.functions import LINK_FUNCTIONS
 
 from contextualized.easy.wrappers import SKLearnInterface
 

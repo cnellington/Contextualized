@@ -1,6 +1,6 @@
 import numpy as np
 
-from contextualized.regression import LINK_FUNCTIONS
+from contextualized.functions import LINK_FUNCTIONS
 from contextualized.easy import ContextualizedRegressor
 
 
