@@ -3,11 +3,11 @@ import torch
 import unittest
 import numpy as np
 
-from contextualized.modules import NGAM, MLP, SoftSelect, Explainer
+from contextualized.modules import ENCODERS, SoftSelect, Explainer
+from contextualized.functions import LINK_FUNCTIONS
 from contextualized.dags.notmad_helpers.simulation import simulate_linear_sem
 from contextualized.regression.lightning_modules import *
 from contextualized.regression.trainers import *
-from contextualized.regression import ENCODERS, LINK_FUNCTIONS
 
 from contextualized.dags.torch_notmad.torch_notmad import NOTMAD_model
 from contextualized.dags.torch_notmad.datamodules import CX_Dataset, CX_DataModule, CXW_Dataset, CXW_DataModule

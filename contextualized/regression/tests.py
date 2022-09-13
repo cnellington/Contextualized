@@ -6,7 +6,7 @@ import torch
 from contextualized.modules import NGAM, MLP, SoftSelect, Explainer
 from contextualized.regression.lightning_modules import *
 from contextualized.regression.trainers import *
-from contextualized.regression import ENCODERS, LINK_FUNCTIONS
+from contextualized.functions import LINK_FUNCTIONS
 
 
 class DummyParamPredictor:

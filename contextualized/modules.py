@@ -4,7 +4,6 @@ import torch.nn as nn
 from contextualized.functions import identity_link, identity
 
 
-
 class SoftSelect(nn.Module):
     """
     Parameter sharing for multiple context encoders:
@@ -97,6 +96,12 @@ class NGAM(nn.Module):
         for i, nam in enumerate(self.nams[1:]):
             ret += nam(x[:, i].unsqueeze(-1))
         return self.link_fn(ret)
+
+
+ENCODERS = {
+    'mlp': MLP,
+    'ngam': NGAM,
+}
 
 
 if __name__ == '__main__': 

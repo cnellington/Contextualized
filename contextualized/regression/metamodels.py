@@ -2,8 +2,8 @@
 import torch
 import torch.nn as nn
 
-from contextualized.modules import Explainer, SoftSelect
-from contextualized.regression import ENCODERS, LINK_FUNCTIONS
+from contextualized.modules import ENCODERS, Explainer, SoftSelect
+from contextualized.functions import LINK_FUNCTIONS
 
 
 class NaiveMetamodel(nn.Module):

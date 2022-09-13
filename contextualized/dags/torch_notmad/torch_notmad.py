@@ -8,8 +8,7 @@ torch.set_default_tensor_type(torch.FloatTensor)
 
 from contextualized.dags.torch_notmad.graph_utils import project_to_dag_torch
 from contextualized.dags.torch_notmad.torch_utils import DAG_loss, NOTEARS_loss
-from contextualized.modules import NGAM, MLP
-from contextualized.modules import Explainer
+from contextualized.modules import ENCODERS, Explainer
 
 
 dag_pred = lambda X, W: torch.matmul(X.unsqueeze(1), W).squeeze(1)
@@ -99,25 +98,15 @@ class NOTMAD_model(pl.LightningModule):
         self.tol = 0.25
 
         # layers
-        if encoder_type == 'ngam':
-            self.encoder = NGAM(
-                encoder_input_shape[0],
-                encoder_output_shape[0],
-                layers=encoder_kwargs["layers"],
-                width=encoder_kwargs["width"],
-            )
-        elif encoder_type == 'mlp':
-            self.encoder = MLP(
-                encoder_input_shape[0],
-                encoder_output_shape[0],
-                layers=encoder_kwargs["layers"],
-                width=encoder_kwargs["width"],
-            )
-
+        self.encoder = ENCODERS[encoder_type](
+            encoder_input_shape[0],
+            encoder_output_shape[0],
+            **encoder_kwargs,
+        )
         self.register_buffer("diag_mask", torch.ones(self.feature_shape[1], self.feature_shape[1]) - torch.eye(self.feature_shape[1]))     
         self.explainer = Explainer(self.n_archetypes, explainer_output_shape)
         self.explainer.set_archetypes(self._mask(self.explainer.get_archetypes())) #intialized archetypes with 0 diagonal
-
+        
         # loss
         self.my_loss = lambda x, y: self._build_arch_loss(
             archetype_loss_params
@@ -148,7 +137,6 @@ class NOTMAD_model(pl.LightningModule):
         w_pred = self.forward(C).float()
         loss = self.my_loss(x_true.float(), self._mask(w_pred)).float()
         self.log("train_loss", loss)
-
         return loss
 
     def test_step(self, batch, batch_idx):
@@ -161,12 +149,12 @@ class NOTMAD_model(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         C, x_true = batch
         w_pred = self.forward(C).float().detach()
-        # print(w_pred[0])
         x_pred = dag_pred(x_true.float(), w_pred)
+        # useful early-stopping validation under dynamic alpha/rho:
+        # ignore archetype loss, use a constant and large alpha and rho for dag loss
         mse = mse_loss(x_true, x_pred)
         dag = torch.mean(torch.Tensor([dag_loss(w, 1e12, 1e12) for w in w_pred]))
         loss = mse + dag
-#         loss = self.my_loss(x_true.float(), w_pred.float())
         self.log("val_loss", loss)
         return loss
 
@@ -177,9 +165,9 @@ class NOTMAD_model(pl.LightningModule):
 
     def predict_w(self, C, confirm_project_to_dag=False):
         # todo: remove this, hotfix to make dynamic alpha/rho work on gpu
+        # An ideal fix should make the datamodule device agnostic, see regression
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         w_preds = self.forward(torch.tensor(C).to(device))
-
         if confirm_project_to_dag:
             try:
                 return np.array(
@@ -187,7 +175,6 @@ class NOTMAD_model(pl.LightningModule):
                 )
             except:
                 print("Error, couldn't project to dag. Returning normal predictions.")
-
         return w_preds
 
     #dynamic alpha rho
@@ -195,7 +182,6 @@ class NOTMAD_model(pl.LightningModule):
         if self.use_dynamic_alpha_rho:
             preds = self.predict_w(self.datamodule.C_train)
             my_dag_loss = torch.mean(DAG_loss(preds, self.alpha, self.rho))
-
             if my_dag_loss > self.tol * self.h_old and self.alpha < 1e12 and self.rho < 1e12:
                 self.alpha = self.alpha + self.rho * my_dag_loss.item()
                 self.rho = self.rho * 1.1
@@ -211,9 +197,7 @@ class NOTMAD_model(pl.LightningModule):
         return alpha, rho
 
     def _build_arch_loss(self, params):
-
         archs = self.explainer.get_archetypes()
-
         arch_loss = torch.sum(
             torch.tensor(
                 [

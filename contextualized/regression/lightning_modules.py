@@ -18,14 +18,17 @@ import torch
 from torch.utils.data import DataLoader
 import pytorch_lightning as pl
 
-from contextualized.regression import LINK_FUNCTIONS, LOSSES, REGULARIZERS
+from contextualized.regression.regularizers import REGULARIZERS
+from contextualized.regression.losses import MSE
+from contextualized.functions import LINK_FUNCTIONS
+
 from contextualized.regression.metamodels import NaiveMetamodel, SubtypeMetamodel, MultitaskMetamodel, TasksplitMetamodel
 from contextualized.regression.datasets import DataIterable, MultivariateDataset, UnivariateDataset, MultitaskMultivariateDataset, MultitaskUnivariateDataset
 
 
 class ContextualizedRegressionBase(pl.LightningModule):
     def __init__(self, *args, learning_rate=1e-3, link_fn=LINK_FUNCTIONS['identity'],
-                 loss_fn=LOSSES['mse'], model_regularizer=REGULARIZERS['none'], 
+                 loss_fn=MSE, model_regularizer=REGULARIZERS['none'], 
                  base_y_predictor=None, base_param_predictor=None, 
                  **kwargs):
         super().__init__()
