@@ -33,3 +33,10 @@ def linear_link_constructor(m=1, b=0):
 
 def softmax_link_constructor(m=1, b=0):
     return make_fn(softmax_link, m=m, b=b)
+
+
+LINK_FUNCTIONS = {
+    'identity': linear_link_constructor(),
+    'logistic': logistic_constructor(),
+    'softmax': softmax_link_constructor()
+}

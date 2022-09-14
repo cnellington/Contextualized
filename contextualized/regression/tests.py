@@ -6,7 +6,7 @@ import torch
 from contextualized.modules import NGAM, MLP, SoftSelect, Explainer
 from contextualized.regression.lightning_modules import *
 from contextualized.regression.trainers import *
-from contextualized.regression import ENCODERS, LINK_FUNCTIONS
+from contextualized.functions import LINK_FUNCTIONS
 
 
 class DummyParamPredictor:
@@ -56,22 +56,24 @@ class TestRegression(unittest.TestCase):
         self.c_dim, self.x_dim, self.y_dim = c_dim, x_dim, y_dim
         self.C, self.X, self.Y = C.numpy(), X.numpy(), Y.numpy()
 
-    def _quicktest(self, model, univariate=False, correlation=False):
+    def _quicktest(self, model, univariate=False, correlation=False, markov=False):
         print(f'\n{type(model)} quicktest')
-        dataloader = None
-        trainer = None
         if correlation:
             dataloader = model.dataloader(self.C, self.X, batch_size=self.batch_size)
             trainer = CorrelationTrainer(max_epochs=self.epochs)
+            y_true = np.tile(self.X[:,:,np.newaxis], (1, 1, self.X.shape[-1]))
+        elif markov:
+            dataloader = model.dataloader(self.C, self.X, batch_size=self.batch_size)
+            trainer = MarkovTrainer(max_epochs=self.epochs)
+            y_true = self.X
         else:
             dataloader = model.dataloader(self.C, self.X, self.Y, batch_size=self.batch_size)
             trainer = RegressionTrainer(max_epochs=self.epochs)
+            if univariate:
+                y_true = np.tile(self.Y[:, :, np.newaxis], (1, 1, self.X.shape[-1]))
+            else:
+                y_true = self.Y
         y_preds = trainer.predict_y(model, dataloader)
-        y_true = self.Y
-        if univariate:
-            y_true = np.tile(y_true[:,:,np.newaxis], (1, 1, self.X.shape[-1]))
-        if correlation:
-            y_true = np.tile(self.X[:,:,np.newaxis], (1, 1, self.X.shape[-1]))
         err_init = ((y_true - y_preds)**2).mean()
         trainer.fit(model, dataloader)
         trainer.validate(model, dataloader)
@@ -79,6 +81,8 @@ class TestRegression(unittest.TestCase):
         beta_preds, mu_preds = trainer.predict_params(model, dataloader)
         if correlation:
             rhos = trainer.predict_correlation(model, dataloader)
+        if markov:
+            omegas = trainer.predict_precision(model, dataloader)
         y_preds = trainer.predict_y(model, dataloader)
         err_trained = ((y_true - y_preds)**2).mean()
         assert err_trained < err_init, "Model failed to converge"
@@ -171,6 +175,13 @@ class TestRegression(unittest.TestCase):
         ybase = DummyYPredictor((1,))
         model = TasksplitContextualizedCorrelation(self.c_dim, self.x_dim, base_param_predictor=parambase, base_y_predictor=ybase)
         self._quicktest(model, correlation=True)
+
+    def test_markov_subtype(self):
+        # Markov Graph
+        parambase = DummyParamPredictor((self.x_dim, self.x_dim), (self.x_dim, 1))
+        ybase = DummyYPredictor((self.x_dim, 1))
+        model = ContextualizedMarkovGraph(self.c_dim, self.x_dim, base_param_predictor=parambase, base_y_predictor=ybase)
+        self._quicktest(model, markov=True)
 
 
 if __name__ == '__main__':
