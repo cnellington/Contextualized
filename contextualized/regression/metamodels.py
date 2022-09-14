@@ -1,4 +1,3 @@
-
 import torch
 import torch.nn as nn
 
@@ -11,8 +10,20 @@ class NaiveMetamodel(nn.Module):
     Probabilistic assumptions as a graphical model (observed) {unobserved}:
     (C) --> {beta, mu} --> (X, Y)
     """
-    def __init__(self, context_dim, x_dim, y_dim, univariate=False, encoder_type='mlp',
-                 encoder_kwargs={'width': 25, 'layers': 1, 'link_fn': LINK_FUNCTIONS['identity']}):
+
+    def __init__(
+        self,
+        context_dim,
+        x_dim,
+        y_dim,
+        univariate=False,
+        encoder_type="mlp",
+        encoder_kwargs={
+            "width": 25,
+            "layers": 1,
+            "link_fn": LINK_FUNCTIONS["identity"],
+        },
+    ):
         """
         context_dim (int): dimension of flattened context
         x_dim (int): dimension of flattened features
@@ -37,8 +48,8 @@ class NaiveMetamodel(nn.Module):
     def forward(self, C):
         W = self.context_encoder(C)
         W = torch.reshape(W, (W.shape[0], self.y_dim, self.x_dim + self.mu_dim))
-        beta = W[:, :, :self.x_dim]
-        mu = W[:, :, self.x_dim:]
+        beta = W[:, :, : self.x_dim]
+        mu = W[:, :, self.x_dim :]
         return beta, mu
 
 
@@ -49,8 +60,21 @@ class SubtypeMetamodel(nn.Module):
 
     Z: latent variable, causal parent of both the context and regression model
     """
-    def __init__(self, context_dim, x_dim, y_dim, univariate=False, num_archetypes=10, encoder_type='mlp',
-                 encoder_kwargs={'width': 25, 'layers': 1, 'link_fn': LINK_FUNCTIONS['identity']}):
+
+    def __init__(
+        self,
+        context_dim,
+        x_dim,
+        y_dim,
+        univariate=False,
+        num_archetypes=10,
+        encoder_type="mlp",
+        encoder_kwargs={
+            "width": 25,
+            "layers": 1,
+            "link_fn": LINK_FUNCTIONS["identity"],
+        },
+    ):
         """
         context_dim (int): dimension of flattened context
         x_dim (int): dimension of flattened features
@@ -76,8 +100,8 @@ class SubtypeMetamodel(nn.Module):
     def forward(self, C):
         Z = self.context_encoder(C)
         W = self.explainer(Z)
-        beta = W[:, :, :self.x_dim]
-        mu = W[:, :, self.x_dim:]
+        beta = W[:, :, : self.x_dim]
+        mu = W[:, :, self.x_dim :]
         return beta, mu
 
 
@@ -89,8 +113,21 @@ class MultitaskMetamodel(nn.Module):
 
     Z: latent variable, causal parent of the context, regression model, and task (T)
     """
-    def __init__(self, context_dim, x_dim, y_dim, univariate=False, num_archetypes=10, encoder_type='mlp',
-                 encoder_kwargs={'width': 25, 'layers': 1, 'link_fn': LINK_FUNCTIONS['identity']}):
+
+    def __init__(
+        self,
+        context_dim,
+        x_dim,
+        y_dim,
+        univariate=False,
+        num_archetypes=10,
+        encoder_type="mlp",
+        encoder_kwargs={
+            "width": 25,
+            "layers": 1,
+            "link_fn": LINK_FUNCTIONS["identity"],
+        },
+    ):
         """
         context_dim (int): dimension of flattened context
         x_dim (int): dimension of flattened features
@@ -111,8 +148,10 @@ class MultitaskMetamodel(nn.Module):
         encoder = ENCODERS[encoder_type]
         beta_dim = 1 if univariate else x_dim
         task_dim = y_dim + x_dim if univariate else y_dim
-        self.context_encoder = encoder(context_dim + task_dim, num_archetypes, **encoder_kwargs)
-        self.explainer = Explainer(num_archetypes, (beta_dim + 1, ))
+        self.context_encoder = encoder(
+            context_dim + task_dim, num_archetypes, **encoder_kwargs
+        )
+        self.explainer = Explainer(num_archetypes, (beta_dim + 1,))
 
     def forward(self, C, T):
         CT = torch.cat((C, T), 1)
@@ -132,13 +171,28 @@ class TasksplitMetamodel(nn.Module):
     Z_c: latent context variable, causal parent of the context and regression model
     Z_t: latent task variable, causal parent of the task and regression model
     """
-    def __init__(self, context_dim, x_dim, y_dim, univariate=False,
-            context_archetypes=10, task_archetypes=10,
-            context_encoder_type='mlp',
-            context_encoder_kwargs={'width': 25, 'layers': 1, 'link_fn': LINK_FUNCTIONS['softmax']},
-            task_encoder_type='mlp',
-            task_encoder_kwargs={'width': 25, 'layers': 1, 'link_fn': LINK_FUNCTIONS['identity']},
-            ):
+
+    def __init__(
+        self,
+        context_dim,
+        x_dim,
+        y_dim,
+        univariate=False,
+        context_archetypes=10,
+        task_archetypes=10,
+        context_encoder_type="mlp",
+        context_encoder_kwargs={
+            "width": 25,
+            "layers": 1,
+            "link_fn": LINK_FUNCTIONS["softmax"],
+        },
+        task_encoder_type="mlp",
+        task_encoder_kwargs={
+            "width": 25,
+            "layers": 1,
+            "link_fn": LINK_FUNCTIONS["identity"],
+        },
+    ):
         """
         context_dim (int): dimension of flattened context
         x_dim (int): dimension of flattened features
@@ -163,9 +217,15 @@ class TasksplitMetamodel(nn.Module):
         task_encoder = ENCODERS[task_encoder_type]
         beta_dim = 1 if univariate else x_dim
         task_dim = y_dim + x_dim if univariate else y_dim
-        self.context_encoder = context_encoder(context_dim, context_archetypes, **context_encoder_kwargs)
-        self.task_encoder = task_encoder(task_dim, task_archetypes, **task_encoder_kwargs)
-        self.explainer = SoftSelect((context_archetypes, task_archetypes), (beta_dim + 1, ))
+        self.context_encoder = context_encoder(
+            context_dim, context_archetypes, **context_encoder_kwargs
+        )
+        self.task_encoder = task_encoder(
+            task_dim, task_archetypes, **task_encoder_kwargs
+        )
+        self.explainer = SoftSelect(
+            (context_archetypes, task_archetypes), (beta_dim + 1,)
+        )
 
     def forward(self, C, T):
         Z_c = self.context_encoder(C)

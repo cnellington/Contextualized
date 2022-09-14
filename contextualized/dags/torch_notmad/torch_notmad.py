@@ -12,8 +12,10 @@ from contextualized.modules import ENCODERS, Explainer
 
 
 dag_pred = lambda X, W: torch.matmul(X.unsqueeze(1), W).squeeze(1)
-mse_loss = lambda y_true, y_pred: ((y_true - y_pred)**2).mean()
+mse_loss = lambda y_true, y_pred: ((y_true - y_pred) ** 2).mean()
 l1_loss = lambda w, l1: l1 * torch.norm(w, p=1)
+
+
 def dag_loss(w, alpha, rho):
     d = w.shape[-1]
     m = torch.linalg.matrix_exp(w * w)
@@ -35,7 +37,7 @@ class NOTMAD_model(pl.LightningModule):
         archetype_loss_params={"l1": 0.0, "alpha": 1e-1, "rho": 1e-2},
         learning_rate=1e-3,
         opt_step=50,
-        encoder_type='mlp',
+        encoder_type="mlp",
         encoder_kwargs={"width": 32, "layers": 2, "link_fn": identity_link},
         init_mat=None,
     ):
@@ -77,9 +79,7 @@ class NOTMAD_model(pl.LightningModule):
         self.project_distance = 0.1
         self.archetype_loss_params = archetype_loss_params
         self.use_dynamic_alpha_rho = use_dynamic_alpha_rho
-        self.alpha, self.rho = self._parse_alpha_rho(
-            sample_specific_loss_params
-        )
+        self.alpha, self.rho = self._parse_alpha_rho(sample_specific_loss_params)
 
         # model layer shapes
         encoder_input_shape = (self.context_shape[1], 1)
@@ -93,7 +93,7 @@ class NOTMAD_model(pl.LightningModule):
         self.learning_rate = learning_rate
         self.opt_step = opt_step
 
-        #dynamic alpha rho params
+        # dynamic alpha rho params
         self.h_old = 0.0
         self.tol = 0.25
 
@@ -103,10 +103,16 @@ class NOTMAD_model(pl.LightningModule):
             encoder_output_shape[0],
             **encoder_kwargs,
         )
-        self.register_buffer("diag_mask", torch.ones(self.feature_shape[1], self.feature_shape[1]) - torch.eye(self.feature_shape[1]))     
+        self.register_buffer(
+            "diag_mask",
+            torch.ones(self.feature_shape[1], self.feature_shape[1])
+            - torch.eye(self.feature_shape[1]),
+        )
         self.explainer = Explainer(self.n_archetypes, explainer_output_shape)
-        self.explainer.set_archetypes(self._mask(self.explainer.get_archetypes())) #intialized archetypes with 0 diagonal
-        
+        self.explainer.set_archetypes(
+            self._mask(self.explainer.get_archetypes())
+        )  # intialized archetypes with 0 diagonal
+
         # loss
         self.my_loss = lambda x, y: self._build_arch_loss(
             archetype_loss_params
@@ -177,12 +183,16 @@ class NOTMAD_model(pl.LightningModule):
                 print("Error, couldn't project to dag. Returning normal predictions.")
         return w_preds
 
-    #dynamic alpha rho
+    # dynamic alpha rho
     def training_epoch_end(self, epoch, logs=None):
         if self.use_dynamic_alpha_rho:
             preds = self.predict_w(self.datamodule.C_train)
             my_dag_loss = torch.mean(DAG_loss(preds, self.alpha, self.rho))
-            if my_dag_loss > self.tol * self.h_old and self.alpha < 1e12 and self.rho < 1e12:
+            if (
+                my_dag_loss > self.tol * self.h_old
+                and self.alpha < 1e12
+                and self.rho < 1e12
+            ):
                 self.alpha = self.alpha + self.rho * my_dag_loss.item()
                 self.rho = self.rho * 1.1
             self.h_old = my_dag_loss

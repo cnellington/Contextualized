@@ -36,7 +36,7 @@ def softmax_link_constructor(m=1, b=0):
 
 
 LINK_FUNCTIONS = {
-    'identity': linear_link_constructor(),
-    'logistic': logistic_constructor(),
-    'softmax': softmax_link_constructor()
+    "identity": linear_link_constructor(),
+    "logistic": logistic_constructor(),
+    "softmax": softmax_link_constructor(),
 }

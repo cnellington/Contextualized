@@ -1,4 +1,10 @@
-from contextualized.regression.datasets import MultivariateDataset, UnivariateDataset, MultitaskMultivariateDataset, MultitaskUnivariateDataset
+from contextualized.regression.datasets import (
+    MultivariateDataset,
+    UnivariateDataset,
+    MultitaskMultivariateDataset,
+    MultitaskUnivariateDataset,
+)
+
 DATASETS = {
     "multivariate": MultivariateDataset,
     "univariate": UnivariateDataset,
@@ -7,17 +13,23 @@ DATASETS = {
 }
 
 from contextualized.regression.losses import MSE
-LOSSES = {
-    'mse': MSE
-}
 
-from contextualized.regression.regularizers import REGULARIZERS 
+LOSSES = {"mse": MSE}
 
-from contextualized.regression.lightning_modules import NaiveContextualizedRegression, ContextualizedRegression, MultitaskContextualizedRegression, TasksplitContextualizedRegression, ContextualizedUnivariateRegression, TasksplitContextualizedUnivariateRegression
-MODELS = ['multivariate', 'univariate']
-METAMODELS = ['simple', 'subtype', 'multitask', 'tasksplit']
+from contextualized.regression.regularizers import REGULARIZERS
+
+from contextualized.regression.lightning_modules import (
+    NaiveContextualizedRegression,
+    ContextualizedRegression,
+    MultitaskContextualizedRegression,
+    TasksplitContextualizedRegression,
+    ContextualizedUnivariateRegression,
+    TasksplitContextualizedUnivariateRegression,
+)
+
+MODELS = ["multivariate", "univariate"]
+METAMODELS = ["simple", "subtype", "multitask", "tasksplit"]
 
 from contextualized.regression.trainers import RegressionTrainer
-TRAINERS = {
-    'regression_trainer': RegressionTrainer
-}
+
+TRAINERS = {"regression_trainer": RegressionTrainer}

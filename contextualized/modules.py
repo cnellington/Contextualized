@@ -9,6 +9,7 @@ class SoftSelect(nn.Module):
     Parameter sharing for multiple context encoders:
     Batched computation for mapping many subtypes onto d-dimensional archetypes
     """
+
     def __init__(self, in_dims, out_shape):
         super(SoftSelect, self).__init__()
         self.in_dims = in_dims
@@ -48,22 +49,34 @@ class SoftSelect(nn.Module):
 
         Requires archetypes.shape == (*in_dims, *out_shape)
         """
-        self.archetypes = nn.parameter.Parameter(self._cycle_dims(archetypes, len(self.out_shape)), requires_grad=True)
+        self.archetypes = nn.parameter.Parameter(
+            self._cycle_dims(archetypes, len(self.out_shape)), requires_grad=True
+        )
 
 
 class Explainer(SoftSelect):
     """
     2D subtype-archetype parameter sharing
     """
+
     def __init__(self, k, out_shape):
-        super().__init__((k, ), out_shape)
+        super().__init__((k,), out_shape)
 
 
 class MLP(nn.Module):
     """
     Multi-layer perceptron
     """
-    def __init__(self, input_dim, output_dim, width, layers, activation=nn.ReLU, link_fn=identity_link):
+
+    def __init__(
+        self,
+        input_dim,
+        output_dim,
+        width,
+        layers,
+        activation=nn.ReLU,
+        link_fn=identity_link,
+    ):
         super(MLP, self).__init__()
         if layers > 0:
             mlp_layers = [nn.Linear(input_dim, width), activation()]
@@ -84,11 +97,32 @@ class NGAM(nn.Module):
     """
     Neural generalized additive model
     """
-    def __init__(self, input_dim, output_dim, width, layers, activation=nn.ReLU, link_fn=identity_link):
+
+    def __init__(
+        self,
+        input_dim,
+        output_dim,
+        width,
+        layers,
+        activation=nn.ReLU,
+        link_fn=identity_link,
+    ):
         super(NGAM, self).__init__()
         self.intput_dim = input_dim
         self.output_dim = output_dim
-        self.nams = nn.ModuleList([MLP(1, output_dim, width, layers, activation=activation, link_fn=identity_link) for _ in range(input_dim)])
+        self.nams = nn.ModuleList(
+            [
+                MLP(
+                    1,
+                    output_dim,
+                    width,
+                    layers,
+                    activation=activation,
+                    link_fn=identity_link,
+                )
+                for _ in range(input_dim)
+            ]
+        )
         self.link_fn = link_fn
 
     def forward(self, x):
@@ -99,12 +133,12 @@ class NGAM(nn.Module):
 
 
 ENCODERS = {
-    'mlp': MLP,
-    'ngam': NGAM,
+    "mlp": MLP,
+    "ngam": NGAM,
 }
 
 
-if __name__ == '__main__': 
+if __name__ == "__main__":
     n = 100
     x_dim = 10
     y_dim = 5
@@ -112,13 +146,13 @@ if __name__ == '__main__':
     width = 50
     layers = 5
     x = torch.rand((n, x_dim))
-    
+
     mlp = MLP(x_dim, y_dim, width, layers)
     mlp(x)
 
     ngam = NGAM(x_dim, y_dim, width, layers)
     ngam(x)
-    
+
     in_dims = (3, 4)
     out_shape = (5, 6)
     z1 = torch.randn(100, 3)
@@ -135,10 +169,10 @@ if __name__ == '__main__':
     softselect.set_archetypes(postcycle_vals)
     assert (softselect.archetypes == precycle_vals).all()
 
-    in_dims = (3, )
+    in_dims = (3,)
     explainer = Explainer(in_dims[0], out_shape)
     explainer(z1)
-    
+
     precycle_vals = explainer.archetypes
     assert precycle_vals.shape == (*out_shape, *in_dims)
     postcycle_vals = explainer.get_archetypes()
@@ -147,4 +181,3 @@ if __name__ == '__main__':
     assert (explainer.archetypes != precycle_vals).any()
     explainer.set_archetypes(postcycle_vals)
     assert (explainer.archetypes == precycle_vals).all()
-

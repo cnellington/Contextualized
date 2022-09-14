@@ -7,6 +7,7 @@ class Dataset:
     """
     Superclass for datastreams (iterators) used to train contextualized.regression models
     """
+
     def __init__(self, C, X, Y, dtype=torch.float):
         self.C = torch.tensor(C, dtype=dtype)
         self.X = torch.tensor(X, dtype=dtype)
@@ -130,6 +131,7 @@ class DataIterable(IterableDataset):
     """
     Dataset wrapper, required by PyTorch
     """
+
     def __init__(self, dataset):
         self.dataset = dataset
 

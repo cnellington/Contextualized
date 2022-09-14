@@ -2,7 +2,7 @@
 Adapted from https://github.com/xunzheng/notears/blob/master/notears/utils.py
 """
 
-#from scipy.special import expit as sigmoid
+# from scipy.special import expit as sigmoid
 import igraph as ig
 import numpy as np
 import random
@@ -81,32 +81,46 @@ def fit_crossval(C, X, crossval_epochs, full_epochs, batch_size,
     return model, best_args, histories
 """
 
+
 def mses_xw(X, W):
     return np.array([mse_xw(X[i], W[i]) for i in range(len(X))])
 
+
 def mse_xw(x_true, w_pred):
     x_prime = np.matmul(x_true, w_pred)
-    return (0.5 / float(np.shape(x_true)[0])) * np.square(np.linalg.norm(x_true - x_prime))
+    return (0.5 / float(np.shape(x_true)[0])) * np.square(
+        np.linalg.norm(x_true - x_prime)
+    )
 
 
 def get_f1s(W_test, W_test_hat, threshs):
     return [
-        np.mean([f1_mat(W_test[i], W_test_hat[i], thresh, thresh) for i in range(len(W_test))])
-            for thresh in threshs
+        np.mean(
+            [
+                f1_mat(W_test[i], W_test_hat[i], thresh, thresh)
+                for i in range(len(W_test))
+            ]
+        )
+        for thresh in threshs
     ]
 
+
 def f1_mat(y_true, y_pred, true_thresh, pred_thresh):
-    return f1_score(np.abs(y_true.flatten()) > true_thresh, np.abs(y_pred.flatten()) > pred_thresh, average='macro')
+    return f1_score(
+        np.abs(y_true.flatten()) > true_thresh,
+        np.abs(y_pred.flatten()) > pred_thresh,
+        average="macro",
+    )
+
 
 def set_random_seed(seed):
     random.seed(seed)
     np.random.seed(seed)
 
 
-
 def fpr(w_true, w_hat, thresh_est=0.2, thresh_true=0.1):
     pos_preds = w_hat > thresh_est
-    pos_true  = w_true > thresh_true
+    pos_true = w_true > thresh_true
     return 1.0 - np.mean((pos_preds * pos_true)[pos_preds])
 
 
@@ -130,14 +144,14 @@ def count_accuracy(B_true, B_est):
     """
     if (B_est == -1).any():  # cpdag
         if not ((B_est == 0) | (B_est == 1) | (B_est == -1)).all():
-            raise ValueError('B_est should take value in {0,1,-1}')
+            raise ValueError("B_est should take value in {0,1,-1}")
         if ((B_est == -1) & (B_est.T == -1)).any():
-            raise ValueError('undirected edge should only appear once')
+            raise ValueError("undirected edge should only appear once")
     else:  # dag
         if not ((B_est == 0) | (B_est == 1)).all():
-            raise ValueError('B_est should take value in {0,1}')
+            raise ValueError("B_est should take value in {0,1}")
         if not is_dag(B_est):
-            raise ValueError('B_est should be a DAG')
+            raise ValueError("B_est should be a DAG")
     d = B_true.shape[0]
     # linear index of nonzeros
     pred_und = np.flatnonzero(B_est == -1)
@@ -169,5 +183,4 @@ def count_accuracy(B_true, B_est):
     extra_lower = np.setdiff1d(pred_lower, cond_lower, assume_unique=True)
     missing_lower = np.setdiff1d(cond_lower, pred_lower, assume_unique=True)
     shd = len(extra_lower) + len(missing_lower) + len(reverse)
-    return {'fdr': fdr, 'tpr': tpr, 'fpr': fpr, 'shd': shd, 'nnz': pred_size}
-
+    return {"fdr": fdr, "tpr": tpr, "fpr": fpr, "shd": shd, "nnz": pred_size}
