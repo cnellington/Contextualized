@@ -1,5 +1,6 @@
 ![Preview](contextualized_logo.png)
 #
+![pylint Score](pylint.svg)
 ![License](https://img.shields.io/github/license/cnellington/contextualized.svg?style=flat-square)
 ![Maintenance](https://img.shields.io/maintenance/yes/2022?style=flat-square)
 
@@ -32,7 +33,7 @@ model.predict_params(C)
 ```
 
 ## Contextualized Family
-Context-dependent modeling is a universal problem, but every domain presents unique challenges and opportunities.
+Context-dependent modeling is a universal problem, and every domain presents unique challenges and opportunities.
 Here are some layers that others have added on top of Contextualized.
 Feel free to add your own page(s) by sending a PR or request an improvement by creating an issue. See [CONTRIBUTING.md](https://github.com/cnellington/Contextualized/blob/main/CONTRIBUTING.md) for more information about the process of contributing to this project.
 

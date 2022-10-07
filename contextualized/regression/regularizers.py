@@ -19,3 +19,11 @@ def l1_l2_reg(alpha, l1_ratio=0.5, mu_ratio=0.5):
     return lambda beta, mu: alpha*(
         l1_ratio*(mu_ratio*torch.norm(mu, p=1) + (1-mu_ratio)*torch.norm(beta, p=1)) +
         (1-l1_ratio)*(mu_ratio*torch.norm(mu, p=2) + (1-mu_ratio)*torch.norm(beta, p=2))).mean()
+
+
+REGULARIZERS = {
+    'none': no_reg(),
+    'l1': l1_reg,
+    'l2': l2_reg,
+    'l1_l2': l1_l2_reg
+}
