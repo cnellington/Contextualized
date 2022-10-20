@@ -1,5 +1,4 @@
-"""Utility torch mathematical functions which are 
-used for many modules.
+"""Utility torch mathematical functions which are used for many modules.
 """
 
 import torch
@@ -17,7 +16,8 @@ softmax_link = lambda x, m, b: F.softmax(x * m + b, dim=1)
 
 def make_fn(base_fn, **params):
     """
-    Makes a single-parameter function from a base function class and a fixed set of extra parameters.
+    Makes a single-parameter function from a base function class and a fixed
+    set of extra parameters.
     :param base_fn:
     :param **params:
 
