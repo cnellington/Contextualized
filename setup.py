@@ -19,12 +19,12 @@ setuptools.setup(name='contextualized',
         'matplotlib',
         'pandas',
         'umap-learn',
-        'interpret',
-        'tensorflow>=2.4.0',
-        'tensorflow-addons',
         'numpy>=1.19.2',
         'ipywidgets',
         'torchvision',
         'dill',
     ],
+    extras_require = {
+        'notmad_tensorflow': ['tensorflow>=2.4.0', 'tensorflow-addons'],
+    }
 )
