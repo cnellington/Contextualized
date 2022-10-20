@@ -25,24 +25,24 @@ def make_fn(base_fn, **params):
     return lambda x: base_fn(x, **params)
 
 
-def linear_constructor(m=1, b=0):
+def linear_constructor(slope=1, intercept=0):
     """
     Creates a single-parameter linear function with slope m and offset b.
-    :param m:  (Default value = 1)
-    :param b:  (Default value = 0)
+    :param slope:  (Default value = 1)
+    :param intercept:  (Default value = 0)
 
     """
-    return make_fn(linear, m=m, b=b)
+    return make_fn(linear, slope=slope, intercept=intercept)
 
 
-def logistic_constructor(m=1, b=0):
+def logistic_constructor(slope=1, intercept=0):
     """
     Creates a single-parameter logistic function with slope m and offset b.
-    :param m:  (Default value = 1)
-    :param b:  (Default value = 0)
+    :param slope:  (Default value = 1)
+    :param intercept:  (Default value = 0)
 
     """
-    return make_fn(logistic, m=m, b=b)
+    return make_fn(logistic, slope=slope, intercept=intercept)
 
 
 def identity_link_constructor():
@@ -52,24 +52,24 @@ def identity_link_constructor():
     return make_fn(identity_link)
 
 
-def linear_link_constructor(m=1, b=0):
+def linear_link_constructor(slope=1, intercept=0):
     """
     Creates a single-parameter linear link function with slope m and offset b.
-    :param m:  (Default value = 1)
-    :param b:  (Default value = 0)
+    :param slope:  (Default value = 1)
+    :param intercept:  (Default value = 0)
 
     """
-    return make_fn(linear_link, m=m, b=b)
+    return make_fn(linear_link, slope=slope, intercept=intercept)
 
 
-def softmax_link_constructor(m=1, b=0):
+def softmax_link_constructor(slope=1, intercept=0):
     """
     Creates a single-parameter softmax link function with slope m and offset b.
-    :param m:  (Default value = 1)
-    :param b:  (Default value = 0)
+    :param slope:  (Default value = 1)
+    :param intercept:  (Default value = 0)
 
     """
-    return make_fn(softmax_link, m=m, b=b)
+    return make_fn(softmax_link, slope=slope, intercept=intercept)
 
 
 LINK_FUNCTIONS = {
