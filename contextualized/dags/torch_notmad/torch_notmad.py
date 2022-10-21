@@ -7,20 +7,8 @@ from contextualized.functions import identity_link
 torch.set_default_tensor_type(torch.FloatTensor)
 
 from contextualized.dags.torch_notmad.graph_utils import project_to_dag_torch
-from contextualized.dags.torch_notmad.torch_utils import DAG_loss, NOTEARS_loss
+from contextualized.dags.torch_notmad.torch_utils import DAG_loss, DAG_loss_np, dag_pred, mse_loss, l1_loss, NOTEARS_loss
 from contextualized.modules import ENCODERS, Explainer
-
-
-dag_pred = lambda X, W: torch.matmul(X.unsqueeze(1), W).squeeze(1)
-mse_loss = lambda y_true, y_pred: ((y_true - y_pred) ** 2).mean()
-l1_loss = lambda w, l1: l1 * torch.norm(w, p=1)
-
-
-def dag_loss(w, alpha, rho):
-    d = w.shape[-1]
-    m = torch.linalg.matrix_exp(w * w)
-    h = torch.trace(m) - d
-    return alpha * h + 0.5 * rho * h * h
 
 
 class NOTMAD_model(pl.LightningModule):

@@ -8,11 +8,22 @@ from contextualized.dags.notmad_helpers import graph_utils
 
 
 def l2_dist(dag1, dag2):
+    """
+
+    :param dag1:
+    :param dag2:
+
+    """
     dist_vec = (dag1 - dag2).flatten()
     return dist_vec.T @ dist_vec
 
 
 def gen_data(data_params):
+    """
+
+    :param data_params:
+
+    """
     if data_params["simulation_type"] == "archetypes":
         W_dict, C_dict = gen_archetypes(
             data_params["d"],
@@ -86,6 +97,17 @@ def gen_data(data_params):
 def gen_cluster_samples(
     W_k, W_mix, n, n_i, radius=1, sem_type="gauss", noise_scale=0.1
 ):
+    """
+
+    :param W_k:
+    :param W_mix:
+    :param n:
+    :param n_i:
+    :param radius:  (Default value = 1)
+    :param sem_type:  (Default value = "gauss")
+    :param noise_scale:  (Default value = 0.1)
+
+    """
     # Generate n samples from k archetypes
     (k, d, _) = W_k.shape
     (k_mix, d, _) = W_mix.shape
@@ -126,6 +148,17 @@ def gen_cluster_samples(
 def gen_archetypes(
     d=8, s0=8, n_c=20, k=4, graph_type="ER", min_radius=0, ensure_convex=False
 ):
+    """
+
+    :param d:  (Default value = 8)
+    :param s0:  (Default value = 8)
+    :param n_c:  (Default value = 20)
+    :param k:  (Default value = 4)
+    :param graph_type:  (Default value = "ER")
+    :param min_radius:  (Default value = 0)
+    :param ensure_convex:  (Default value = False)
+
+    """
     # Create network and epigenetic archetypes
     W_k = np.ones((k, d, d))
     c_k = np.ones((k, n_c))
@@ -155,10 +188,26 @@ def gen_archetypes(
 
 
 def simulate_context(n_c):
+    """
+
+    :param n_c:
+
+    """
     return np.random.uniform(0, 1, n_c)
 
 
 def gen_samples(W_k, c_k, n, n_i, n_mix=2, sem_type="gauss", noise_scale=0.1):
+    """
+
+    :param W_k:
+    :param c_k:
+    :param n:
+    :param n_i:
+    :param n_mix:  (Default value = 2)
+    :param sem_type:  (Default value = "gauss")
+    :param noise_scale:  (Default value = 0.1)
+
+    """
     # Generate n samples from k archetypes
     assert c_k.shape[0] == W_k.shape[0]
     (k, d, _) = W_k.shape
@@ -206,6 +255,19 @@ def gen_samples_no_archs(
     sem_type="gauss",
     noise_scale=0.1,
 ):
+    """
+
+    :param n:
+    :param d:
+    :param s0:
+    :param n_i:
+    :param n_c:
+    :param c_signal_noise:
+    :param graph_type:  (Default value = "ER")
+    :param sem_type:  (Default value = "gauss")
+    :param noise_scale:  (Default value = 0.1)
+
+    """
     W_n = np.zeros((n, d, d))
     c_n = np.zeros((n, n_c))
     X_n = np.zeros((n, n_i, d))
@@ -228,25 +290,42 @@ def gen_samples_no_archs(
 def simulate_dag(d, s0, graph_type):
     """Simulate random DAG with some expected number of edges.
 
-    Args:
-        d (int): num of nodes
-        s0 (int): expected num of edges
-        graph_type (str): ER, SF, BP
+    :param d: num of nodes
+    :type d: int
+    :param s0: expected num of edges
+    :type s0: int
+    :param graph_type: ER, SF, BP
+    :type graph_type: str
+    :returns: B-> [d, d] binary adj matrix of DAG
+    :rtype: np.ndarray
 
-    Returns:
-        B (np.ndarray): [d, d] binary adj matrix of DAG
     """
 
     def _random_permutation(M):
+        """
+
+        :param M:
+
+        """
         # np.random.permutation permutes first axis only
         P = np.random.permutation(np.eye(M.shape[0]))
         # return P.T @ M @ P
         return np.matmul(np.matmul(P.T, M), P)
 
     def _random_acyclic_orientation(B_und):
+        """
+
+        :param B_und:
+
+        """
         return np.tril(_random_permutation(B_und), k=-1)
 
     def _graph_to_adjmat(G):
+        """
+
+        :param G:
+
+        """
         return np.array(G.get_adjacency().data)
 
     if graph_type == "ER":
@@ -273,12 +352,16 @@ def simulate_dag(d, s0, graph_type):
 def simulate_parameter(B, w_ranges=((-10.0, -1), (1, 10.0))):
     """Simulate SEM parameters for a DAG.
 
-    Args:
-        B (np.ndarray): [d, d] binary adj matrix of DAG
-        w_ranges (tuple): disjoint weight ranges
+    :param B: [d, d] binary adj matrix of DAG
+    :type B: np.ndarray
+    :param w_ranges: disjoint weight ranges (Default value = ((-10.0)
+    :type w_ranges: tuple
+    :param -1):
+    :param (1:
+    :param 10.0)):
+    :returns: W-> [d, d] weighted adj matrix of DAG
+    :rtype: np.ndarray
 
-    Returns:
-        W (np.ndarray): [d, d] weighted adj matrix of DAG
     """
     W = np.zeros(B.shape)
     S = np.random.randint(len(w_ranges), size=B.shape)  # which range
@@ -293,18 +376,27 @@ def simulate_linear_sem(W, n, sem_type, noise_scale=None):
 
     For uniform, noise z ~ uniform(-a, a), where a = noise_scale.
 
-    Args:
-        W (np.ndarray): [d, d] weighted adj matrix of DAG
-        n (int): num of samples, n=inf mimics population risk
-        sem_type (str): gauss, exp, gumbel, uniform, logistic, poisson
-        noise_scale (np.ndarray): scale parameter of additive noise, default all ones
+    :param W: [d, d] weighted adj matrix of DAG
+    :type W: np.ndarray
+    :param n: num of samples, n=inf mimics population risk
+    :type n: int
+    :param sem_type: gauss, exp, gumbel, uniform, logistic, poisson
+    :type sem_type: str
+    :param noise_scale: scale parameter of additive noise, default all ones
+    :type noise_scale: np.ndarray
+    :returns: X-> [n, d] sample matrix, [d, d] if n=inf
+    :rtype: np.ndarray
 
-    Returns:
-        X (np.ndarray): [n, d] sample matrix, [d, d] if n=inf
     """
 
     def _simulate_single_equation(X, w, scale):
-        """X: [n, num of parents], w: [num of parents], x: [n]"""
+        """X: [n, num of parents], w: [num of parents], x: [n]
+
+        :param X:
+        :param w:
+        :param scale:
+
+        """
         if sem_type == "gauss":
             z = np.random.normal(scale=scale, size=n)
             # x = X @ w + z
@@ -364,18 +456,26 @@ def simulate_linear_sem(W, n, sem_type, noise_scale=None):
 def simulate_nonlinear_sem(B, n, sem_type, noise_scale=None):
     """Simulate samples from nonlinear SEM.
 
-    Args:
-        B (np.ndarray): [d, d] binary adj matrix of DAG
-        n (int): num of samples
-        sem_type (str): mlp, mim, gp, gp-add
-        noise_scale (np.ndarray): scale parameter of additive noise, default all ones
+    :param B: [d, d] binary adj matrix of DAG
+    :type B: np.ndarray
+    :param n: num of samples
+    :type n: int
+    :param sem_type: mlp, mim, gp, gp-add
+    :type sem_type: str
+    :param noise_scale: scale parameter of additive noise, default all ones
+    :type noise_scale: np.ndarray
+    :returns: X-> [n, d] sample matrix
+    :rtype: np.ndarray
 
-    Returns:
-        X (np.ndarray): [n, d] sample matrix
     """
 
     def _simulate_single_equation(X, scale):
-        """X: [n, num of parents], x: [n]"""
+        """X: [n, num of parents], x: [n]
+
+        :param X:
+        :param scale:
+
+        """
         z = np.random.normal(scale=scale, size=n)
         pa_size = X.shape[1]
         if pa_size == 0:
