@@ -1,3 +1,7 @@
+""""
+NoTEARS-Optimized Mixtures of Archetypal DAGs.
+https://arxiv.org/abs/2111.01104
+"""
 import os
 import dill as pickle
 import numpy as np
@@ -18,9 +22,10 @@ from contextualized.dags.notmad_helpers.baselines import (
 
 
 class NGAM(tf.keras.layers.Layer):
-    """
-    Neural Generalized Additive Model
+    """Neural Generalized Additive Model
     One multi-layer perceptron per input dimension for an interpretable non-linear model
+
+
     """
 
     def __init__(
@@ -67,9 +72,19 @@ class NGAM(tf.keras.layers.Layer):
         self._name = "NGAM"
 
     def build(self, input_shapes):
+        """
+
+        :param input_shapes:
+
+        """
         pass
 
     def call(self, my_input):
+        """
+
+        :param my_input:
+
+        """
         # y = Lambda(lambda x: x[:,0,:,:], output_shape=(1,) + input_shape[2:])(x)
         outputs = [
             self.models[i](
@@ -83,9 +98,7 @@ class NGAM(tf.keras.layers.Layer):
 
 
 class DynamicAlphaRho(Callback):
-    """
-    Dual-step DAG optimization parameter update, required for NO-TEARS structure learning
-    """
+    """Dual-step DAG optimization parameter update, required for NO-TEARS structure learning"""
 
     def __init__(self, C_train, base_predictor=None, tol=0.25):
         super(DynamicAlphaRho, self).__init__()
@@ -95,23 +108,17 @@ class DynamicAlphaRho(Callback):
         self.base_predictor = base_predictor
 
     def on_epoch_begin(self, epoch, logs=None):
+        """
+
+        :param epoch:
+        :param logs:  (Default value = None)
+
+        """
         if self.base_predictor is not None:
             base_W = self.base_predictor.predict_w(self.C_train, project_to_dag=False)
         else:
             base_W = np.zeros((len(self.C_train), 1))
         pred = np.squeeze(self.model.predict({"C": self.C_train, "base_W": base_W}))
-        #         if self.base_predictor is not None:
-        #             pred = np.squeeze(self.model.predict(
-        #                 {"C": self.C_train,
-        #                  "base_W": self.base_predictor.predict_w(self.C_train, project_to_dag=False)}))
-        #         else:
-        #             pred = np.squeeze(self.model.predict(
-        #                 {"C": self.C_train,
-        #                  "base_W": np.zeros((len(self.C_train), 1))}))
-        # pred = np.squeeze(self.model.predict(np.expand_dims(
-        #    self.C_train[np.random.choice(self.C_train.shape[0])], 0)))
-        # pred = trim_params(pred, thresh=0.1)
-        # if not is_dag(pred):
         my_dag_loss = tf.reduce_mean(
             DAG_loss(pred, self.model.alpha.numpy(), self.model.rho.numpy())
         )
@@ -123,15 +130,20 @@ class DynamicAlphaRho(Callback):
 
 
 class ProjectToDAG(Callback):
-    """
-    Project low and rull-rank archetypes in NOTMAD to DAG
-    """
+    """Project low and rull-rank archetypes in NOTMAD to DAG"""
 
     def __init__(self, distance=0.1):
         super(ProjectToDAG, self).__init__()
         self.distance = distance
 
     def project_low_rank(self, A, B, mask):
+        """
+
+        :param A:
+        :param B:
+        :param mask:
+
+        """
         A_new = np.zeros_like(A)
         B_new = np.zeros_like(B)
         pca = PCA(n_components=A.shape[-1])
@@ -155,6 +167,11 @@ class ProjectToDAG(Callback):
         return A_new, B_new
 
     def project_full_rank(self, archs):
+        """
+
+        :param archs:
+
+        """
         archs_new = np.zeros_like(archs)
         for i in range(len(archs)):
             arch_dag, thresh = graph_utils.project_to_dag(archs[i])
@@ -162,6 +179,12 @@ class ProjectToDAG(Callback):
         return archs_new
 
     def on_epoch_end(self, epoch, logs=None):
+        """
+
+        :param epoch:
+        :param logs:  (Default value = None)
+
+        """
         for layer in self.model.layers:
             if hasattr(layer, "archetypes"):
                 explainer = layer
@@ -176,14 +199,18 @@ class ProjectToDAG(Callback):
 
 
 class UpdateCompatMat(Callback):
-    """
-    Binary compatibility matrix to enforce DAG-only archetype mixtures in NOTMAD
-    """
+    """Binary compatibility matrix to enforce DAG-only archetype mixtures in NOTMAD"""
 
     def __init__(self):
         super(UpdateCompatMat, self).__init__()
 
     def on_epoch_end(self, epoch, logs=None):
+        """
+
+        :param epoch:
+        :param logs:  (Default value = None)
+
+        """
         for layer in self.model.layers:
             if hasattr(layer, "archetypes"):
                 explainer = layer
@@ -202,24 +229,34 @@ class UpdateCompatMat(Callback):
 
 
 class BatchDot(tf.keras.layers.Layer):
-    """
-    Matrix multiplication over a batch
-    """
+    """Matrix multiplication over a batch"""
 
     def __init__(self):
         super(BatchDot, self).__init__()
 
     def build(self, input_shapes):
+        """
+
+        :param input_shapes:
+
+        """
         pass
 
     def call(self, A, B):
+        """
+
+        :param A:
+        :param B:
+
+        """
         return tf.keras.backend.batch_dot(A, B)
 
 
 class Explainer(tf.keras.layers.Layer):
-    """
-    NOTMAD dictionary of archetypes
+    """NOTMAD dictionary of archetypes
     Forward pass takes a weight vector and returns a weighted combination of archetypes
+
+
     """
 
     def __init__(
@@ -279,8 +316,6 @@ class Explainer(tf.keras.layers.Layer):
                         for _ in range(self.k)
                     ]
                 )
-                # init_B = np.array([init_B + np.random.binomial(0, 0.1, size=init_B.shape)*np.random.normal(0, 0.1, size=init_B.shape)
-                #    for _ in range(self.k)])
             else:
                 # Default init, set A to all 0s and and B to all 1s.
                 init_A = np.zeros(A_shape)
@@ -306,9 +341,15 @@ class Explainer(tf.keras.layers.Layer):
             return None
 
     def build(self, input_shapes):
+        """
+
+        :param input_shapes:
+
+        """
         pass
 
     def archetypes(self):
+        """ """
         try:
             archs = tf.tensordot(
                 self.A, tf.squeeze(self.B), axes=1
@@ -318,6 +359,11 @@ class Explainer(tf.keras.layers.Layer):
         return tf.multiply(archs, self.mask)
 
     def call(self, subtype):  # Subtype is of shape (None x k)
+        """
+
+        :param subtype):  # Subtype is of shape (None x k:
+
+        """
         if self.use_compat:
             max_subtype = 1 + tf.math.sign(subtype - tf.reduce_max(subtype, axis=0))
             subtype = tf.multiply(
@@ -327,9 +373,10 @@ class Explainer(tf.keras.layers.Layer):
 
 
 class NOTMAD:  # TODO: Only difference between low-rank and full-rank version should be the Explainer.
-    """
-    NO-TEARS Optimized Mixtures of Archetypal DAGs
+    """NO-TEARS Optimized Mixtures of Archetypal DAGs
     The sample-specific DAG estimation model
+
+
     """
 
     def __init__(
@@ -472,6 +519,11 @@ class NOTMAD:  # TODO: Only difference between low-rank and full-rank version sh
         self.model.compile(loss=self.my_loss, optimizer=self.opt, metrics=self.metrics)
 
     def _parse_alpha_rho(self, params):
+        """
+
+        :param params:
+
+        """
         try:
             alpha = tf.Variable(params["init_alpha"], trainable=False)
             rho = tf.Variable(params["init_rho"], trainable=False)
@@ -490,6 +542,15 @@ class NOTMAD:  # TODO: Only difference between low-rank and full-rank version sh
         context_activity_regularizer,
         activation="relu",
     ):
+        """
+
+        :param n_layers:
+        :param width:
+        :param output_shape:
+        :param context_activity_regularizer:
+        :param activation:  (Default value = "relu")
+
+        """
         encoder_layers = [tf.keras.layers.Flatten()]
         for i in range(n_layers - 1):
             encoder_layers.append(
@@ -507,6 +568,11 @@ class NOTMAD:  # TODO: Only difference between low-rank and full-rank version sh
         return tf.keras.models.Sequential(encoder_layers)
 
     def _build_arch_loss(self, params):
+        """
+
+        :param params:
+
+        """
         try:  # low-rank archetype loss, no good way to penalize dag-ness
             return params["l1"] * tf.norm(self.explainer.A, ord=1) + params[
                 "l1"
@@ -525,6 +591,11 @@ class NOTMAD:  # TODO: Only difference between low-rank and full-rank version sh
             )
 
     def transform_to_low_rank(self, W):
+        """
+
+        :param W:
+
+        """
         # W is N x P x P
         return np.tensordot(W, self.explainer.B.T, axes=1)
 
@@ -539,6 +610,18 @@ class NOTMAD:  # TODO: Only difference between low-rank and full-rank version sh
         callbacks=[],
         verbose=1,
     ):
+        """
+
+        :param C:
+        :param X:
+        :param epochs:
+        :param batch_size:
+        :param es_patience:  (Default value = None)
+        :param val_split:  (Default value = 0.25)
+        :param callbacks:  (Default value = [])
+        :param verbose:  (Default value = 1)
+
+        """
         callbacks = copy.deepcopy(callbacks)
         if es_patience is not None:
             callbacks.append(
@@ -585,8 +668,7 @@ class NOTMAD:  # TODO: Only difference between low-rank and full-rank version sh
     def progressive_fit(
         self, C, X, epochs_per_grouping, groupings, max_samples=100, verbose=1
     ):
-        """
-        Learn personalized networks by learning group networks with increasing
+        """Learn personalized networks by learning group networks with increasing
         specificity. This encourages the framework to learn population networks
         before personalizing these networks (e.g. tissue --> cell-type --> cell)
 
@@ -600,6 +682,14 @@ class NOTMAD:  # TODO: Only difference between low-rank and full-rank version sh
         TODO: Gradient computation is unreasonably slow for large groups (or
         conversely, small # of groups e.g. male/female) because individual
         gradients are computed using the all group samples.
+
+        :param C:
+        :param X:
+        :param epochs_per_grouping:
+        :param groupings:
+        :param max_samples:  (Default value = 100)
+        :param verbose:  (Default value = 1)
+
         """
         for i, grouping in enumerate(groupings):
             if verbose:
@@ -633,6 +723,12 @@ class NOTMAD:  # TODO: Only difference between low-rank and full-rank version sh
                     self.opt.apply_gradients(zip(grads, self.model.trainable_variables))
 
     def predict_w(self, C, project_to_dag=False):
+        """
+
+        :param C:
+        :param project_to_dag:  (Default value = False)
+
+        """
         if self.base_predictor is not None:
             base_W = self.base_predictor.predict_w(C, project_to_dag=False)
             # if self.explainer.d2 < self.explainer.d1: # low-rank
@@ -648,6 +744,12 @@ class NOTMAD:  # TODO: Only difference between low-rank and full-rank version sh
 
 
 def save_notmad(notmad, path):
+    """
+
+    :param notmad:
+    :param path:
+
+    """
     if path[-1] != "/":
         path += "/"
     os.makedirs(path, exist_ok=True)
@@ -660,6 +762,11 @@ def save_notmad(notmad, path):
 
 
 def load_notmad(path):
+    """
+
+    :param path:
+
+    """
     if path[-1] != "/":
         path += "/"
     kwargs = pickle.load(open(path + "kwargs.pkl", "rb"))

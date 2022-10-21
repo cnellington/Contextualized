@@ -1,50 +1,39 @@
+"""
+Unit tests for DAG models.
+"""
 import unittest
-import time
 import numpy as np
 import tensorflow as tf
 from contextualized.dags import NOTMAD
 
 
 class TestDAGs(unittest.TestCase):
+    """
+    Test DAGs
+    """
+
     def __init__(self, *args, **kwargs):
-        super(TestDAGs, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def setUp(self):
-        n = 1000
-        C = np.linspace(1, 2, n).reshape((n, 1))
+        """
+        Shared set-up function.
+        """
+        n_samples = 1000
+        C = np.linspace(1, 2, n_samples).reshape((n_samples, 1))
         blank = np.zeros_like(C)
-        W_00 = blank
-        W_01 = C - 2
-        W_02 = blank
-        W_03 = blank
-        W_10 = blank
-        W_11 = blank
-        W_12 = blank
-        W_13 = blank
-        W_20 = blank
-        W_21 = C**2
-        W_22 = blank
-        W_23 = blank
-        W_30 = blank
-        W_31 = C**3
-        W_32 = C
-        W_33 = blank
-        W = np.array(
-            [
-                [W_00, W_01, W_02, W_03],
-                [W_10, W_11, W_12, W_13],
-                [W_20, W_21, W_22, W_23],
-                [W_30, W_31, W_32, W_33],
-            ]
-        ).squeeze()
+        W = np.zeros((4, 4, n_samples))
+        W[0, 1] = C - 2
+        W[2, 1] = C**2
+        W[3, 1] = C**3
+        W[3, 2] = C
         W = np.transpose(W, (2, 0, 1))
 
-        X_pre = np.random.uniform(-1, 1, (n, 4))
+        X_pre = np.random.uniform(-1, 1, (n_samples, 4))
         X = np.zeros_like(X_pre)
         for i, (w, X_p) in enumerate(zip(W, X_pre)):
             eps = np.random.normal(0, 0.01, 4)
-            X_new = self._dag_pred(X_p[np.newaxis, :], w)
-            X[i] = X_new + eps
+            X[i] = self._dag_pred(X_p[np.newaxis, :], w) + eps
 
         idx = np.logical_and(C > 1.7, C < 1.9).squeeze()
         test_idx = np.argwhere(idx).squeeze()
@@ -58,9 +47,16 @@ class TestDAGs(unittest.TestCase):
         self.X_train, self.X_test = split(X)
 
     def _dag_pred(self, x, w):
+        """
+
+        :param x:
+        :param w:
+
+        """
         return tf.matmul(x, w).numpy().squeeze()
 
     def test_notmad(self):
+        """ """
         mse = lambda true, pred: ((true - pred) ** 2).mean()
         k = 5
         sample_specific_loss_params = {"l1": 0.0, "init_alpha": 1e-1, "init_rho": 1e-2}
