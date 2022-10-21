@@ -22,7 +22,7 @@ class TestDAGs(unittest.TestCase):
         n_samples = 1000
         C = np.linspace(1, 2, n_samples).reshape((n_samples, 1))
         blank = np.zeros_like(C)
-        W = np.zeros((4, 4, n_samples))
+        W = np.zeros((4, 4, n_samples, 1))
         W[0, 1] = C - 2
         W[2, 1] = C**2
         W[3, 1] = C**3
