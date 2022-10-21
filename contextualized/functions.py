@@ -4,14 +4,15 @@
 import torch
 import torch.nn.functional as F
 
+# TODO: Need to update these param names.
 zero_vector = lambda x, *args: torch.zeros((len(x), 1))
 zero = lambda x: torch.zeros_like(x)
 identity = lambda x: x
-linear = lambda x, m, b: x * m + b
-logistic = lambda x, m, b: 1 / (1 + torch.exp(-x * m - b))
-linear_link = lambda x, m, b: x * m + b
+linear = lambda x, slope, intercept: x * slope + intercept
+logistic = lambda x, slope, intercept: 1 / (1 + torch.exp(-x * slope - intercept))
+linear_link = lambda x, slope, intercept: x * slope + intercept
 identity_link = lambda x: x
-softmax_link = lambda x, m, b: F.softmax(x * m + b, dim=1)
+softmax_link = lambda x, slope, intercept: F.softmax(x * slope + intercept, dim=1)
 
 
 def make_fn(base_fn, **params):
