@@ -200,7 +200,7 @@ class SKLearnInterface:
         :param individual_preds:  (Default value = False)
 
         """
-        if not hasattr(self, "models"):
+        if not hasattr(self, "models") or self.models is None:
             raise ValueError(
                 "Trying to predict with a model that hasn't been trained yet."
             )
