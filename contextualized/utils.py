@@ -1,11 +1,28 @@
+"""
+Utility functions, including saving/loading of contextualized models.
+"""
+
 import torch
 import dill
 
 
 def save(model, path):
-    torch.save(model, open(path, "wb"), pickle_module=dill)
+    """
+    Saves model to path.
+    :param model:
+    :param path:
+
+    """
+    with open(path, "wb") as out_file:
+        torch.save(model, out_file, pickle_module=dill)
 
 
 def load(path):
-    model = torch.load(open(path, "rb"), pickle_module=dill)
+    """
+    Loads model from path.
+    :param path:
+
+    """
+    with open(path, "rb") as in_file:
+        model = torch.load(in_file, pickle_module=dill)
     return model

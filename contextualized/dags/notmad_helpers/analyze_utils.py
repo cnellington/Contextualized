@@ -62,13 +62,7 @@ def count_accuracy(W_true, W_est, W_und=None):
     missing_lower = np.setdiff1d(cond_lower, pred_lower, assume_unique=True)
     shd = len(extra_lower) + len(missing_lower) + len(reverse)
 
-    return {
-        'fdr': fdr,
-        'tpr': tpr,
-        'fpr': fpr,
-        'shd': shd,
-        'pred_size': pred_size
-    }
+    return {"fdr": fdr, "tpr": tpr, "fpr": fpr, "shd": shd, "pred_size": pred_size}
 
 
 def plot_estimated_graph(W_est, W, save_name=None):
@@ -76,8 +70,8 @@ def plot_estimated_graph(W_est, W, save_name=None):
 
     # plot just the positive data and save the
     # color "mappable" object returned by ax1.imshow
-    ax1.set_title('estimated_graph')
-    map1 = ax1.imshow(W_est, cmap='Greys', interpolation='none')
+    ax1.set_title("estimated_graph")
+    map1 = ax1.imshow(W_est, cmap="Greys", interpolation="none")
 
     # add the colorbar using the figure's method,
     # telling which mappable we're talking about and
@@ -85,8 +79,8 @@ def plot_estimated_graph(W_est, W, save_name=None):
     fig.colorbar(map1, ax=ax1)
 
     # repeat everything above for the the negative data
-    ax2.set_title('true_graph')
-    map2 = ax2.imshow(W, cmap='Greys', interpolation='none')
+    ax2.set_title("true_graph")
+    map2 = ax2.imshow(W, cmap="Greys", interpolation="none")
     fig.colorbar(map2, ax=ax2)
 
     plt.show()

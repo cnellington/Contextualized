@@ -6,22 +6,13 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 import pytorch_lightning as pl
 from contextualized.dags.notmad_helpers.graph_utils import project_to_dag, trim_params
+from contextualized.dags.torch_notmad.torch_utils import DAG_loss_np, dag_pred, l1_loss
 
+mse_loss = lambda y_true, y_pred: ((y_true - y_pred)**2).mean()
 
 def project_all(ws):
     # Projects non-dag structures to dags
     return np.array([trim_params(project_to_dag(w)[0], 0.01) for w in ws])
-
-
-dag_pred = lambda X, W: torch.matmul(X.unsqueeze(1), W).squeeze(1)
-mse_loss = lambda y_true, y_pred: ((y_true - y_pred)**2).mean()
-l1_loss = lambda w, l1: l1 * torch.norm(w, p=1)
-def dag_loss(w, alpha, rho):
-    d = w.shape[-1]
-    m = torch.linalg.matrix_exp(w * w)
-    h = torch.trace(m) - d
-    return alpha * h + 0.5 * rho * h * h
-
 
 class NOTEARSTrainer(pl.Trainer):
     def predict(self, model, dataloader):
@@ -58,7 +49,7 @@ class NOTEARS(pl.LightningModule):
         x_pred = self(x_true)
         mse = mse_loss(x_true, x_pred)
         l1 = l1_loss(self.W, self.l1)
-        dag = dag_loss(self.W, self.alpha, self.rho)
+        dag = DAG_loss_np(self.W, self.alpha, self.rho)
         return 0.5 * mse + l1 + dag
     
     def configure_optimizers(self):
@@ -73,7 +64,7 @@ class NOTEARS(pl.LightningModule):
         x_true = batch
         x_pred = self(x_true).detach()
         mse = mse_loss(x_true, x_pred)
-        dag = dag_loss(self.W, 1e12, 1e12).detach()
+        dag = DAG_loss_np(self.W, 1e12, 1e12).detach()
         loss = mse + dag
         self.log_dict({'val_loss': loss})
         return loss
@@ -84,7 +75,7 @@ class NOTEARS(pl.LightningModule):
         return loss
     
     def on_train_epoch_end(self, *args, **kwargs):
-        dag = dag_loss(self.W, self.alpha, self.rho).item()
+        dag = DAG_loss_np(self.W, self.alpha, self.rho).item()
         if dag > self.tolerance * self.prev_dag and self.alpha < 1e12 and self.rho < 1e12:
             self.alpha = self.alpha + self.rho * dag
             self.rho = self.rho * 10

@@ -15,5 +15,5 @@ def create_dir(dir_path):
 
         return 0
     except Exception as err:
-        _logger.critical('Creating directories error: {0}'.format(err))
+        _logger.critical("Creating directories error: {0}".format(err))
         exit(-1)
