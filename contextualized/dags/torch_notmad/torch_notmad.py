@@ -149,7 +149,7 @@ class NOTMAD_model(pl.LightningModule):
         # useful early-stopping validation under dynamic alpha/rho:
         # ignore archetype loss, use a constant and large alpha and rho for dag loss
         mse = mse_loss(x_true, x_pred)
-        dag = torch.mean(torch.Tensor([dag_loss(w, 1e12, 1e12) for w in w_pred]))
+        dag = torch.mean(torch.Tensor([DAG_loss_np(w, 1e12, 1e12) for w in w_pred]))
         loss = mse + dag
         self.log("val_loss", loss)
         return loss
