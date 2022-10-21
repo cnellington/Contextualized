@@ -27,7 +27,7 @@ class TestDAGs(unittest.TestCase):
         W[2, 1] = C**2
         W[3, 1] = C**3
         W[3, 2] = C
-        W = np.transpose(W, (2, 0, 1))
+        W = np.transpose(W.squeeze(), (2, 0, 1))
 
         X_pre = np.random.uniform(-1, 1, (n_samples, 4))
         X = np.zeros_like(X_pre)
