@@ -4,7 +4,6 @@
 import torch
 import torch.nn.functional as F
 
-# TODO: Need to update these param names.
 zero_vector = lambda x, *args: torch.zeros((len(x), 1))
 zero = lambda x: torch.zeros_like(x)
 identity = lambda x: x
