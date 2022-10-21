@@ -1,3 +1,8 @@
+"""
+Abstract wrappers of Contextualized.ML models.
+"""
+
+import copy
 import numpy as np
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from sklearn.model_selection import train_test_split
@@ -6,10 +11,24 @@ from contextualized.regression import RegressionTrainer
 
 
 class SKLearnInterface:
+    """An sklearn-like wrapper for Contextualized models."""
+
     def __init__(self, base_constructor):
         self.base_constructor = base_constructor
+        self.n_bootstraps = 1
+        self.models = None
+        self.trainers = None
+        self.dataloaders = None
+        self.context_dim = None
+        self.x_dim = None
+        self.y_dim = None
 
     def _organize_kwargs(self, **kwargs):
+        """
+        Helper function to organize keywords.
+        :param **kwargs:
+
+        """
         # Organize kwargs into data, model, and trainer categories.
 
         acceptable_data_kwargs = [
@@ -44,20 +63,20 @@ class SKLearnInterface:
             {},
             {},
         )
-        for k, v in kwargs.items():
-            if k in acceptable_data_kwargs:
-                data_kwargs[k] = v
-            elif k in acceptable_model_kwargs:
-                model_kwargs[k] = v
-            elif k in acceptable_trainer_kwargs:
-                trainer_kwargs[k] = v
-            elif k in acceptable_fit_kwargs:
-                fit_kwargs[k] = v
-            elif k in acceptable_wrapper_kwargs:
-                wrapper_kwargs[k] = v
+        for key, value in kwargs.items():
+            if key in acceptable_data_kwargs:
+                data_kwargs[key] = value
+            elif key in acceptable_model_kwargs:
+                model_kwargs[key] = value
+            elif key in acceptable_trainer_kwargs:
+                trainer_kwargs[key] = value
+            elif key in acceptable_fit_kwargs:
+                fit_kwargs[key] = value
+            elif key in acceptable_wrapper_kwargs:
+                wrapper_kwargs[key] = value
             else:
                 print(
-                    "Received unknown keyword argument {}, probably ignoring.".format(k)
+                    f"Received unknown keyword argument {key}, probably ignoring."
                 )
 
         model_kwargs["learning_rate"] = model_kwargs.get("learning_rate", 1e-3)
@@ -87,6 +106,14 @@ class SKLearnInterface:
         return data_kwargs, model_kwargs, trainer_kwargs, fit_kwargs
 
     def fit(self, C, X, Y, **kwargs):
+        """
+
+        :param C:
+        :param X:
+        :param Y:
+        :param **kwargs:
+
+        """
         self.models = []
         self.trainers = []
         self.dataloaders = {"train": [], "val": [], "test": []}
@@ -98,13 +125,13 @@ class SKLearnInterface:
         )
         self.n_bootstraps = kwargs.get("n_bootstraps", 1)
 
-        for i in range(self.n_bootstraps):
+        for _ in range(self.n_bootstraps):
             model = self.base_constructor(**model_kwargs)
             train_dataloader, val_dataloader = self._build_dataloaders(
                 C, X, Y, model, **data_kwargs
             )
             # Makes a new trainer for each bootstrap fit - bad practice, but necessary here.
-            my_trainer_kwargs = {k: v for k, v in trainer_kwargs.items()}
+            my_trainer_kwargs = copy.deepcopy(trainer_kwargs)
             # Must reconstruct the callbacks because they save state from fitting trajectories.
             my_trainer_kwargs["callbacks"] = [
                 f() for f in trainer_kwargs["callback_constructors"]
@@ -122,6 +149,15 @@ class SKLearnInterface:
             self.trainers.append(trainer)
 
     def _build_dataloaders(self, C, X, Y, model, **kwargs):
+        """
+
+        :param C:
+        :param X:
+        :param Y:
+        :param model:
+        :param **kwargs:
+
+        """
         train_dataloader = model.dataloader(
             C, X, Y, batch_size=kwargs.get("train_batch_size", 1)
         )
@@ -156,7 +192,14 @@ class SKLearnInterface:
                 )
         return train_dataloader, val_dataloader
 
-    def predict(self, C, X, individual_preds=False):
+    def predict(self, C, X, individual_preds=False, **kwargs):
+        """
+
+        :param C:
+        :param X:
+        :param individual_preds:  (Default value = False)
+
+        """
         if not hasattr(self, "models"):
             raise ValueError(
                 "Trying to predict with a model that hasn't been trained yet."
@@ -174,10 +217,23 @@ class SKLearnInterface:
             return preds
         return np.mean(preds, axis=0)
 
-    def predict_proba(self, C, X, Y=None, individual_preds=False):
+    def predict_proba(self, C, X, **kwargs):
+        """
+
+        :param C:
+        :param X:
+        :param **kwargs:
+
+        """
         raise NotImplementedError
 
-    def predict_params(self, C, individual_preds=False):
+    def predict_params(self, C, individual_preds=False, **kwargs):
+        """
+
+        :param C:
+        :param individual_preds:  (Default value = False)
+
+        """
         # Returns models, mus
         get_dataloader = lambda i: self.models[i].dataloader(
             C, np.zeros((len(C), self.x_dim)), np.zeros((len(C), self.y_dim))

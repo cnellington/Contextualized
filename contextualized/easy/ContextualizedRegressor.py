@@ -1,3 +1,6 @@
+"""
+sklearn-like interface to Contextualized Regressors.
+"""
 from contextualized.regression import (
     NaiveContextualizedRegression,
     ContextualizedRegression,
@@ -13,6 +16,10 @@ from contextualized.easy.wrappers import SKLearnInterface
 
 
 class ContextualizedRegressor(SKLearnInterface):
+    """
+    sklearn-like interface to Contextualized Regression.
+    """
+
     def __init__(self, **kwargs):
         self.num_archetypes = kwargs.get("num_archetypes", 0)
         if self.num_archetypes == 0:
@@ -21,9 +28,8 @@ class ContextualizedRegressor(SKLearnInterface):
             self.constructor = ContextualizedRegression
         else:
             print(
-                "Was told to construct a ContextualizedRegressor with {} archetypes, but this should be a non-negative integer.".format(
-                    self.num_archetypes
-                )
+                f"""Was told to construct a ContextualizedRegressor with {self.num_archetypes}
+                archetypes, but this should be a non-negative integer."""
             )
         self.constructor_kwargs = kwargs
         self.constructor_kwargs["link_fn"] = kwargs.get(
@@ -61,14 +67,23 @@ class ContextualizedRegressor(SKLearnInterface):
         super().__init__(self.constructor)
 
     def fit(self, C, X, Y, **kwargs):
+        """
+
+        :param C:
+        :param X:
+        :param Y:
+        :param **kwargs:
+
+        """
         # Merge kwargs and self.constructor_kwargs, prioritizing more recent kwargs.
-        for k, v in self.constructor_kwargs.items():
-            if k not in kwargs:
-                kwargs[k] = v
+        for key, value in self.constructor_kwargs.items():
+            if key not in kwargs:
+                kwargs[key] = value
         return super().fit(C, X, Y, **kwargs)
 
-    def predict(self, C, X, **kwargs):
-        return super().predict(C, X, **kwargs)
-
-    def predict_params(self, C, **kwargs):
-        return super().predict_params(C, **kwargs)
+    def predict_proba(self, C, X, **kwargs):
+        print(
+            """I am a regressor. I don't predict probabilities.
+        Did you mean to be using a ContextualizedClassifier instead?"""
+        )
+        raise TypeError
