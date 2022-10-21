@@ -1,3 +1,6 @@
+"""
+Helper functions for simulations and experiments.
+"""
 import numpy as np
 from sklearn.decomposition import PCA
 

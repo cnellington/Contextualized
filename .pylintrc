@@ -157,7 +157,8 @@ disable=raw-checker-failed,
         no-member,
         too-many-arguments,
         fixme, # Remove this to find TODOs
-        too-many-instance-attributes
+        too-many-instance-attributes,
+        too-many-ancestors
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
@@ -568,7 +569,9 @@ good-names=i,
            C_means, C_stds,
            Y_means, Y_stds,
            X_val, Y_val, C_val,
-           W_train, W_val, W_test
+           W_train, W_val, W_test,
+           beta, mu,
+           Y_true, Y_pred
 
 # Good variable names regexes, separated by a comma. If names match any regex,
 # they will always be accepted

@@ -1,11 +1,23 @@
+"""
+Torch regularizers used for regression.
+"""
 import torch
 
 
 def no_reg():
+    """
+    Function that returns an empty regularizer. 
+    """
     return lambda beta, mu: 0.0
 
 
 def l1_reg(alpha, mu_ratio=0.5):
+    """
+
+    :param alpha:
+    :param mu_ratio:  (Default value = 0.5)
+
+    """
     return (
         lambda beta, mu: alpha
         * (
@@ -15,6 +27,12 @@ def l1_reg(alpha, mu_ratio=0.5):
 
 
 def l2_reg(alpha, mu_ratio=0.5):
+    """
+
+    :param alpha:
+    :param mu_ratio:  (Default value = 0.5)
+
+    """
     return (
         lambda beta, mu: alpha
         * (
@@ -24,6 +42,13 @@ def l2_reg(alpha, mu_ratio=0.5):
 
 
 def l1_l2_reg(alpha, l1_ratio=0.5, mu_ratio=0.5):
+    """
+
+    :param alpha:
+    :param l1_ratio:  (Default value = 0.5)
+    :param mu_ratio:  (Default value = 0.5)
+
+    """
     return (
         lambda beta, mu: alpha
         * (

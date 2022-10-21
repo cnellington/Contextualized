@@ -1,3 +1,7 @@
+"""
+Losses used in regression.
+"""
+
 def MSE(Y_true, Y_pred):
     """
     Returns

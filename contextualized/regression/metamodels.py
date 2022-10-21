@@ -1,14 +1,18 @@
+"""
+Metamodels which generate context-specific models.
+"""
 import torch
-import torch.nn as nn
+from torch import nn
 
 from contextualized.modules import ENCODERS, Explainer, SoftSelect
 from contextualized.functions import LINK_FUNCTIONS
 
 
 class NaiveMetamodel(nn.Module):
-    """
-    Probabilistic assumptions as a graphical model (observed) {unobserved}:
+    """Probabilistic assumptions as a graphical model (observed) {unobserved}:
     (C) --> {beta, mu} --> (X, Y)
+
+
     """
 
     def __init__(
@@ -46,6 +50,11 @@ class NaiveMetamodel(nn.Module):
         self.context_encoder = encoder(context_dim, out_dim, **encoder_kwargs)
 
     def forward(self, C):
+        """
+
+        :param C:
+
+        """
         W = self.context_encoder(C)
         W = torch.reshape(W, (W.shape[0], self.y_dim, self.x_dim + self.mu_dim))
         beta = W[:, :, : self.x_dim]
@@ -54,11 +63,12 @@ class NaiveMetamodel(nn.Module):
 
 
 class SubtypeMetamodel(nn.Module):
-    """
-    Probabilistic assumptions as a graphical model (observed) {unobserved}:
+    """Probabilistic assumptions as a graphical model (observed) {unobserved}:
     (C) <-- {Z} --> {beta, mu} --> (X)
 
     Z: latent variable, causal parent of both the context and regression model
+
+
     """
 
     def __init__(
@@ -98,6 +108,11 @@ class SubtypeMetamodel(nn.Module):
         self.explainer = Explainer(num_archetypes, out_shape)
 
     def forward(self, C):
+        """
+
+        :param C:
+
+        """
         Z = self.context_encoder(C)
         W = self.explainer(Z)
         beta = W[:, :, : self.x_dim]
@@ -106,12 +121,13 @@ class SubtypeMetamodel(nn.Module):
 
 
 class MultitaskMetamodel(nn.Module):
-    """
-    Probabilistic assumptions as a graphical model (observed) {unobserved}:
+    """Probabilistic assumptions as a graphical model (observed) {unobserved}:
     (C) <-- {Z} --> {beta, mu} --> (X)
     (T) <---/
 
     Z: latent variable, causal parent of the context, regression model, and task (T)
+
+
     """
 
     def __init__(
@@ -154,6 +170,12 @@ class MultitaskMetamodel(nn.Module):
         self.explainer = Explainer(num_archetypes, (beta_dim + 1,))
 
     def forward(self, C, T):
+        """
+
+        :param C:
+        :param T:
+
+        """
         CT = torch.cat((C, T), 1)
         Z = self.context_encoder(CT)
         W = self.explainer(Z)
@@ -163,13 +185,14 @@ class MultitaskMetamodel(nn.Module):
 
 
 class TasksplitMetamodel(nn.Module):
-    """
-    Probabilistic assumptions as a graphical model (observed) {unobserved}:
+    """Probabilistic assumptions as a graphical model (observed) {unobserved}:
     (C) <-- {Z_c} --> {beta, mu} --> (X)
     (T) <-- {Z_t} ----^
 
     Z_c: latent context variable, causal parent of the context and regression model
     Z_t: latent task variable, causal parent of the task and regression model
+
+
     """
 
     def __init__(
@@ -228,6 +251,12 @@ class TasksplitMetamodel(nn.Module):
         )
 
     def forward(self, C, T):
+        """
+
+        :param C:
+        :param T:
+
+        """
         Z_c = self.context_encoder(C)
         Z_t = self.task_encoder(T)
         W = self.explainer(Z_c, Z_t)
