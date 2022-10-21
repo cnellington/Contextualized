@@ -37,7 +37,6 @@ def DAG_loss_np(w, alpha, rho):
     return alpha * h + 0.5 * rho * h * h
 
 dag_pred = lambda X, W: torch.matmul(X.unsqueeze(1), W).squeeze(1)
-mse_loss = lambda y_true, y_pred: ((y_true - y_pred)**2).mean()
 l1_loss = lambda w, l1: l1 * torch.norm(w, p=1)
 
 

@@ -6,7 +6,9 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 import pytorch_lightning as pl
 from contextualized.dags.notmad_helpers.graph_utils import project_to_dag, trim_params
-from contextualized.dags.torch_notmad.torch_utils import DAG_loss_np, dag_pred, mse_loss, l1_loss
+from contextualized.dags.torch_notmad.torch_utils import DAG_loss_np, dag_pred, l1_loss
+
+mse_loss = lambda y_true, y_pred: ((y_true - y_pred)**2).mean()
 
 def project_all(ws):
     # Projects non-dag structures to dags
