@@ -1,12 +1,14 @@
+"""
+Data generators used for Contextualized regression training.
+"""
 from abc import abstractmethod
 import torch
 from torch.utils.data import IterableDataset
 
 
 class Dataset:
-    """
-    Superclass for datastreams (iterators) used to train contextualized.regression models
-    """
+    """Superclass for datastreams (iterators) used to train contextualized.regression models"""
+
     def __init__(self, C, X, Y, dtype=torch.float):
         self.C = torch.tensor(C, dtype=dtype)
         self.X = torch.tensor(X, dtype=dtype)
@@ -36,6 +38,10 @@ class Dataset:
 
 
 class MultivariateDataset(Dataset):
+    """
+    Simple multivariate dataset with context, predictors, and outcomes.
+    """
+
     def __next__(self):
         if self.n_i >= self.n:
             self.n_i = 0
@@ -49,11 +55,15 @@ class MultivariateDataset(Dataset):
         self.n_i += 1
         return ret
 
-    def __len(self):
+    def __len__(self):
         return self.n
 
 
 class UnivariateDataset(Dataset):
+    """
+    Simple univariate dataset with context, predictors, and one outcome.
+    """
+
     def __next__(self):
         if self.n_i >= self.n:
             self.n_i = 0
@@ -67,11 +77,15 @@ class UnivariateDataset(Dataset):
         self.n_i += 1
         return ret
 
-    def __len(self):
+    def __len__(self):
         return self.n
 
 
 class MultitaskMultivariateDataset(Dataset):
+    """
+    Multi-task Multivariate Dataset.
+    """
+
     def __next__(self):
         if self.y_i >= self.y_dim:
             self.n_i += 1
@@ -92,11 +106,15 @@ class MultitaskMultivariateDataset(Dataset):
         self.y_i += 1
         return ret
 
-    def __len(self):
+    def __len__(self):
         return self.n * self.y_dim
 
 
 class MultitaskUnivariateDataset(Dataset):
+    """
+    Multitask Univariate Dataset
+    """
+
     def __next__(self):
         if self.y_i >= self.y_dim:
             self.x_i += 1
@@ -127,9 +145,8 @@ class MultitaskUnivariateDataset(Dataset):
 
 
 class DataIterable(IterableDataset):
-    """
-    Dataset wrapper, required by PyTorch
-    """
+    """Dataset wrapper, required by PyTorch"""
+
     def __init__(self, dataset):
         self.dataset = dataset
 

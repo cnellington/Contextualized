@@ -1,3 +1,6 @@
+"""
+Unit tests for DAG models.
+"""
 import unittest
 import numpy as np
 import igraph as ig
