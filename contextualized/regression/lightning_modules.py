@@ -695,7 +695,9 @@ class ContextualizedCorrelation(ContextualizedUnivariateRegression):
 
         """
         if Y is not None:
-            print("Passed a Y, but this is self-correlation between X featuers. Ignoring Y.")
+            print(
+                "Passed a Y, but this is self-correlation between X featuers. Ignoring Y."
+            )
         return super().dataloader(C, X, X, **kwargs)
 
 
@@ -719,7 +721,9 @@ class TasksplitContextualizedCorrelation(TasksplitContextualizedUnivariateRegres
 
         """
         if Y is not None:
-            print("Passed a Y, but this is self-correlation between X featuers. Ignoring Y.")
+            print(
+                "Passed a Y, but this is self-correlation between X featuers. Ignoring Y."
+            )
         return super().dataloader(C, X, X, **kwargs)
 
 
@@ -759,7 +763,9 @@ class ContextualizedMarkovGraph(ContextualizedRegression):
         :param **kwargs:
 
         """
-        
+
         if Y is not None:
-            print("Passed a Y, but this is a Markov Graph between X featuers. Ignoring Y.")
+            print(
+                "Passed a Y, but this is a Markov Graph between X featuers. Ignoring Y."
+            )
         return super().dataloader(C, X, X, **kwargs)

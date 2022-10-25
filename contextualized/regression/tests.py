@@ -5,7 +5,7 @@ import unittest
 import numpy as np
 import torch
 
-#from contextualized.modules import NGAM, MLP, SoftSelect, Explainer
+# from contextualized.modules import NGAM, MLP, SoftSelect, Explainer
 from contextualized.regression.lightning_modules import *
 from contextualized.regression.trainers import *
 from contextualized.functions import LINK_FUNCTIONS
@@ -126,7 +126,7 @@ class TestRegression(unittest.TestCase):
 
     def test_naive(self):
         """
-        Test Naive Multivariate regression. 
+        Test Naive Multivariate regression.
         """
         # Naive Multivariate
         model = NaiveContextualizedRegression(
@@ -258,7 +258,7 @@ class TestRegression(unittest.TestCase):
         self._quicktest(model)
 
     def test_tasksplit(self):
-        """ 
+        """
         Test tasksplit multivariate regression.
         """
         # Tasksplit Multivariate

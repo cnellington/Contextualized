@@ -21,8 +21,7 @@ class SoftSelect(nn.Module):
         self.archetypes = nn.parameter.Parameter(init_mat, requires_grad=True)
 
     def forward(self, *batch_weights):
-        """ Torch Forward pass.
-        """
+        """Torch Forward pass."""
         batch_size = batch_weights[0].shape[0]
         expand_dims = [batch_size] + [-1 for _ in range(len(self.archetypes.shape))]
         batch_archetypes = self.archetypes.unsqueeze(0).expand(expand_dims)
@@ -94,8 +93,7 @@ class MLP(nn.Module):
         self.link_fn = link_fn
 
     def forward(self, X):
-        """ Torch Forward pass.
-        """
+        """Torch Forward pass."""
         ret = self.mlp(X)
         return self.link_fn(ret)
 
@@ -133,8 +131,7 @@ class NGAM(nn.Module):
         self.link_fn = link_fn
 
     def forward(self, X):
-        """ Torch Forward pass.
-        """
+        """Torch Forward pass."""
         ret = self.nams[0](X[:, 0].unsqueeze(-1))
         for i, nam in enumerate(self.nams[1:]):
             ret += nam(X[:, i].unsqueeze(-1))

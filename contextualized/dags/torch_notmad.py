@@ -6,7 +6,14 @@ from contextualized.functions import identity_link
 torch.set_default_tensor_type(torch.FloatTensor)
 
 from contextualized.dags.graph_utils import project_to_dag_torch
-from contextualized.dags.torch_utils import DAG_loss, DAG_loss_np, dag_pred, l1_loss, NOTEARS_loss, mse_loss
+from contextualized.dags.torch_utils import (
+    DAG_loss,
+    DAG_loss_np,
+    dag_pred,
+    l1_loss,
+    NOTEARS_loss,
+    mse_loss,
+)
 from contextualized.modules import ENCODERS, Explainer
 
 
