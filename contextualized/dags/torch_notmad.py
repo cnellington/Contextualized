@@ -1,16 +1,20 @@
 import torch
-from torch import nn
 import pytorch_lightning as pl
 import numpy as np
 from contextualized.functions import identity_link
 
 torch.set_default_tensor_type(torch.FloatTensor)
 
-from contextualized.dags.torch_notmad.graph_utils import project_to_dag_torch
-from contextualized.dags.torch_notmad.torch_utils import DAG_loss, DAG_loss_np, dag_pred, l1_loss, NOTEARS_loss
+from contextualized.dags.graph_utils import project_to_dag_torch
+from contextualized.dags.torch_utils import (
+    DAG_loss,
+    DAG_loss_np,
+    dag_pred,
+    l1_loss,
+    NOTEARS_loss,
+    mse_loss,
+)
 from contextualized.modules import ENCODERS, Explainer
-
-mse_loss = lambda y_true, y_pred: ((y_true - y_pred)**2).mean()
 
 
 class NOTMAD_model(pl.LightningModule):

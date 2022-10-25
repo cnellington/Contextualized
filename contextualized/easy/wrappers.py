@@ -75,9 +75,7 @@ class SKLearnInterface:
             elif key in acceptable_wrapper_kwargs:
                 wrapper_kwargs[key] = value
             else:
-                print(
-                    f"Received unknown keyword argument {key}, probably ignoring."
-                )
+                print(f"Received unknown keyword argument {key}, probably ignoring.")
 
         model_kwargs["learning_rate"] = model_kwargs.get("learning_rate", 1e-3)
         if "num_archetypes" in model_kwargs and model_kwargs["num_archetypes"] == 0:

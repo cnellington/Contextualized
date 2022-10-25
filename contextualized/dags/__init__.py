@@ -3,7 +3,7 @@ Contextualized Directed Acyclic Graphs (DAGs).
 """
 
 from contextualized.modules import MLP, NGAM
-from contextualized.dags.notmad import NOTMAD
+from contextualized.dags.torch_notmad import NOTMAD_model
 
 ENCODERS = {
     "mlp": MLP,

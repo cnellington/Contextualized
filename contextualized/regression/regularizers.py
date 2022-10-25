@@ -6,7 +6,7 @@ import torch
 
 def no_reg():
     """
-    Function that returns an empty regularizer. 
+    Function that returns an empty regularizer.
     """
     return lambda beta, mu: 0.0
 

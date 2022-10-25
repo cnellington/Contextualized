@@ -27,6 +27,7 @@ def DAG_loss(w_pred, alpha, rho):
 
     return loss
 
+
 def DAG_loss_np(w, alpha, rho):
     """
     Computes DAG loss on w which is np array.
@@ -36,12 +37,13 @@ def DAG_loss_np(w, alpha, rho):
     h = torch.trace(m) - d
     return alpha * h + 0.5 * rho * h * h
 
+
 dag_pred = lambda X, W: torch.matmul(X.unsqueeze(1), W).squeeze(1)
 l1_loss = lambda w, l1: l1 * torch.norm(w, p=1)
+mse_loss = lambda y_true, y_pred: ((y_true - y_pred) ** 2).mean()
 
 
-
-def mse_loss(x_true, w_pred):
+def dag_mse(x_true, w_pred):
     """Computes MSE loss between true x and predicted network, for torch tensors.
     Works on batches only.
 
@@ -71,6 +73,6 @@ def NOTEARS_loss(x_true, w_pred, l1_lambda, alpha, rho):
     Returns:
         torch.tensor: NOTEARS loss for data features and predicted network (batches only).
     """
-    mse = mse_loss(x_true, w_pred)
+    mse = dag_mse(x_true, w_pred)
     loss = mse + l1_lambda * torch.norm(w_pred, p=1) + DAG_loss(w_pred, alpha, rho)
     return loss
