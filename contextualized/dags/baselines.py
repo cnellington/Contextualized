@@ -5,12 +5,12 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 import pytorch_lightning as pl
-from contextualized.dags.notmad_helpers.graph_utils import project_to_dag, trim_params
+from contextualized.dags.graph_utils import project_to_dag_torch, trim_params
 
 
 def project_all(ws):
     # Projects non-dag structures to dags
-    return np.array([trim_params(project_to_dag(w)[0], 0.01) for w in ws])
+    return np.array([trim_params(project_to_dag_torch(w)[0], 0.01) for w in ws])
 
 
 dag_pred = lambda X, W: torch.matmul(X.unsqueeze(1), W).squeeze(1)

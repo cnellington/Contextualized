@@ -1,13 +1,12 @@
 import torch
-from torch import nn
 import pytorch_lightning as pl
 import numpy as np
 from contextualized.functions import identity_link
 
 torch.set_default_tensor_type(torch.FloatTensor)
 
-from contextualized.dags.torch_notmad.graph_utils import project_to_dag_torch
-from contextualized.dags.torch_notmad.torch_utils import DAG_loss, NOTEARS_loss
+from contextualized.dags.graph_utils import project_to_dag_torch
+from contextualized.dags.torch_utils import DAG_loss, NOTEARS_loss
 from contextualized.modules import ENCODERS, Explainer
 
 
