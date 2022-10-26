@@ -8,14 +8,14 @@ from contextualized.regression import (
 from contextualized.regression import REGULARIZERS, LOSSES
 from contextualized.functions import LINK_FUNCTIONS
 
-from contextualized.easy.wrappers import SKLearnInterface
+from contextualized.easy.wrappers import SKLearnPredictorWrapper
 
 # TODO: Multitask metamodels
 # TODO: Task-specific link functions.
 # TODO: Easier early stopping (right now, have to pass in 'callback_constructors' kwarg.
 
 
-class ContextualizedRegressor(SKLearnInterface):
+class ContextualizedRegressor(SKLearnPredictorWrapper):
     """
     sklearn-like interface to Contextualized Regression.
     """
@@ -28,62 +28,51 @@ class ContextualizedRegressor(SKLearnInterface):
             self.constructor = ContextualizedRegression
         else:
             print(
-                f"""Was told to construct a ContextualizedRegressor with {self.num_archetypes}
+                f"""
+                Was told to construct a ContextualizedRegressor with {self.num_archetypes}
                 archetypes, but this should be a non-negative integer."""
             )
-        self.constructor_kwargs = kwargs
-        self.constructor_kwargs["link_fn"] = kwargs.get(
+        constructor_kwargs, convenience_kwargs = self._organize_constructor_kwargs(
+            **kwargs
+        )
+        not_constructor_kwargs = {
+            k: v
+            for k, v in kwargs.items()
+            if k not in constructor_kwargs and k not in convenience_kwargs
+        }
+        super().__init__(self.constructor, **not_constructor_kwargs)
+        for key, value in constructor_kwargs.items():
+            self._init_kwargs["model"][key] = value
+
+    def _organize_constructor_kwargs(self, **kwargs):
+        """
+        Helper function to set all the default constructor or changes allowed
+        by ContextualizedRegressor.
+        """
+        constructor_kwargs = {}
+        convenience_kwargs = ["subtype_probabilities", "alpha", "l1_ratio", "mu_ratio"]
+        constructor_kwargs["link_fn"] = kwargs.get(
             "link_fn", LINK_FUNCTIONS["identity"]
         )
-        self.constructor_kwargs["univariate"] = kwargs.get("univariate", False)
-        self.constructor_kwargs["encoder_type"] = kwargs.get("encoder_type", "mlp")
-        self.constructor_kwargs["loss_fn"] = kwargs.get("loss_fn", LOSSES["mse"])
-        self.constructor_kwargs["encoder_kwargs"] = kwargs.get(
+        constructor_kwargs["univariate"] = kwargs.get("univariate", False)
+        constructor_kwargs["encoder_type"] = kwargs.get("encoder_type", "mlp")
+        constructor_kwargs["loss_fn"] = kwargs.get("loss_fn", LOSSES["mse"])
+        constructor_kwargs["encoder_kwargs"] = kwargs.get(
             "encoder_kwargs",
             {"width": 25, "layers": 2, "link_fn": LINK_FUNCTIONS["identity"]},
         )
         if kwargs.get("subtype_probabilities", False):
-            self.constructor_kwargs["encoder_kwargs"]["link_fn"] = LINK_FUNCTIONS[
-                "softmax"
-            ]
+            constructor_kwargs["encoder_kwargs"]["link_fn"] = LINK_FUNCTIONS["softmax"]
 
         # Make regularizer
         if "alpha" in kwargs and kwargs["alpha"] > 0:
-            print(
-                kwargs["alpha"],
-                kwargs.get("l1_ratio", 1.0),
-                kwargs.get("mu_ratio", 0.5),
-            )
-            self.constructor_kwargs["model_regularizer"] = REGULARIZERS["l1_l2"](
+            constructor_kwargs["model_regularizer"] = REGULARIZERS["l1_l2"](
                 kwargs["alpha"],
                 kwargs.get("l1_ratio", 1.0),
                 kwargs.get("mu_ratio", 0.5),
             )
         else:
-            self.constructor_kwargs["model_regularizer"] = kwargs.get(
+            constructor_kwargs["model_regularizer"] = kwargs.get(
                 "model_regularizer", REGULARIZERS["none"]
             )
-
-        super().__init__(self.constructor)
-
-    def fit(self, C, X, Y, **kwargs):
-        """
-
-        :param C:
-        :param X:
-        :param Y:
-        :param **kwargs:
-
-        """
-        # Merge kwargs and self.constructor_kwargs, prioritizing more recent kwargs.
-        for key, value in self.constructor_kwargs.items():
-            if key not in kwargs:
-                kwargs[key] = value
-        return super().fit(C, X, Y, **kwargs)
-
-    def predict_proba(self, C, X, **kwargs):
-        print(
-            """I am a regressor. I don't predict probabilities.
-        Did you mean to be using a ContextualizedClassifier instead?"""
-        )
-        raise TypeError
+        return constructor_kwargs, convenience_kwargs

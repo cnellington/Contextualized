@@ -8,16 +8,6 @@ from contextualized.functions import LINK_FUNCTIONS
 from contextualized.easy import ContextualizedRegressor
 
 
-def inv_sigmoid(x, slope=1):
-    """
-    Inverse sigmoid function.
-    :param x:
-    :param slope:  (Default value = 1)
-
-    """
-    return (1.0 / slope) * np.log(x / (1 - x))
-
-
 class ContextualizedClassifier(ContextualizedRegressor):
     """
     sklearn-like interface to Contextualized Classifiers.
