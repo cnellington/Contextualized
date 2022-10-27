@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader, TensorDataset
 import pytorch_lightning as pl
 
 from contextualized.dags.graph_utils import project_to_dag_torch, trim_params
-from contextualized.dags.torch_utils import DAG_loss_np, dag_pred, l1_loss
+from contextualized.dags.losses import DAG_loss_np, dag_pred, l1_loss
 
 mse_loss = lambda y_true, y_pred: ((y_true - y_pred) ** 2).mean()
 

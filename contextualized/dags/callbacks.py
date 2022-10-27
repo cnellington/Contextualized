@@ -4,7 +4,7 @@ from pytorch_lightning.callbacks import Callback
 from pytorch_lightning.callbacks import EarlyStopping
 
 # local imports
-from contextualized.dags.torch_utils import DAG_loss
+from contextualized.dags.losses import DAG_loss
 
 early_stopping = EarlyStopping("val_loss")
 

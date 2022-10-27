@@ -5,7 +5,7 @@ import unittest
 import numpy as np
 import igraph as ig
 
-from contextualized.dags.torch_notmad import NOTMAD_model
+from contextualized.dags.lightning_modules import NOTMAD
 from contextualized.dags.datamodules import CXW_DataModule
 from contextualized.dags.callbacks import DynamicAlphaRho
 from contextualized.dags import graph_utils
@@ -136,67 +136,73 @@ class TestNOTMAD(unittest.TestCase):
 
         return C, W, X
 
-    def _quicktest(self, model, datamodule, n_epochs=5):
+    def _quicktest(self, model, n_epochs=5):
         print(f"\n{type(model)} quicktest")
 
-        trainer = Trainer(max_epochs=n_epochs, callbacks=[DynamicAlphaRho()])
+        # trainer = Trainer(max_epochs=n_epochs, callbacks=[DynamicAlphaRho()])
+        trainer = Trainer(max_epochs=n_epochs)
 
         trainer.tune(model)
-        trainer.fit(model, datamodule)
-        trainer.validate(model, datamodule)
-        trainer.test(model, datamodule)
-        # data
-        C_train = trainer.model.datamodule.C_train
-        C_test = trainer.model.datamodule.C_test
-        W_train = trainer.model.datamodule.W_train
-        W_test = trainer.model.datamodule.W_test
-        X_train = trainer.model.datamodule.X_train
-        X_test = trainer.model.datamodule.X_test
+        dataloader = model.dataloader(self.C, self.X)
+        trainer.fit(model, dataloader)
+        trainer.validate(model, dataloader)
+        trainer.test(model, dataloader)
+        trainer.predict(model, dataloader)
+        # todo: make tests use new dataloader, remove callbacks
 
-        # Evaluate results
-        torch_notmad_preds_train = trainer.model.predict_w(
-            C_train, confirm_project_to_dag=True
-        )
-        torch_notmad_preds = trainer.model.predict_w(C_test).squeeze().detach().numpy()
-
-        torch_notmad_preds_train = trainer.model.predict_w(
-            C_train, confirm_project_to_dag=True
-        )
-        torch_notmad_preds = trainer.model.predict_w(C_test).squeeze().detach().numpy()
-
-        mse = lambda true, pred: ((true - pred) ** 2).mean()
-        dag_pred = lambda x, w: np.matmul(x, w).squeeze()
-        dags_pred = lambda xs, w: [dag_pred(x, w) for x in xs]
-
-        example_preds = dags_pred(X_train, torch_notmad_preds_train)
-        actual_preds = dags_pred(X_train, W_train)
-
-        print(f"train L2: {mse(torch_notmad_preds_train, W_train)}")
-        print(f"test L2:  {mse(torch_notmad_preds, W_test)}")
-        print(f"train mse: {mse(dag_pred(X_train, torch_notmad_preds_train), X_train)}")
-        print(f"test mse:  {mse(dag_pred(X_test, torch_notmad_preds), X_test)}")
+        # # data
+        # C_train = trainer.model.datamodule.C_train
+        # C_test = trainer.model.datamodule.C_test
+        # W_train = trainer.model.datamodule.W_train
+        # W_test = trainer.model.datamodule.W_test
+        # X_train = trainer.model.datamodule.X_train
+        # X_test = trainer.model.datamodule.X_test
+        #
+        # # Evaluate results
+        # torch_notmad_preds_train = trainer.model.predict_w(
+        #     C_train, confirm_project_to_dag=True
+        # )
+        # torch_notmad_preds = trainer.model.predict_w(C_test).squeeze().detach().numpy()
+        #
+        # torch_notmad_preds_train = trainer.model.predict_w(
+        #     C_train, confirm_project_to_dag=True
+        # )
+        # torch_notmad_preds = trainer.model.predict_w(C_test).squeeze().detach().numpy()
+        #
+        # mse = lambda true, pred: ((true - pred) ** 2).mean()
+        # dag_pred = lambda x, w: np.matmul(x, w).squeeze()
+        # dags_pred = lambda xs, w: [dag_pred(x, w) for x in xs]
+        #
+        # example_preds = dags_pred(X_train, torch_notmad_preds_train)
+        # actual_preds = dags_pred(X_train, W_train)
+        #
+        # print(f"train L2: {mse(torch_notmad_preds_train, W_train)}")
+        # print(f"test L2:  {mse(torch_notmad_preds, W_test)}")
+        # print(f"train mse: {mse(dag_pred(X_train, torch_notmad_preds_train), X_train)}")
+        # print(f"test mse:  {mse(dag_pred(X_test, torch_notmad_preds), X_test)}")
 
     def test_notmad(self):
         # 5 archetypes
         k = 5
         INIT_MAT = np.random.uniform(-0.01, 0.01, size=(k, 4, 4))
-        datamodule = CXW_DataModule(self.C, self.X, self.W)
-        model = NOTMAD_model(
-            datamodule,
+        model = NOTMAD(
+            self.C.shape[-1],
+            self.X.shape[-1],
             init_mat=INIT_MAT,
-            n_archetypes=k,
+            num_archetypes=k,
         )
-        self._quicktest(model, datamodule, n_epochs=5)
+        self._quicktest(model, n_epochs=5)
 
         # 6 archetypes
         k = 6
         INIT_MAT = np.random.uniform(-0.01, 0.01, size=(k, 4, 4))
-        model = NOTMAD_model(
-            datamodule,
+        model = NOTMAD(
+            self.C.shape[-1],
+            self.X.shape[-1],
             init_mat=INIT_MAT,
-            n_archetypes=k,
+            num_archetypes=k,
         )
-        self._quicktest(model, datamodule, n_epochs=5)
+        self._quicktest(model, n_epochs=5)
 
 
 if __name__ == "__main__":

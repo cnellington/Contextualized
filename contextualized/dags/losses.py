@@ -1,7 +1,7 @@
 import torch
 
 
-def DAG_loss(w_pred, alpha, rho):
+def DAG_loss_old(w_pred, alpha, rho):
     """Computes the DAG loss via torch functions, for torch tensors.
     Used by torch NOTMAD for NOTEARS loss, archetype loss, and DynamicAlphaRho callback.
     Works on both batches of predicted networks and single networks.
@@ -28,13 +28,13 @@ def DAG_loss(w_pred, alpha, rho):
     return loss
 
 
-def DAG_loss_np(w, alpha, rho):
+def DAG_loss(w, alpha, rho):
     """
     Computes DAG loss on w which is np array.
+    NOTEARS trace matrix exponential
     """
-    d = w.shape[-1]
     m = torch.linalg.matrix_exp(w * w)
-    h = torch.trace(m) - d
+    h = m.diagonal(offset=0, dim1=-1, dim2=-2).sum(-1) - w.shape[-1]
     return alpha * h + 0.5 * rho * h * h
 
 
