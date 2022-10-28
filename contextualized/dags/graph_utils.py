@@ -1,5 +1,10 @@
+import torch
 import igraph as ig
 import numpy as np
+
+
+dag_pred = lambda X, W: torch.matmul(X.unsqueeze(1), W).squeeze(1)
+dag_pred_np = lambda x, w: np.matmul(x[:, np.newaxis, :], w).squeeze()
 
 
 def break_symmetry(w):
@@ -19,7 +24,7 @@ def project_to_dag_torch(w):
         return w, 0.0
 
     w_dag = w.copy()
-    w_dag = break_symmetry(w_dag)
+    # w_dag = break_symmetry(w_dag)
 
     vals = sorted(list(set(np.abs(w_dag).flatten())))
     low = 0
