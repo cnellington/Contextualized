@@ -6,10 +6,8 @@ import numpy as np
 import igraph as ig
 
 from contextualized.dags.lightning_modules import NOTMAD
-from contextualized.dags.datamodules import CXW_DataModule
-from contextualized.dags.callbacks import DynamicAlphaRho
 from contextualized.dags import graph_utils
-from pytorch_lightning import Trainer
+from contextualized.dags.trainers import GraphTrainer
 
 
 def simulate_linear_sem(W, n, sem_type, noise_scale=None):
@@ -90,7 +88,17 @@ class TestNOTMAD(unittest.TestCase):
         super(TestNOTMAD, self).__init__(*args, **kwargs)
 
     def setUp(self):
-        self.C, self.W, self.X = self._create_cwx_dataset(500)
+        (
+            self.C_train,
+            self.C_test,
+            self.C_val,
+            self.X_train,
+            self.X_test,
+            self.X_val,
+            self.W_train,
+            self.W_test,
+            self.W_val,
+        ) = self._create_cwx_dataset()
 
     def _create_cwx_dataset(self, n=1000):
         C = np.linspace(1, 2, n).reshape((n, 1))
@@ -121,88 +129,79 @@ class TestNOTMAD(unittest.TestCase):
             ]
         ).squeeze()
 
-        def _dag_pred(self, x, w):
-            return np.matmul(x, w).squeeze()
-
         W = np.transpose(W, (2, 0, 1))
         X = np.zeros((n, 4))
-        X_pre = np.random.uniform(-1, 1, (n, 4))
         for i, w in enumerate(W):
-            eps = np.random.normal(0, 0.01, 4)
-            eps = 0
-            X_new = simulate_linear_sem(w, 1, "uniform", noise_scale=0.1)[0]
-            # X_new = _dag_pred(X_p[np.newaxis, :], w)
-            X[i] = X_new + eps
-
-        return C, W, X
+            x = simulate_linear_sem(w, 1, "uniform", noise_scale=0.1)[0]
+            X[i] = x
+        train_idx = np.logical_or(C < 1.7, C >= 1.9)[:, 0]
+        test_idx = np.logical_and(C >= 1.8, C < 1.9)[:, 0]
+        val_idx = np.logical_and(C >= 1.7, C < 1.8)[:, 0]
+        return (
+            C[train_idx],
+            C[test_idx],
+            C[val_idx],
+            X[train_idx],
+            X[test_idx],
+            X[val_idx],
+            W[train_idx],
+            W[test_idx],
+            W[val_idx],
+        )
 
     def _quicktest(self, model, n_epochs=5):
         print(f"\n{type(model)} quicktest")
 
-        # trainer = Trainer(max_epochs=n_epochs, callbacks=[DynamicAlphaRho()])
-        trainer = Trainer(max_epochs=n_epochs)
+        trainer = GraphTrainer(max_epochs=n_epochs)
+        train_dataloader = model.dataloader(self.C_train, self.X_train, batch_size=10)
+        test_dataloader = model.dataloader(self.C_test, self.X_test, batch_size=10)
+        val_dataloader = model.dataloader(self.C_val, self.X_val, batch_size=10)
+        trainer.tune(model, train_dataloader)
+        trainer.fit(model, train_dataloader, val_dataloader)
+        trainer.validate(model, val_dataloader)
+        trainer.test(model, test_dataloader)
+        train_preds = trainer.predict_params(
+            model, train_dataloader, project_to_dag=True
+        )
+        test_preds = trainer.predict_params(model, test_dataloader, project_to_dag=True)
+        val_preds = trainer.predict_params(model, val_dataloader, project_to_dag=True)
 
-        trainer.tune(model)
-        dataloader = model.dataloader(self.C, self.X)
-        trainer.fit(model, dataloader)
-        trainer.validate(model, dataloader)
-        trainer.test(model, dataloader)
-        trainer.predict(model, dataloader)
-        # todo: make tests use new dataloader, remove callbacks
-
-        # # data
-        # C_train = trainer.model.datamodule.C_train
-        # C_test = trainer.model.datamodule.C_test
-        # W_train = trainer.model.datamodule.W_train
-        # W_test = trainer.model.datamodule.W_test
-        # X_train = trainer.model.datamodule.X_train
-        # X_test = trainer.model.datamodule.X_test
-        #
-        # # Evaluate results
-        # torch_notmad_preds_train = trainer.model.predict_w(
-        #     C_train, confirm_project_to_dag=True
-        # )
-        # torch_notmad_preds = trainer.model.predict_w(C_test).squeeze().detach().numpy()
-        #
-        # torch_notmad_preds_train = trainer.model.predict_w(
-        #     C_train, confirm_project_to_dag=True
-        # )
-        # torch_notmad_preds = trainer.model.predict_w(C_test).squeeze().detach().numpy()
-        #
-        # mse = lambda true, pred: ((true - pred) ** 2).mean()
-        # dag_pred = lambda x, w: np.matmul(x, w).squeeze()
-        # dags_pred = lambda xs, w: [dag_pred(x, w) for x in xs]
-        #
-        # example_preds = dags_pred(X_train, torch_notmad_preds_train)
-        # actual_preds = dags_pred(X_train, W_train)
-        #
-        # print(f"train L2: {mse(torch_notmad_preds_train, W_train)}")
-        # print(f"test L2:  {mse(torch_notmad_preds, W_test)}")
-        # print(f"train mse: {mse(dag_pred(X_train, torch_notmad_preds_train), X_train)}")
-        # print(f"test mse:  {mse(dag_pred(X_test, torch_notmad_preds), X_test)}")
+        mse = lambda true, pred: ((true - pred) ** 2).mean()
+        print(f"train L2: {mse(train_preds, self.W_train)}")
+        print(f"test L2:  {mse(test_preds, self.W_test)}")
+        print(f"val L2:   {mse(val_preds, self.W_val)}")
+        print(
+            f"train mse: {mse(graph_utils.dag_pred_np(self.X_train, train_preds), self.X_train)}"
+        )
+        print(
+            f"test mse:  {mse(graph_utils.dag_pred_np(self.X_test, test_preds), self.X_test)}"
+        )
+        print(
+            f"val mse:   {mse(graph_utils.dag_pred_np(self.X_val, val_preds), self.X_val)}"
+        )
 
     def test_notmad(self):
-        # 5 archetypes
-        k = 5
+        # 1 archetype
+        k = 1
         INIT_MAT = np.random.uniform(-0.01, 0.01, size=(k, 4, 4))
         model = NOTMAD(
-            self.C.shape[-1],
-            self.X.shape[-1],
+            self.C_train.shape[-1],
+            self.X_train.shape[-1],
             init_mat=INIT_MAT,
             num_archetypes=k,
         )
-        self._quicktest(model, n_epochs=5)
+        self._quicktest(model)
 
-        # 6 archetypes
-        k = 6
+        # 10 archetypes
+        k = 20
         INIT_MAT = np.random.uniform(-0.01, 0.01, size=(k, 4, 4))
         model = NOTMAD(
-            self.C.shape[-1],
-            self.X.shape[-1],
+            self.C_train.shape[-1],
+            self.X_train.shape[-1],
             init_mat=INIT_MAT,
             num_archetypes=k,
         )
-        self._quicktest(model, n_epochs=5)
+        self._quicktest(model)
 
 
 if __name__ == "__main__":
