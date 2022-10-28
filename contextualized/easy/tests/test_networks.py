@@ -66,7 +66,7 @@ class TestEasyNetworks(unittest.TestCase):
         model = ContextualizedBayesianNetworks(encoder_type="ngam", num_archetypes=16)
         self._quicktest(model, self.C, self.X, max_epochs=10, learning_rate=1e-3)
         networks = model.predict_networks(self.C, individual_preds=False)
-        assert np.shape(omegas) == (self.n_samples, self.x_dim, self.x_dim)
+        assert np.shape(networks) == (self.n_samples, self.x_dim, self.x_dim)
 
     def test_correlation(self):
         """Test Case for ContextualizedCorrelationNetworks."""

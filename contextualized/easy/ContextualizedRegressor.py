@@ -33,6 +33,7 @@ class ContextualizedRegressor(SKLearnWrapper):
         extra_model_kwargs = [
             "base_param_predictor",
             "base_y_predictor",
+            "y_dim"
         ]
         extra_data_kwargs = ["Y_val"]
         trainer_constructor = RegressionTrainer

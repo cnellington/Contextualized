@@ -153,9 +153,9 @@ class SKLearnWrapper:
                     patience=kwargs.get("es_patience", self.default_es_patience),
                     verbose=kwargs.get("es_verbose", False),
                     min_delta=kwargs.get("es_min_delta", 0.00),
-                )
+                ),
             ]
-        )
+        )       # TODO: Add ModelCheckpoint callback and revert to the best epoch.
         maybe_add_kwarg("trainer", "accelerator", self.accelerator)
         return organized_kwargs
 
