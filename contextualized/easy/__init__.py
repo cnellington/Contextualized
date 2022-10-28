@@ -9,7 +9,7 @@ from contextualized.easy.ContextualGAM import (
     ContextualGAMRegressor,
 )
 from contextualized.easy.ContextualizedNetworks import (
-    # ContextualizedBayesianNetworks,
+    ContextualizedBayesianNetworks,
     ContextualizedCorrelationNetworks,
     ContextualizedMarkovNetworks,
 )

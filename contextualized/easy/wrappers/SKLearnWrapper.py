@@ -53,6 +53,8 @@ class SKLearnWrapper:
                 "model_regularizer",
                 "num_archetypes",
                 "learning_rate",
+                "context_dim",
+                "x_dim",
             ],
             "trainer": [
                 "max_epochs",
@@ -60,12 +62,17 @@ class SKLearnWrapper:
                 "val_check_interval",
                 "callbacks",
                 "callback_constructors",
+                "accelerator",
             ],
             "fit": [],
             "wrapper": [
                 "n_bootstraps",
             ],
         }
+        self._update_acceptable_kwargs("model", extra_model_kwargs)
+        self._update_acceptable_kwargs("data", extra_data_kwargs)
+        self._update_acceptable_kwargs("model", kwargs.get('remove_model_kwargs', []), extra=False)
+        self._update_acceptable_kwargs("data", kwargs.get('remove_data_kwargs', []), extra=False)
         self.constructor_kwargs = self._organize_constructor_kwargs(**kwargs)
         self.convenience_kwargs = [
             "alpha",
@@ -91,8 +98,6 @@ class SKLearnWrapper:
             if k not in self.constructor_kwargs and k not in self.convenience_kwargs
         }
         # Add Predictor-Specific kwargs for parsing.
-        self._update_acceptable_kwargs("model", extra_model_kwargs)
-        self._update_acceptable_kwargs("data", extra_data_kwargs)
         self._init_kwargs = self._organize_kwargs(**self.not_constructor_kwargs)
         self.trainer_constructor = trainer_constructor
         for key, value in self.constructor_kwargs.items():
@@ -115,36 +120,33 @@ class SKLearnWrapper:
                     organized_kwargs[category][key] = value
 
         # Add necessary kwargs.
+        def maybe_add_kwarg(category, kwarg, default_val):
+            if kwarg in self.acceptable_kwargs[category]:
+                organized_kwargs[category][kwarg] = organized_kwargs[category].get(
+                    kwarg, default_val
+                )
+                
         # Model
-        organized_kwargs["model"]["learning_rate"] = organized_kwargs["model"].get(
-            "learning_rate", self.default_learning_rate
-        )
+        maybe_add_kwarg("model", "learning_rate", self.default_learning_rate)
+        maybe_add_kwarg("model", "context_dim", self.context_dim)
+        maybe_add_kwarg("model", "x_dim", self.x_dim)
+        maybe_add_kwarg("model", "y_dim", self.y_dim)
         if (
             "num_archetypes" in organized_kwargs["model"]
             and organized_kwargs["model"]["num_archetypes"] == 0
         ):
             del organized_kwargs["model"]["num_archetypes"]
-        organized_kwargs["model"]["context_dim"] = self.context_dim
-        organized_kwargs["model"]["x_dim"] = self.x_dim
-        organized_kwargs["model"]["y_dim"] = self.y_dim
-        organized_kwargs["data"]["train_batch_size"] = organized_kwargs["data"].get(
-            "train_batch_size", self.default_val_batch_size
-        )
-        organized_kwargs["data"]["val_batch_size"] = organized_kwargs["data"].get(
-            "val_batch_size", self.default_val_batch_size
-        )
-        organized_kwargs["data"]["test_batch_size"] = organized_kwargs["data"].get(
-            "test_batch_size", self.default_test_batch_size
-        )
+        
+        # Data
+        maybe_add_kwarg("data", "train_batch_size", self.default_train_batch_size)
+        maybe_add_kwarg("data", "val_batch_size", self.default_val_batch_size)
+        maybe_add_kwarg("data", "test_batch_size", self.default_test_batch_size)
 
         # Wrapper
-        self.n_bootstraps = organized_kwargs["wrapper"].get(
-            "n_bootstraps", self.default_n_bootstraps
-        )
+        maybe_add_kwarg("wrapper", "n_bootstraps", self.default_n_bootstraps)
 
         # Trainer
-        if "callback_constructors" not in organized_kwargs["trainer"]:
-            organized_kwargs["trainer"]["callback_constructors"] = [
+        maybe_add_kwarg("trainer", "callback_constructors", [
                 lambda: EarlyStopping(
                     monitor=kwargs.get("es_monitor", "val_loss"),
                     mode=kwargs.get("es_mode", "min"),
@@ -153,7 +155,8 @@ class SKLearnWrapper:
                     min_delta=kwargs.get("es_min_delta", 0.00),
                 )
             ]
-        organized_kwargs["trainer"]["accelerator"] = self.accelerator
+        )
+        maybe_add_kwarg("trainer", "accelerator", self.accelerator)
         return organized_kwargs
 
     def _split_train_data(self, C, X, Y=None, Y_required=False, **kwargs):
@@ -198,11 +201,16 @@ class SKLearnWrapper:
             val_data = [C_val, X_val]
         return train_data, val_data
 
-    def _update_acceptable_kwargs(self, category, new_acceptable_kwargs):
+    def _update_acceptable_kwargs(self, category, new_acceptable_kwargs, extra=True):
         """Helper function to update the acceptable kwargs."""
-        self.acceptable_kwargs[category] = self._combine_lists(
-            self.acceptable_kwargs[category], new_acceptable_kwargs
-        )
+        if extra:
+            self.acceptable_kwargs[category] = self._combine_lists(
+                self.acceptable_kwargs[category], new_acceptable_kwargs
+            )
+        else:
+            self.acceptable_kwargs[category] = list(set(
+                self.acceptable_kwargs[category]) - set(new_acceptable_kwargs)
+            )
 
     def _organize_kwargs(self, **kwargs):
         """Private helper function to organize kwargs passed to constructor or
@@ -252,30 +260,32 @@ class SKLearnWrapper:
         Helper function to set all the default constructor or changes allowed.
         """
         constructor_kwargs = {}
-        constructor_kwargs["link_fn"] = kwargs.get(
-            "link_fn", LINK_FUNCTIONS["identity"]
-        )
-        constructor_kwargs["univariate"] = kwargs.get("univariate", False)
-        constructor_kwargs["encoder_type"] = kwargs.get("encoder_type", "mlp")
-        constructor_kwargs["loss_fn"] = kwargs.get("loss_fn", LOSSES["mse"])
-        constructor_kwargs["encoder_kwargs"] = kwargs.get(
-            "encoder_kwargs",
-            {"width": 25, "layers": 2, "link_fn": LINK_FUNCTIONS["identity"]},
+        def maybe_add_constructor_kwarg(kwarg, default_val):
+            if kwarg in self.acceptable_kwargs['model']:
+                constructor_kwargs[kwarg] = kwargs.get(kwarg, default_val)
+            
+        maybe_add_constructor_kwarg("link_fn", LINK_FUNCTIONS["identity"])
+        maybe_add_constructor_kwarg("univariate", False)
+        maybe_add_constructor_kwarg("encoder_type", "mlp")
+        maybe_add_constructor_kwarg("loss_fn", LOSSES["mse"])
+        maybe_add_constructor_kwarg("encoder_kwargs",
+            {"width": 25, "layers": 2, "link_fn": LINK_FUNCTIONS["identity"]}
         )
         if kwargs.get("subtype_probabilities", False):
             constructor_kwargs["encoder_kwargs"]["link_fn"] = LINK_FUNCTIONS["softmax"]
 
         # Make regularizer
-        if "alpha" in kwargs and kwargs["alpha"] > 0:
-            constructor_kwargs["model_regularizer"] = REGULARIZERS["l1_l2"](
-                kwargs["alpha"],
-                kwargs.get("l1_ratio", 1.0),
-                kwargs.get("mu_ratio", 0.5),
-            )
-        else:
-            constructor_kwargs["model_regularizer"] = kwargs.get(
-                "model_regularizer", REGULARIZERS["none"]
-            )
+        if 'model_regularizer' in self.acceptable_kwargs['model']:
+            if "alpha" in kwargs and kwargs["alpha"] > 0:
+                constructor_kwargs["model_regularizer"] = REGULARIZERS["l1_l2"](
+                    kwargs["alpha"],
+                    kwargs.get("l1_ratio", 1.0),
+                    kwargs.get("mu_ratio", 0.5),
+                )
+            else:
+                constructor_kwargs["model_regularizer"] = kwargs.get(
+                    "model_regularizer", REGULARIZERS["none"]
+                )
         return constructor_kwargs
 
     def predict(self, C, X, individual_preds=False, **kwargs):
@@ -311,7 +321,7 @@ class SKLearnWrapper:
         :param individual_preds:  (Default value = False)
 
         """
-        # Returns models, mus
+        # Returns betas, mus
         if kwargs.get("uses_y", True):
             get_dataloader = lambda i: self.models[i].dataloader(
                 C, np.zeros((len(C), self.x_dim)), np.zeros((len(C), self.y_dim))
@@ -321,7 +331,7 @@ class SKLearnWrapper:
                 C, np.zeros((len(C), self.x_dim))
             )
             del kwargs["uses_y"]
-        models = np.array(
+        betas = np.array(
             [
                 self.trainers[i].predict_params(
                     self.models[i], get_dataloader(i), **kwargs
@@ -338,8 +348,8 @@ class SKLearnWrapper:
             ]
         )
         if individual_preds:
-            return models, mus
-        return np.mean(models, axis=0), np.mean(mus, axis=0)
+            return betas, mus
+        return np.mean(betas, axis=0), np.mean(mus, axis=0)
 
     def fit(self, *args, **kwargs):
         """

@@ -163,6 +163,7 @@ class TestNOTMAD(unittest.TestCase):
         train_preds = trainer.predict_params(
             model, train_dataloader, project_to_dag=True
         )
+        assert train_preds.shape == (self.W_train.shape)
         test_preds = trainer.predict_params(model, test_dataloader, project_to_dag=True)
         val_preds = trainer.predict_params(model, val_dataloader, project_to_dag=True)
 

@@ -6,7 +6,7 @@ import unittest
 import numpy as np
 import torch
 from contextualized.easy import (
-    # ContextualizedBayesianNetworks,
+    ContextualizedBayesianNetworks,
     ContextualizedCorrelationNetworks,
     ContextualizedMarkovNetworks,
 )
@@ -47,16 +47,26 @@ class TestEasyNetworks(unittest.TestCase):
         model = ContextualizedMarkovNetworks()
         self._quicktest(model, self.C, self.X, max_epochs=10, learning_rate=1e-3)
 
-        model = ContextualizedMarkovNetworks(n_archetypes=16)
+        model = ContextualizedMarkovNetworks(num_archetypes=16)
         self._quicktest(model, self.C, self.X, max_epochs=10, learning_rate=1e-3)
 
-        model = ContextualizedMarkovNetworks(encoder_type="ngam", n_archetypes=16)
+        model = ContextualizedMarkovNetworks(encoder_type="ngam", num_archetypes=16)
         self._quicktest(model, self.C, self.X, max_epochs=10, learning_rate=1e-3)
         omegas = model.predict_precisions(self.C, individual_preds=False)
         assert np.shape(omegas) == (self.n_samples, self.x_dim, self.x_dim)
 
     def test_bayesian(self):
         """ Test case for ContextualizedBayesianNetworks."""
+        model = ContextualizedBayesianNetworks()
+        self._quicktest(model, self.C, self.X, max_epochs=10, learning_rate=1e-3)
+
+        model = ContextualizedBayesianNetworks(num_archetypes=16)
+        self._quicktest(model, self.C, self.X, max_epochs=10, learning_rate=1e-3)
+
+        model = ContextualizedBayesianNetworks(encoder_type="ngam", num_archetypes=16)
+        self._quicktest(model, self.C, self.X, max_epochs=10, learning_rate=1e-3)
+        networks = model.predict_networks(self.C, individual_preds=False)
+        assert np.shape(omegas) == (self.n_samples, self.x_dim, self.x_dim)
 
     def test_correlation(self):
         """Test Case for ContextualizedCorrelationNetworks."""
@@ -64,7 +74,7 @@ class TestEasyNetworks(unittest.TestCase):
         model = ContextualizedCorrelationNetworks()
         self._quicktest(model, self.C, self.X, max_epochs=10, learning_rate=1e-3)
 
-        model = ContextualizedCorrelationNetworks(n_archetypes=16)
+        model = ContextualizedCorrelationNetworks(num_archetypes=16)
         self._quicktest(model, self.C, self.X, max_epochs=10, learning_rate=1e-3)
 
         model = ContextualizedCorrelationNetworks(
