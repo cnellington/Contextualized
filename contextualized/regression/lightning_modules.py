@@ -683,6 +683,8 @@ class ContextualizedCorrelation(ContextualizedUnivariateRegression):
     """
 
     def __init__(self, context_dim, x_dim, **kwargs):
+        if 'y_dim' in kwargs:
+            del kwargs['y_dim']
         super().__init__(context_dim, x_dim, x_dim, **kwargs)
 
     def dataloader(self, C, X, Y=None, **kwargs):
@@ -709,6 +711,8 @@ class TasksplitContextualizedCorrelation(TasksplitContextualizedUnivariateRegres
     """
 
     def __init__(self, context_dim, x_dim, **kwargs):
+        if 'y_dim' in kwargs:
+            del kwargs['y_dim']
         super().__init__(context_dim, x_dim, x_dim, **kwargs)
 
     def dataloader(self, C, X, Y=None, **kwargs):
@@ -736,6 +740,8 @@ class ContextualizedMarkovGraph(ContextualizedRegression):
     """
 
     def __init__(self, context_dim, x_dim, **kwargs):
+        if 'y_dim' in kwargs:
+            del kwargs['y_dim']
         super().__init__(context_dim, x_dim, x_dim, **kwargs)
         self.register_buffer("diag_mask", torch.ones(x_dim, x_dim) - torch.eye(x_dim))
 

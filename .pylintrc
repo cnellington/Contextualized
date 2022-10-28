@@ -571,7 +571,8 @@ good-names=i,
            X_val, Y_val, C_val,
            W_train, W_val, W_test,
            beta, mu,
-           Y_true, Y_pred
+           Y_true, Y_pred,
+           W_true, W_pred
 
 # Good variable names regexes, separated by a comma. If names match any regex,
 # they will always be accepted

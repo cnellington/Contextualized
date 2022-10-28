@@ -9,43 +9,7 @@ import torch
 from contextualized.regression.lightning_modules import *
 from contextualized.regression.trainers import *
 from contextualized.functions import LINK_FUNCTIONS
-
-
-class DummyParamPredictor:
-    """
-    Predicts Parameters as all zeros.
-    """
-
-    def __init__(self, beta_dim, mu_dim):
-        self.beta_dim = beta_dim
-        self.mu_dim = mu_dim
-
-    def predict_params(self, *args):
-        """
-
-        :param *args:
-
-        """
-        n = len(args[0])
-        return torch.zeros((n, *self.beta_dim)), torch.zeros((n, *self.mu_dim))
-
-
-class DummyYPredictor:
-    """
-    Predicts Ys as all zeros.
-    """
-
-    def __init__(self, y_dim):
-        self.y_dim = y_dim
-
-    def predict_y(self, *args):
-        """
-
-        :param *args:
-
-        """
-        n = len(args[0])
-        return torch.zeros((n, *self.y_dim))
+from contextualized.utils import DummyParamPredictor, DummyYPredictor
 
 
 class TestRegression(unittest.TestCase):
