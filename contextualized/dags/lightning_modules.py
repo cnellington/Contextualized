@@ -163,6 +163,7 @@ class NOTMAD(pl.LightningModule):
             "train_arch_l1_loss": arch_l1_term,
             "train_arch_dag_loss": arch_dag_term,
         }
+        self.log_dict(losses)
         return losses
 
     def test_step(self, batch, batch_idx):
@@ -183,6 +184,7 @@ class NOTMAD(pl.LightningModule):
             "test_arch_l1_loss": arch_l1_term,
             "test_arch_dag_loss": arch_dag_term,
         }
+        self.log_dict(losses)
         return losses
 
     def validation_step(self, batch, batch_idx):
@@ -200,6 +202,7 @@ class NOTMAD(pl.LightningModule):
             "val_l1_loss": l1_term,
             "val_dag_loss": dag_term,
         }
+        self.log_dict(losses)
         return losses
 
     def predict_step(self, batch, batch_idx):
