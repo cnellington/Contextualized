@@ -4,10 +4,13 @@ Unit tests for DAG models.
 import unittest
 import numpy as np
 import igraph as ig
+from pytorch_lightning.utilities.seed import seed_everything
+
 
 from contextualized.dags.lightning_modules import NOTMAD
 from contextualized.dags import graph_utils
 from contextualized.dags.trainers import GraphTrainer
+from contextualized.dags.losses import mse_loss as mse
 
 
 def simulate_linear_sem(W, n, sem_type, noise_scale=None):
@@ -89,18 +92,19 @@ class TestNOTMAD(unittest.TestCase):
 
     def setUp(self):
         (
-            self.C_train,
-            self.C_test,
-            self.C_val,
-            self.X_train,
-            self.X_test,
-            self.X_val,
-            self.W_train,
-            self.W_test,
-            self.W_val,
+            self.C,
+            self.X,
+            self.W,
+            self.train_idx,
+            self.test_idx,
+            self.val_idx,
         ) = self._create_cwx_dataset()
+        self.C_train, self.C_test, self.C_val = self.C[self.train_idx], self.C[self.test_idx], self.C[self.val_idx]
+        self.X_train, self.X_test, self.X_val = self.X[self.train_idx], self.X[self.test_idx], self.X[self.val_idx]
+        self.W_train, self.W_test, self.W_val = self.W[self.train_idx], self.W[self.test_idx], self.W[self.val_idx]
 
-    def _create_cwx_dataset(self, n=1000):
+    def _create_cwx_dataset(self, n=500):
+        np.random.seed(0)
         C = np.linspace(1, 2, n).reshape((n, 1))
         blank = np.zeros_like(C)
         W_00 = blank
@@ -134,74 +138,73 @@ class TestNOTMAD(unittest.TestCase):
         for i, w in enumerate(W):
             x = simulate_linear_sem(w, 1, "uniform", noise_scale=0.1)[0]
             X[i] = x
-        train_idx = np.logical_or(C < 1.7, C >= 1.9)[:, 0]
-        test_idx = np.logical_and(C >= 1.8, C < 1.9)[:, 0]
-        val_idx = np.logical_and(C >= 1.7, C < 1.8)[:, 0]
+        train_idx = np.argwhere(np.logical_or(C < 1.7, C >= 1.9)[:, 0])[:, 0]
+        np.random.shuffle(train_idx)
+        test_idx = np.argwhere(np.logical_and(C >= 1.8, C < 1.9)[:, 0])[:, 0]
+        val_idx = np.argwhere(np.logical_and(C >= 1.7, C < 1.8)[:, 0])[:, 0]
         return (
-            C[train_idx],
-            C[test_idx],
-            C[val_idx],
-            X[train_idx],
-            X[test_idx],
-            X[val_idx],
-            W[train_idx],
-            W[test_idx],
-            W[val_idx],
+            C,
+            X,
+            W,
+            train_idx,
+            test_idx,
+            val_idx,
         )
 
-    def _quicktest(self, model, n_epochs=5):
-        print(f"\n{type(model)} quicktest")
+    def _evaluate(self, train_preds, test_preds, val_preds):
+        return (
+            mse(train_preds, self.W_train),
+            mse(test_preds, self.W_test),
+            mse(val_preds, self.W_val),
+            mse(graph_utils.dag_pred_np(self.X_train, train_preds), self.X_train),
+            mse(graph_utils.dag_pred_np(self.X_test, test_preds), self.X_test),
+            mse(graph_utils.dag_pred_np(self.X_val, val_preds), self.X_val),
+        )
 
-        trainer = GraphTrainer(max_epochs=n_epochs)
-        train_dataloader = model.dataloader(self.C_train, self.X_train, batch_size=10)
+    def _train(self, n_epochs):
+        seed_everything(0)
+        k = 6
+        INIT_MAT = np.random.uniform(-0.01, 0.01, size=(k, 4, 4))
+        model = NOTMAD(
+            self.C.shape[-1],
+            self.X.shape[-1],
+            init_mat=INIT_MAT,
+            num_archetypes=k,
+        )
+        train_dataloader = model.dataloader(self.C_train, self.X_train, batch_size=1)
         test_dataloader = model.dataloader(self.C_test, self.X_test, batch_size=10)
         val_dataloader = model.dataloader(self.C_val, self.X_val, batch_size=10)
-        trainer.tune(model, train_dataloader)
-        trainer.fit(model, train_dataloader, val_dataloader)
+        trainer = GraphTrainer(max_epochs=n_epochs, callbacks=[], deterministic=True)
+        trainer.tune(model)
+        trainer.fit(model, train_dataloader)
         trainer.validate(model, val_dataloader)
         trainer.test(model, test_dataloader)
-        train_preds = trainer.predict_params(
-            model, train_dataloader, project_to_dag=True
-        )
-        test_preds = trainer.predict_params(model, test_dataloader, project_to_dag=True)
-        val_preds = trainer.predict_params(model, val_dataloader, project_to_dag=True)
 
-        mse = lambda true, pred: ((true - pred) ** 2).mean()
-        print(f"train L2: {mse(train_preds, self.W_train)}")
-        print(f"test L2:  {mse(test_preds, self.W_test)}")
-        print(f"val L2:   {mse(val_preds, self.W_val)}")
-        print(
-            f"train mse: {mse(graph_utils.dag_pred_np(self.X_train, train_preds), self.X_train)}"
-        )
-        print(
-            f"test mse:  {mse(graph_utils.dag_pred_np(self.X_test, test_preds), self.X_test)}"
-        )
-        print(
-            f"val mse:   {mse(graph_utils.dag_pred_np(self.X_val, val_preds), self.X_val)}"
-        )
+        # Evaluate results
+        preds_train = trainer.predict_params(model, train_dataloader, project_to_dag=True)
+        preds_test = trainer.predict_params(model, test_dataloader, project_to_dag=True)
+        preds_val = trainer.predict_params(model, val_dataloader, project_to_dag=True)
+        return preds_train, preds_test, preds_val
 
     def test_notmad(self):
-        # 1 archetype
-        k = 1
-        INIT_MAT = np.random.uniform(-0.01, 0.01, size=(k, 4, 4))
-        model = NOTMAD(
-            self.C_train.shape[-1],
-            self.X_train.shape[-1],
-            init_mat=INIT_MAT,
-            num_archetypes=k,
-        )
-        self._quicktest(model)
-
-        # 10 archetypes
-        k = 20
-        INIT_MAT = np.random.uniform(-0.01, 0.01, size=(k, 4, 4))
-        model = NOTMAD(
-            self.C_train.shape[-1],
-            self.X_train.shape[-1],
-            init_mat=INIT_MAT,
-            num_archetypes=k,
-        )
-        self._quicktest(model)
+        train_preds, test_preds, val_preds = self._train(10)
+        print(train_preds[0])
+        print(self.W_train[0])
+        print(train_preds[-1])
+        print(self.W_train[-1])
+        train_l2, test_l2, val_l2, train_mse, test_mse, val_mse = self._evaluate(train_preds, test_preds, val_preds)
+        print(f"Train L2: {train_l2}")
+        print(f"Test L2:  {test_l2}")
+        print(f"Val L2:   {val_l2}")
+        print(f"Train mse: {train_mse}")
+        print(f"Test mse:  {test_mse}")
+        print(f"Val mse:   {val_mse}")
+        assert train_l2 < 1e-1
+        assert test_l2 < 1e-1
+        assert val_l2 < 1e-1
+        assert train_mse < 1e-2
+        assert test_mse < 1e-2
+        assert val_mse < 1e-2
 
 
 if __name__ == "__main__":

@@ -24,7 +24,7 @@ def project_to_dag_torch(w):
         return w, 0.0
 
     w_dag = w.copy()
-    # w_dag = break_symmetry(w_dag)
+    w_dag = break_symmetry(w_dag)
 
     vals = sorted(list(set(np.abs(w_dag).flatten())))
     low = 0
