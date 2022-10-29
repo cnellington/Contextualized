@@ -8,3 +8,8 @@ from contextualized.easy.ContextualGAM import (
     ContextualGAMClassifier,
     ContextualGAMRegressor,
 )
+from contextualized.easy.ContextualizedNetworks import (
+    ContextualizedBayesianNetworks,
+    ContextualizedCorrelationNetworks,
+    ContextualizedMarkovNetworks,
+)
