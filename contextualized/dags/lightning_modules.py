@@ -163,10 +163,12 @@ class NOTMAD(pl.LightningModule):
             "train_arch_dag_loss": arch_dag_term,
         }
         self.log_dict(ret)
-        ret.update({
-            'train_batch': batch,
-            'train_batch_idx': batch_idx,
-        })
+        ret.update(
+            {
+                "train_batch": batch,
+                "train_batch_idx": batch_idx,
+            }
+        )
         return ret
 
     def test_step(self, batch, batch_idx):
@@ -223,15 +225,19 @@ class NOTMAD(pl.LightningModule):
 
     def training_epoch_end(self, training_step_outputs, logs=None):
         # update alpha/rho based on average end-of-epoch dag loss
-        epoch_samples = sum([len(ret['train_batch'][0]) for ret in training_step_outputs])
+        epoch_samples = sum(
+            [len(ret["train_batch"][0]) for ret in training_step_outputs]
+        )
         epoch_dag_loss = 0
         for ret in training_step_outputs:
             batch_dag_loss = dag_loss(
-                self.predict_step(ret['train_batch'], ret['train_batch_idx']),
+                self.predict_step(ret["train_batch"], ret["train_batch_idx"]),
                 self.ss_alpha,
-                self.ss_rho
+                self.ss_rho,
             ).detach()
-            epoch_dag_loss += len(ret['train_batch'][0]) / epoch_samples * batch_dag_loss
+            epoch_dag_loss += (
+                len(ret["train_batch"][0]) / epoch_samples * batch_dag_loss
+            )
         if (
             self.use_dynamic_alpha_rho
             and epoch_dag_loss > self.tol * self.h_old

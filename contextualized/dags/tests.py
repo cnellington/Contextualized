@@ -99,9 +99,21 @@ class TestNOTMAD(unittest.TestCase):
             self.test_idx,
             self.val_idx,
         ) = self._create_cwx_dataset()
-        self.C_train, self.C_test, self.C_val = self.C[self.train_idx], self.C[self.test_idx], self.C[self.val_idx]
-        self.X_train, self.X_test, self.X_val = self.X[self.train_idx], self.X[self.test_idx], self.X[self.val_idx]
-        self.W_train, self.W_test, self.W_val = self.W[self.train_idx], self.W[self.test_idx], self.W[self.val_idx]
+        self.C_train, self.C_test, self.C_val = (
+            self.C[self.train_idx],
+            self.C[self.test_idx],
+            self.C[self.val_idx],
+        )
+        self.X_train, self.X_test, self.X_val = (
+            self.X[self.train_idx],
+            self.X[self.test_idx],
+            self.X[self.val_idx],
+        )
+        self.W_train, self.W_test, self.W_val = (
+            self.W[self.train_idx],
+            self.W[self.test_idx],
+            self.W[self.val_idx],
+        )
 
     def _create_cwx_dataset(self, n=500):
         np.random.seed(0)
@@ -181,7 +193,9 @@ class TestNOTMAD(unittest.TestCase):
         trainer.test(model, test_dataloader)
 
         # Evaluate results
-        preds_train = trainer.predict_params(model, train_dataloader, project_to_dag=True)
+        preds_train = trainer.predict_params(
+            model, train_dataloader, project_to_dag=True
+        )
         preds_test = trainer.predict_params(model, test_dataloader, project_to_dag=True)
         preds_val = trainer.predict_params(model, val_dataloader, project_to_dag=True)
         return preds_train, preds_test, preds_val
@@ -192,7 +206,9 @@ class TestNOTMAD(unittest.TestCase):
         print(self.W_train[0])
         print(train_preds[-1])
         print(self.W_train[-1])
-        train_l2, test_l2, val_l2, train_mse, test_mse, val_mse = self._evaluate(train_preds, test_preds, val_preds)
+        train_l2, test_l2, val_l2, train_mse, test_mse, val_mse = self._evaluate(
+            train_preds, test_preds, val_preds
+        )
         print(f"Train L2: {train_l2}")
         print(f"Test L2:  {test_l2}")
         print(f"Val L2:   {val_l2}")
