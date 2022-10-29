@@ -3,12 +3,12 @@ import torch
 from torch.utils.data import DataLoader, TensorDataset
 import pytorch_lightning as pl
 from contextualized.functions import identity_link
-
 from contextualized.dags.graph_utils import project_to_dag_torch, trim_params, dag_pred
 from contextualized.dags.losses import (
-    DAG_loss,
+    dag_loss,
     l1_loss,
     mse_loss,
+    linear_sem_loss,
 )
 from contextualized.modules import ENCODERS, Explainer
 
@@ -25,7 +25,7 @@ class NOTMAD(pl.LightningModule):
         num_archetypes=4,
         use_dynamic_alpha_rho=True,
         sample_specific_loss_params={"l1": 0.0, "alpha": 1e-1, "rho": 1e-2},
-        archetype_loss_params={"l1": 0.0, "alpha": 1e-1, "rho": 1e-2},
+        archetype_loss_params={"l1": 0.0, "alpha": 0.0, "rho": 0.0},
         learning_rate=1e-3,
         opt_step=50,
         encoder_type="mlp",
@@ -104,9 +104,9 @@ class NOTMAD(pl.LightningModule):
         )  # intialized archetypes with 0 diagonal
 
     def forward(self, c):
-        Z = self.encoder(c)
-        W = self.explainer(Z)
-        return W
+        c = self.encoder(c)
+        out = self.explainer(c)
+        return out
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
@@ -123,17 +123,16 @@ class NOTMAD(pl.LightningModule):
         }
 
     def _batch_loss(self, batch, batch_idx):
-        _, X_true = batch
-        W_hat = self.predict_step(batch, batch_idx)
-        X_pred = dag_pred(X_true, W_hat)
-        mse_term = 0.5 * mse_loss(X_true, X_pred)
-        l1_term = l1_loss(W_hat, self.ss_l1).mean()
-        dag_term = DAG_loss(W_hat, self.ss_alpha, self.ss_rho).mean()
+        _, x_true = batch
+        w_pred = self.predict_step(batch, batch_idx)
+        mse_term = linear_sem_loss(x_true, w_pred)
+        l1_term = l1_loss(w_pred, self.ss_l1)
+        dag_term = dag_loss(w_pred, self.ss_alpha, self.ss_rho)
         notears = mse_term + l1_term + dag_term
         W_arch = self.explainer.get_archetypes()
-        arch_l1_term = l1_loss(W_arch, self.arch_l1).sum()
-        arch_dag_term = DAG_loss(W_arch, self.arch_alpha, self.arch_rho).sum()
-        loss = notears + arch_l1_term + arch_dag_term
+        arch_l1_term = l1_loss(W_arch, self.arch_l1)
+        arch_dag_term = len(W_arch) * dag_loss(W_arch, self.arch_alpha, self.arch_rho)
+        loss = notears + arch_l1_term + arch_dag_term  # todo: scale archetype loss?
         return (
             loss,
             notears.detach(),
@@ -154,7 +153,7 @@ class NOTMAD(pl.LightningModule):
             arch_l1_term,
             arch_dag_term,
         ) = self._batch_loss(batch, batch_idx)
-        losses = {
+        ret = {
             "loss": loss,
             "train_loss": loss,
             "train_mse_loss": mse_term,
@@ -163,8 +162,12 @@ class NOTMAD(pl.LightningModule):
             "train_arch_l1_loss": arch_l1_term,
             "train_arch_dag_loss": arch_dag_term,
         }
-        self.log_dict(losses)
-        return losses
+        self.log_dict(ret)
+        ret.update({
+            'train_batch': batch,
+            'train_batch_idx': batch_idx,
+        })
+        return ret
 
     def test_step(self, batch, batch_idx):
         (
@@ -176,7 +179,7 @@ class NOTMAD(pl.LightningModule):
             arch_l1_term,
             arch_dag_term,
         ) = self._batch_loss(batch, batch_idx)
-        losses = {
+        ret = {
             "test_loss": loss,
             "test_mse_loss": mse_term,
             "test_l1_loss": l1_term,
@@ -184,57 +187,62 @@ class NOTMAD(pl.LightningModule):
             "test_arch_l1_loss": arch_l1_term,
             "test_arch_dag_loss": arch_dag_term,
         }
-        self.log_dict(losses)
-        return losses
+        self.log_dict(ret)
+        return ret
 
     def validation_step(self, batch, batch_idx):
-        _, X_true = batch
-        W_hat = self.predict_step(batch, batch_idx)
-        X_pred = dag_pred(X_true, W_hat)
-        mse_term = 0.5 * mse_loss(X_true, X_pred)
-        l1_term = l1_loss(W_hat, self.ss_l1).mean()
+        _, x_true = batch
+        w_pred = self.predict_step(batch, batch_idx)
+        X_pred = dag_pred(x_true, w_pred)
+        mse_term = 0.5 * x_true.shape[-1] * mse_loss(x_true, X_pred)
+        l1_term = l1_loss(w_pred, self.ss_l1).mean()
         # ignore archetype loss, use constant alpha/rho upper bound for validation
-        dag_term = DAG_loss(W_hat, 1e12, 1e12).mean()
+        dag_term = dag_loss(w_pred, 1e12, 1e12).mean()
         loss = mse_term + l1_term + dag_term
-        losses = {
+        ret = {
             "val_loss": loss,
             "val_mse_loss": mse_term,
             "val_l1_loss": l1_term,
             "val_dag_loss": dag_term,
         }
-        self.log_dict(losses)
-        return losses
+        self.log_dict(ret)
+        return ret
 
     def predict_step(self, batch, batch_idx):
-        C, _ = batch
-        W_hat = self(C)
-        return W_hat
+        c, _ = batch
+        w_pred = self(c)
+        return self._mask(w_pred)
 
-    def _format_params(self, W_preds, project_to_dag=False, threshold=0.0):
+    def _format_params(self, w_preds, project_to_dag=False, threshold=0.0):
         if project_to_dag:
             try:
-                W_preds = np.array([project_to_dag_torch(w)[0] for w in W_preds])
+                w_preds = np.array([project_to_dag_torch(w)[0] for w in w_preds])
             except:
                 print("Error, couldn't project to dag. Returning normal predictions.")
-        return trim_params(W_preds, thresh=threshold)
+        return trim_params(w_preds, thresh=threshold)
 
     def training_epoch_end(self, training_step_outputs, logs=None):
-        """
-        Dynamic alpha and rho
-        """
-        mean_dag_loss = 0
-        for loss in training_step_outputs:
-            mean_dag_loss += loss["train_dag_loss"].item() / len(training_step_outputs)
+        # update alpha/rho based on average end-of-epoch dag loss
+        epoch_samples = sum([len(ret['train_batch'][0]) for ret in training_step_outputs])
+        epoch_dag_loss = 0
+        for ret in training_step_outputs:
+            batch_dag_loss = dag_loss(
+                self.predict_step(ret['train_batch'], ret['train_batch_idx']),
+                self.ss_alpha,
+                self.ss_rho
+            ).detach()
+            epoch_dag_loss += len(ret['train_batch'][0]) / epoch_samples * batch_dag_loss
         if (
             self.use_dynamic_alpha_rho
-            and mean_dag_loss > self.tol * self.h_old
+            and epoch_dag_loss > self.tol * self.h_old
             and self.ss_alpha < 1e12
             and self.ss_rho < 1e12
         ):
-            self.ss_alpha = self.ss_alpha + self.ss_rho * mean_dag_loss
+            self.ss_alpha = self.ss_alpha + self.ss_rho * epoch_dag_loss
             self.ss_rho = self.ss_rho * 1.1
-        self.h_old = mean_dag_loss
+        self.h_old = epoch_dag_loss
 
+    # helpers
     def _mask(self, W):
         return torch.multiply(W, self.diag_mask)
 
@@ -252,4 +260,4 @@ class NOTMAD(pl.LightningModule):
             torch.tensor(C, dtype=torch.float),
             torch.tensor(X, dtype=torch.float),
         )
-        return DataLoader(dataset=dataset, **kwargs)
+        return DataLoader(dataset=dataset, shuffle=False, **kwargs)
