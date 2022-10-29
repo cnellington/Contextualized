@@ -63,4 +63,3 @@ class DummyYPredictor:
         """
         n = len(args[0])
         return torch.zeros((n, *self.y_dim))
-

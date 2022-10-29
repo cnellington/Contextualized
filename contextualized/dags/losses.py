@@ -37,16 +37,16 @@ def linear_sem_loss(x_true, w_pred):
 
 def NOTEARS_loss(x_true, w_pred, l1_lambda, alpha, rho):
     """Computes NOTEARS loss between true x and predicted network, for torch tensors.
-        Works on batches only.
+    Works on batches only.
 
-        Args:
-            w_pred (torch.FloatTensor): _description_
-            alpha (float): Alpha DAG loss param
-            rho (float): Rho DAG loss param
+    Args:
+        w_pred (torch.FloatTensor): _description_
+        alpha (float): Alpha DAG loss param
+        rho (float): Rho DAG loss param
 
-        Returns:
-            torch.tensor: NOTEARS loss for data features and predicted network (batches only).
-        """
+    Returns:
+        torch.tensor: NOTEARS loss for data features and predicted network (batches only).
+    """
     mse_term = linear_sem_loss(x_true, w_pred)
     l1_term = l1_loss(w_pred, l1_lambda)
     dag_term = dag_loss(w_pred, alpha, rho)
