@@ -45,5 +45,5 @@ class ContextualizedRegressor(SKLearnWrapper):
             **kwargs,
         )
 
-    def _split_train_data(self, C, X, Y, **kwargs):
+    def _split_train_data(self, C, X, Y=None, Y_required=False, **kwargs):
         return super()._split_train_data(C, X, Y, Y_required=True, **kwargs)

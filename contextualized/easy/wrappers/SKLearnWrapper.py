@@ -1,12 +1,14 @@
 """An sklearn-like wrapper for Contextualized models."""
 import copy
+import os
 import numpy as np
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+from pytorch_lightning.callbacks import ModelCheckpoint
 from sklearn.model_selection import train_test_split
 import torch
 
-from contextualized.regression import REGULARIZERS, LOSSES
 from contextualized.functions import LINK_FUNCTIONS
+from contextualized.regression import REGULARIZERS, LOSSES
 
 
 class SKLearnWrapper:
@@ -71,8 +73,12 @@ class SKLearnWrapper:
         }
         self._update_acceptable_kwargs("model", extra_model_kwargs)
         self._update_acceptable_kwargs("data", extra_data_kwargs)
-        self._update_acceptable_kwargs("model", kwargs.get('remove_model_kwargs', []), extra=False)
-        self._update_acceptable_kwargs("data", kwargs.get('remove_data_kwargs', []), extra=False)
+        self._update_acceptable_kwargs(
+            "model", kwargs.get("remove_model_kwargs", []), extra=False
+        )
+        self._update_acceptable_kwargs(
+            "data", kwargs.get("remove_data_kwargs", []), extra=False
+        )
         self.constructor_kwargs = self._organize_constructor_kwargs(**kwargs)
         self.convenience_kwargs = [
             "alpha",
@@ -125,7 +131,7 @@ class SKLearnWrapper:
                 organized_kwargs[category][kwarg] = organized_kwargs[category].get(
                     kwarg, default_val
                 )
-                
+
         # Model
         maybe_add_kwarg("model", "learning_rate", self.default_learning_rate)
         maybe_add_kwarg("model", "context_dim", self.context_dim)
@@ -136,7 +142,7 @@ class SKLearnWrapper:
             and organized_kwargs["model"]["num_archetypes"] == 0
         ):
             del organized_kwargs["model"]["num_archetypes"]
-        
+
         # Data
         maybe_add_kwarg("data", "train_batch_size", self.default_train_batch_size)
         maybe_add_kwarg("data", "val_batch_size", self.default_val_batch_size)
@@ -146,16 +152,26 @@ class SKLearnWrapper:
         maybe_add_kwarg("wrapper", "n_bootstraps", self.default_n_bootstraps)
 
         # Trainer
-        maybe_add_kwarg("trainer", "callback_constructors", [
-                lambda: EarlyStopping(
+        maybe_add_kwarg(
+            "trainer",
+            "callback_constructors",
+            [
+                lambda i: EarlyStopping(
                     monitor=kwargs.get("es_monitor", "val_loss"),
                     mode=kwargs.get("es_mode", "min"),
                     patience=kwargs.get("es_patience", self.default_es_patience),
                     verbose=kwargs.get("es_verbose", False),
                     min_delta=kwargs.get("es_min_delta", 0.00),
-                ),
-            ]
-        )       # TODO: Add ModelCheckpoint callback and revert to the best epoch.
+                )
+            ],
+        )
+        organized_kwargs["trainer"]["callback_constructors"].append(
+            lambda i: ModelCheckpoint(
+                monitor=kwargs.get("es_monitor", "val_loss"),
+                dirpath=f"{kwargs.get('checkpoint_path', './lightning_logs')}/boot_{i}_checkpoints",
+                filename="{epoch}-{val_loss:.2f}",
+            )
+        )
         maybe_add_kwarg("trainer", "accelerator", self.accelerator)
         return organized_kwargs
 
@@ -208,8 +224,8 @@ class SKLearnWrapper:
                 self.acceptable_kwargs[category], new_acceptable_kwargs
             )
         else:
-            self.acceptable_kwargs[category] = list(set(
-                self.acceptable_kwargs[category]) - set(new_acceptable_kwargs)
+            self.acceptable_kwargs[category] = list(
+                set(self.acceptable_kwargs[category]) - set(new_acceptable_kwargs)
             )
 
     def _organize_kwargs(self, **kwargs):
@@ -260,22 +276,24 @@ class SKLearnWrapper:
         Helper function to set all the default constructor or changes allowed.
         """
         constructor_kwargs = {}
+
         def maybe_add_constructor_kwarg(kwarg, default_val):
-            if kwarg in self.acceptable_kwargs['model']:
+            if kwarg in self.acceptable_kwargs["model"]:
                 constructor_kwargs[kwarg] = kwargs.get(kwarg, default_val)
-            
+
         maybe_add_constructor_kwarg("link_fn", LINK_FUNCTIONS["identity"])
         maybe_add_constructor_kwarg("univariate", False)
         maybe_add_constructor_kwarg("encoder_type", "mlp")
         maybe_add_constructor_kwarg("loss_fn", LOSSES["mse"])
-        maybe_add_constructor_kwarg("encoder_kwargs",
-            {"width": 25, "layers": 2, "link_fn": LINK_FUNCTIONS["identity"]}
+        maybe_add_constructor_kwarg(
+            "encoder_kwargs",
+            {"width": 25, "layers": 2, "link_fn": LINK_FUNCTIONS["identity"]},
         )
         if kwargs.get("subtype_probabilities", False):
             constructor_kwargs["encoder_kwargs"]["link_fn"] = LINK_FUNCTIONS["softmax"]
 
         # Make regularizer
-        if 'model_regularizer' in self.acceptable_kwargs['model']:
+        if "model_regularizer" in self.acceptable_kwargs["model"]:
             if "alpha" in kwargs and kwargs["alpha"] > 0:
                 constructor_kwargs["model_regularizer"] = REGULARIZERS["l1_l2"](
                     kwargs["alpha"],
@@ -314,7 +332,9 @@ class SKLearnWrapper:
             return preds
         return np.mean(preds, axis=0)
 
-    def predict_params(self, C, individual_preds=False, **kwargs):
+    def predict_params(
+        self, C, individual_preds=False, model_includes_mus=True, **kwargs
+    ):
         """
 
         :param C:
@@ -331,25 +351,21 @@ class SKLearnWrapper:
                 C, np.zeros((len(C), self.x_dim))
             )
             del kwargs["uses_y"]
-        betas = np.array(
-            [
-                self.trainers[i].predict_params(
-                    self.models[i], get_dataloader(i), **kwargs
-                )[0]
-                for i in range(len(self.models))
-            ]
-        )
-        mus = np.array(
-            [
-                self.trainers[i].predict_params(
-                    self.models[i], get_dataloader(i), **kwargs
-                )[1]
-                for i in range(len(self.models))
-            ]
-        )
+        preds = [
+            self.trainers[i].predict_params(self.models[i], get_dataloader(i), **kwargs)
+            for i in range(len(self.models))
+        ]
+        if model_includes_mus:
+            betas = np.array([p[0] for p in preds])
+            mus = np.array([p[1] for p in preds])
+            if individual_preds:
+                return betas, mus
+            else:
+                return np.mean(betas, axis=0), np.mean(mus, axis=0)
+        betas = np.array(preds)
         if individual_preds:
-            return betas, mus
-        return np.mean(betas, axis=0), np.mean(mus, axis=0)
+            return np.mean(betas, axis=0)
+        return betas
 
     def fit(self, *args, **kwargs):
         """
@@ -373,7 +389,7 @@ class SKLearnWrapper:
         self.n_bootstraps = organized_kwargs["wrapper"].get(
             "n_bootstraps", self.n_bootstraps
         )
-        for _ in range(self.n_bootstraps):
+        for bootstrap in range(self.n_bootstraps):
             model = self.base_constructor(**organized_kwargs["model"])
             train_data, val_data = self._split_train_data(
                 *args, **organized_kwargs["data"]
@@ -388,17 +404,22 @@ class SKLearnWrapper:
             my_trainer_kwargs = copy.deepcopy(organized_kwargs["trainer"])
             # Must reconstruct the callbacks because they save state from fitting trajectories.
             my_trainer_kwargs["callbacks"] = [
-                f() for f in organized_kwargs["trainer"]["callback_constructors"]
+                f(bootstrap)
+                for f in organized_kwargs["trainer"]["callback_constructors"]
             ]
             del my_trainer_kwargs["callback_constructors"]
             trainer = self.trainer_constructor(**my_trainer_kwargs)
+            checkpoint_callback = my_trainer_kwargs["callbacks"][1]
+            os.makedirs(checkpoint_callback.dirpath, exist_ok=True)
             try:
                 trainer.fit(
                     model, train_dataloader, val_dataloader, **organized_kwargs["fit"]
                 )
             except:
                 trainer.fit(model, train_dataloader, **organized_kwargs["fit"])
-
+            if kwargs.get("max_epochs", 1) > 0:
+                best_checkpoint = torch.load(checkpoint_callback.best_model_path)
+                model.load_state_dict(best_checkpoint["state_dict"])
             self.dataloaders["train"].append(train_dataloader)
             self.dataloaders["val"].append(val_dataloader)
             self.models.append(model)
