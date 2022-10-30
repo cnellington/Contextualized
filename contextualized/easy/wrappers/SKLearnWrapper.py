@@ -332,7 +332,9 @@ class SKLearnWrapper:
             return preds
         return np.mean(preds, axis=0)
 
-    def predict_params(self, C, individual_preds=False, **kwargs):
+    def predict_params(
+        self, C, individual_preds=False, model_includes_mus=True, **kwargs
+    ):
         """
 
         :param C:
@@ -349,25 +351,21 @@ class SKLearnWrapper:
                 C, np.zeros((len(C), self.x_dim))
             )
             del kwargs["uses_y"]
-        betas = np.array(
-            [
-                self.trainers[i].predict_params(
-                    self.models[i], get_dataloader(i), **kwargs
-                )[0]
-                for i in range(len(self.models))
-            ]
-        )
-        mus = np.array(
-            [
-                self.trainers[i].predict_params(
-                    self.models[i], get_dataloader(i), **kwargs
-                )[1]
-                for i in range(len(self.models))
-            ]
-        )
+        preds = [
+            self.trainers[i].predict_params(self.models[i], get_dataloader(i), **kwargs)
+            for i in range(len(self.models))
+        ]
+        if model_includes_mus:
+            betas = np.array([p[0] for p in preds])
+            mus = np.array([p[1] for p in preds])
+            if individual_preds:
+                return betas, mus
+            else:
+                return np.mean(betas, axis=0), np.mean(mus, axis=0)
+        betas = np.array(preds)
         if individual_preds:
-            return betas, mus
-        return np.mean(betas, axis=0), np.mean(mus, axis=0)
+            return np.mean(betas, axis=0)
+        return betas
 
     def fit(self, *args, **kwargs):
         """
