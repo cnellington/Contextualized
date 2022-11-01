@@ -9,5 +9,8 @@ sergio_temp
 .ipynb_checkpoints
 .DS_Store
 
+# Jupyter-book builds
+*/_build/*
+
 # Pytorch Checkpoints
 *.pt
