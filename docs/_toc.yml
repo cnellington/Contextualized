@@ -1,0 +1,18 @@
+# Table of contents
+# Learn more at https://jupyterbook.org/customize/toc.html
+
+format: jb-book
+root: intro
+parts:
+  - caption: Quick Start
+    chapters:
+    - file: getting-started-intro
+      sections:
+      - file: installation
+      - file: model-fitting
+    - file: faq
+  - caption: Models
+    chapters:
+    - file: demos/easy_regression
+    - file: demos/easy_classification
+    - file: demos/easy_networks
