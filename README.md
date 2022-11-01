@@ -16,7 +16,7 @@ Context-specific parameters are essential for:
 pip install git+https://github.com/cnellington/Contextualized.git
 ```
 
-Take a look at the [main demo](demos/main_demo.ipynb) for a complete overview with code, or the [easy demo](demos/Easy-demo/easy_demo.ipynb) for a quickstart with sklearn-style wrappers!
+Take a look at the [main demo](docs/demos/main_demo.ipynb) for a complete overview with code, or the [easy demo](docs/demos/Easy-demo/easy_demo.ipynb) for a quickstart with sklearn-style wrappers!
 
 ### Quick Start
 
