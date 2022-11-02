@@ -1,13 +1,18 @@
-import setuptools
+"""
+Setup and requirements for Contextualized.ML
+"""
 
-setuptools.setup(name='contextualized',
-    packages=[
-        'contextualized',
-        'contextualized.regression',
-        'contextualized.dags',
-        'contextualized.easy',
-    ],
+from setuptools import find_packages, setup
+
+DESCRIPTION = "An ML toolbox for estimating context-specific parameters."
+
+setup(
+    name='contextualized',
     version='0.2.1',
+    author="Contextualized.ML team",
+    description=DESCRIPTION,
+    url="https://github.com/cnellington/contextualized",
+    packages=find_packages(),
     install_requires=[
         'lightning',
         'torch',
@@ -16,5 +21,6 @@ setuptools.setup(name='contextualized',
         'scikit-learn',
         'igraph',
         'dill',
+        'pytorch_lightning'
     ],
 )
