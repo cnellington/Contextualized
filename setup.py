@@ -14,7 +14,6 @@ setup(
     description=DESCRIPTION,
     url="https://github.com/cnellington/contextualized",
     packages=find_packages(),
-    version=VERSION,
     install_requires=[
         'lightning',
         'pytorch-lightning',
