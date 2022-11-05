@@ -3,6 +3,10 @@
 ![pylint Score](pylint.svg)
 ![License](https://img.shields.io/github/license/cnellington/contextualized.svg?style=flat-square)
 ![Maintenance](https://img.shields.io/maintenance/yes/2022?style=flat-square)
+[![PyPI version](https://badge.fury.io/py/contextualized-ml.svg)](https://badge.fury.io/py/contextualized-ml)
+[![Downloads](https://pepy.tech/badge/contextualized-ml)](https://pepy.tech/project/contextualized-ml)
+<a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
+
 
 A statistical machine learning toolbox for estimating models, distributions, and functions with context-specific parameters.
 
@@ -13,7 +17,7 @@ Context-specific parameters are essential for:
 
 ## Install and Use Contextualized
 ```
-pip install git+https://github.com/cnellington/Contextualized.git
+pip install contextualized-ml
 ```
 
 Take a look at the [main demo](docs/demos/main_demo.ipynb) for a complete overview with code, or the [easy demo](docs/demos/Easy-demo/easy_demo.ipynb) for a quickstart with sklearn-style wrappers!
