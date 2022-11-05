@@ -2,7 +2,7 @@
 #
 
 ![License](https://img.shields.io/github/license/cnellington/contextualized.svg?style=flat-square)
-![python](https://img.shields.io/badge/python-3.6%20|%203.7%20|%203.8%20|%203.9-blue)
+![python](https://img.shields.io/badge/python-3.7%20|%203.8%20|%203.9%20|%203.10-blue)
 [![PyPI version](https://badge.fury.io/py/contextualized-ml.svg)](https://badge.fury.io/py/contextualized-ml)
 ![Maintenance](https://img.shields.io/maintenance/yes/2022?style=flat-square)
 [![Downloads](https://pepy.tech/badge/contextualized-ml)](https://pepy.tech/project/contextualized-ml)
