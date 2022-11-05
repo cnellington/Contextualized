@@ -1,36 +1,51 @@
 ![Preview](contextualized_logo.png)
 #
-![pylint Score](pylint.svg)
+
 ![License](https://img.shields.io/github/license/cnellington/contextualized.svg?style=flat-square)
+![python](https://img.shields.io/badge/python-3.7%20|%203.8%20|%203.9%20|%203.10-blue)
+[![PyPI version](https://badge.fury.io/py/contextualized-ml.svg)](https://badge.fury.io/py/contextualized-ml)
 ![Maintenance](https://img.shields.io/maintenance/yes/2022?style=flat-square)
+[![Downloads](https://pepy.tech/badge/contextualized-ml)](https://pepy.tech/project/contextualized-ml)
+![pylint Score](pylint.svg)
+<a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
+
 
 A statistical machine learning toolbox for estimating models, distributions, and functions with context-specific parameters.
 
-Context-specific parameters are essential for:
-- Finding hidden heterogeneity in data -- are all samples the same?
-- Identifying context-specific predictors -- are there different reasons for outcomes?
-- Domain adaptation -- can our learned models extrapolate to new contexts?
+Context-specific parameters:
+- Find hidden heterogeneity in data -- are all samples the same?
+- Identify context-specific predictors -- are there different reasons for outcomes?
+- Enable domain adaptation -- can learned models extrapolate to new contexts?
 
-## Install and Use Contextualized
+
+## Quick Start
+
+### Installation
 ```
 pip install contextualized-ml
 ```
 
-Take a look at the [main demo](docs/demos/main_demo.ipynb) for a complete overview with code, or the [easy demo](docs/demos/Easy-demo/easy_demo.ipynb) for a quickstart with sklearn-style wrappers!
+Take a look at the [easy demo](docs/demos/Easy-demo/easy_demo.ipynb) for a quickstart with sklearn-style wrappers, or the [main demo](docs/demos/main_demo.ipynb) for a complete overview with PyTorch interfaces.
 
-### Quick Start
-
-#### Build a Contextualized Model
+### Build a Contextualized Model
 ```
 from contextualized.easy import ContextualizedRegressor
 model = ContextualizedRegressor()
 model.fit(C, X, Y)
 ```
 
-#### Predict Context-Specific Parameters
+### Predict Context-Specific Parameters
 ```
 model.predict_params(C)
 ```
+
+See the [docs](https://contextualized.ml/docs) for more examples.
+
+### Important links
+
+- [Documentation](https://contextualized.ml/docs)
+- [Pypi package index](https://pypi.python.org/pypi/contextualized-ml)
+
 
 ## Contextualized Family
 Context-dependent modeling is a universal problem, and every domain presents unique challenges and opportunities.
@@ -45,11 +60,16 @@ Feel free to add your own page(s) by sending a PR or request an improvement by c
 </table>
 
 
-## Acknowledgements
+## Thanks to all our contributors
 
-ContextualizedML was originally implemented by [Caleb Ellington](https://calebellington.com/) (CMU) and [Ben Lengerich](http://web.mit.edu/~blengeri/www/index.shtml) (MIT).
+<a href="https://github.com/cnellington/contextualized/graphs/contributors">
+  <img src="https://contributors-img.web.app/image?repo=cnellington/contextualized" />
+</a>
+
+ContextualizedML was originally implemented by [Caleb Ellington](https://calebellington.com/) (CMU) and [Ben Lengerich](http://web.mit.edu/~blengeri/www) (MIT).
 
 Many people have helped. Check out [ACKNOWLEDGEMENTS.md](https://github.com/cnellington/Contextualized/blob/main/ACKNOWLEDGEMENTS.md)!
+
 
 
 ## Related Publications and Pre-prints
