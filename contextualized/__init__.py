@@ -8,3 +8,4 @@ from contextualized import dags
 from contextualized import easy
 from contextualized import regression
 from contextualized import utils
+from contextualized.utils import *
