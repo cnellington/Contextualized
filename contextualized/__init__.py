@@ -3,4 +3,8 @@
 	For more details, please refer to contextualized.ml.
 """
 
-from contextualized.utils import *
+from contextualized import analysis
+from contextualized import dags
+from contextualized import easy
+from contextualized import regression
+from contextualized import utils
