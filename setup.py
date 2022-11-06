@@ -23,5 +23,6 @@ setup(
         'scikit-learn',
         'igraph',
         'dill',
+        'matplotlib',
     ],
 )
