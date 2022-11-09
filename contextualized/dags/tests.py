@@ -13,7 +13,7 @@ from contextualized.dags.trainers import GraphTrainer
 from contextualized.dags.losses import mse_loss as mse
 
 
-def simulate_linear_sem(W, n, sem_type, noise_scale=None):
+def simulate_linear_sem(W, n_samples, sem_type, noise_scale=None):
     """Simulate samples from linear SEM with specified type of noise.
 
     For uniform, noise z ~ uniform(-a, a), where a = noise_scale.
@@ -31,24 +31,24 @@ def simulate_linear_sem(W, n, sem_type, noise_scale=None):
     def _simulate_single_equation(X, w, scale):
         """X: [n, num of parents], w: [num of parents], x: [n]"""
         if sem_type == "gauss":
-            z = np.random.normal(scale=scale, size=n)
+            z = np.random.normal(scale=scale, size=n_samples)
             # x = X @ w + z
             x = np.matmul(X, w) + z
         elif sem_type == "exp":
-            z = np.random.exponential(scale=scale, size=n)
+            z = np.random.exponential(scale=scale, size=n_samples)
             # x = X @ w + z
             x = np.matmul(X, w) + z
         elif sem_type == "gumbel":
-            z = np.random.gumbel(scale=scale, size=n)
+            z = np.random.gumbel(scale=scale, size=n_samples)
             # x = X @ w + z
             x = np.matmul(X, w) + z
         elif sem_type == "uniform":
-            z = np.random.uniform(low=-scale, high=scale, size=n)
+            z = np.random.uniform(low=-scale, high=scale, size=n_samples)
             # x = X @ w + z
             x = np.matmul(X, w) + z
         elif sem_type == "logistic":
             # x = np.random.binomial(1, sigmoid(X @ w)) * 1.0
-            x = np.random.binomial(1, sigmoid(np.matmul(X, w))) * 1.0
+            x = np.random.binomial(1, 1 / (1 + np.exp(-(np.matmul(X, w))))) * 1.0
         elif sem_type == "poisson":
             # x = np.random.poisson(np.exp(X @ w)) * 1.0
             x = np.random.poisson(np.exp(np.matmul(X, w))) * 1.0
@@ -67,7 +67,7 @@ def simulate_linear_sem(W, n, sem_type, noise_scale=None):
         scale_vec = noise_scale
     if not graph_utils.is_dag(W):
         raise ValueError("W must be a DAG")
-    if np.isinf(n):  # population risk for linear gauss SEM
+    if np.isinf(n_samples):  # population risk for linear gauss SEM
         if sem_type == "gauss":
             # make 1/d X'X = true cov
             # X = np.sqrt(d) * np.diag(scale_vec) @ np.linalg.inv(np.eye(d) - W)
@@ -79,7 +79,7 @@ def simulate_linear_sem(W, n, sem_type, noise_scale=None):
     G = ig.Graph.Weighted_Adjacency(W.tolist())
     ordered_vertices = G.topological_sorting()
     assert len(ordered_vertices) == d
-    X = np.zeros([n, d])
+    X = np.zeros([n_samples, d])
     for j in ordered_vertices:
         parents = G.neighbors(j, mode=ig.IN)
         X[:, j] = _simulate_single_equation(X[:, parents], W[parents, j], scale_vec[j])
@@ -87,6 +87,7 @@ def simulate_linear_sem(W, n, sem_type, noise_scale=None):
 
 
 class TestNOTMAD(unittest.TestCase):
+    """ Unit tests for NOTMAD. """
     def __init__(self, *args, **kwargs):
         super(TestNOTMAD, self).__init__(*args, **kwargs)
 
@@ -153,7 +154,7 @@ class TestNOTMAD(unittest.TestCase):
             mse(graph_utils.dag_pred_np(self.X_val, val_preds), self.X_val),
         )
 
-    def _train(self, n_epochs):
+    def _train(self, model_args, n_epochs):
         seed_everything(0)
         k = 6
         INIT_MAT = np.random.uniform(-0.01, 0.01, size=(k, 4, 4))
@@ -161,12 +162,19 @@ class TestNOTMAD(unittest.TestCase):
             self.C.shape[-1],
             self.X.shape[-1],
             init_mat=INIT_MAT,
-            num_archetypes=k,
+            num_archetypes=model_args.get("num_archetypes", k),
+            num_factors=model_args.get("num_factors", 0),
         )
         train_dataloader = model.dataloader(self.C_train, self.X_train, batch_size=1)
         test_dataloader = model.dataloader(self.C_test, self.X_test, batch_size=10)
         val_dataloader = model.dataloader(self.C_val, self.X_val, batch_size=10)
         trainer = GraphTrainer(max_epochs=n_epochs, callbacks=[], deterministic=True)
+        preds_train = trainer.predict_params(
+            model, train_dataloader, project_to_dag=True
+        )
+        preds_test = trainer.predict_params(model, test_dataloader, project_to_dag=True)
+        preds_val = trainer.predict_params(model, val_dataloader, project_to_dag=True)
+        init_train_l2, init_test_l2, init_val_l2, _, _, _ = self._evaluate(preds_train, preds_test, preds_val)
         trainer.tune(model)
         trainer.fit(model, train_dataloader)
         trainer.validate(model, val_dataloader)
@@ -178,10 +186,18 @@ class TestNOTMAD(unittest.TestCase):
         )
         preds_test = trainer.predict_params(model, test_dataloader, project_to_dag=True)
         preds_val = trainer.predict_params(model, val_dataloader, project_to_dag=True)
-        return preds_train, preds_test, preds_val
+
+        return (
+            preds_train,
+            preds_test,
+            preds_val,
+            init_train_l2,
+            init_test_l2,
+            init_val_l2,
+        )
 
     def test_notmad(self):
-        train_preds, test_preds, val_preds = self._train(10)
+        train_preds, test_preds, val_preds, _, _, _ = self._train({}, 10)
         print(train_preds[0])
         print(self.W_train[0])
         print(train_preds[-1])
@@ -201,6 +217,28 @@ class TestNOTMAD(unittest.TestCase):
         assert train_mse < 1e-2
         assert test_mse < 1e-2
         assert val_mse < 1e-2
+
+    def test_notmad_factor_graphs(self):
+        """
+        Unit tests for factor graph feature of NOTMAD.
+        """
+        (
+            train_preds,
+            test_preds,
+            val_preds,
+            init_train_l2,
+            init_test_l2,
+            init_val_l2,
+        ) = self._train({"num_factors": 3}, 10)
+        train_l2, test_l2, val_l2, _, _, _ = self._evaluate(
+            train_preds, test_preds, val_preds
+        )
+        assert train_preds.shape == self.W_train.shape
+        assert val_preds.shape == self.W_val.shape
+        assert test_preds.shape == self.W_test.shape
+        assert train_l2 < init_train_l2
+        assert test_l2 < init_test_l2
+        assert val_l2 < init_val_l2
 
 
 if __name__ == "__main__":

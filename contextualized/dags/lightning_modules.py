@@ -1,14 +1,21 @@
 import numpy as np
 import torch
+from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 import pytorch_lightning as pl
 from contextualized.functions import identity_link
-from contextualized.dags.graph_utils import project_to_dag_torch, trim_params, dag_pred
+from contextualized.dags.graph_utils import (
+    project_to_dag_torch,
+    trim_params,
+    dag_pred,
+    dag_pred_with_factors,
+)
 from contextualized.dags.losses import (
     dag_loss,
     l1_loss,
     mse_loss,
     linear_sem_loss,
+    linear_sem_loss_with_factors,
 )
 from contextualized.modules import ENCODERS, Explainer
 
@@ -31,6 +38,7 @@ class NOTMAD(pl.LightningModule):
         encoder_type="mlp",
         encoder_kwargs={"width": 32, "layers": 2, "link_fn": identity_link},
         init_mat=None,
+        num_factors=0,
     ):
         """Initialize NOTMAD.
 
@@ -64,6 +72,14 @@ class NOTMAD(pl.LightningModule):
         # dataset params
         self.context_dim = context_dim
         self.x_dim = x_dim
+        if num_factors > 0 and num_factors < self.x_dim:
+            self.latent_dim = num_factors
+        else:
+            if num_factors < 0:
+                print(
+                    f"Requested negative factors {num_factors}, but this should be a positive integer."
+                )
+            self.latent_dim = self.x_dim
         self.num_archetypes = num_archetypes
 
         # dag/loss params
@@ -76,6 +92,7 @@ class NOTMAD(pl.LightningModule):
         self.arch_l1 = archetype_loss_params["l1"]
         self.arch_alpha = archetype_loss_params["alpha"]
         self.arch_rho = archetype_loss_params["rho"]
+        self.factor_mat_l1 = archetype_loss_params.get("factor_mat_l1", 0.0)
 
         # layer params
         self.init_mat = init_mat
@@ -96,16 +113,28 @@ class NOTMAD(pl.LightningModule):
         )
         self.register_buffer(
             "diag_mask",
-            torch.ones(x_dim, x_dim) - torch.eye(x_dim),
+            torch.ones(self.latent_dim, self.latent_dim) - torch.eye(self.latent_dim),
         )
-        self.explainer = Explainer(num_archetypes, (x_dim, x_dim))
+        self.explainer = Explainer(num_archetypes, (self.latent_dim, self.latent_dim))
         self.explainer.set_archetypes(
             self._mask(self.explainer.get_archetypes())
         )  # intialized archetypes with 0 diagonal
+        if self.latent_dim != self.x_dim:
+            factor_mat_init = (
+                torch.rand([self.latent_dim, self.x_dim]) * 2e-2 - 1e-2
+            )  # np.random.uniform(-0.1, 0.1, size=(self.latent_dim, self.x_dim))
+        else:
+            factor_mat_init = torch.zeros([1, 1])
+        self.factor_mat_raw = nn.parameter.Parameter(
+            factor_mat_init, requires_grad=True
+        )
+        self.factor_softmax = nn.Softmax(
+            dim=0
+        )  # Sums to one along the latent factor axis, so each feature should only be projected to a single factor.
 
-    def forward(self, c):
-        c = self.encoder(c)
-        out = self.explainer(c)
+    def forward(self, context):
+        subtype = self.encoder(context)
+        out = self.explainer(subtype)
         return out
 
     def configure_optimizers(self):
@@ -122,17 +151,26 @@ class NOTMAD(pl.LightningModule):
             },
         }
 
+    def _factor_mat(self):
+        return self.factor_softmax(self.factor_mat_raw)
+
     def _batch_loss(self, batch, batch_idx):
         _, x_true = batch
         w_pred = self.predict_step(batch, batch_idx)
-        mse_term = linear_sem_loss(x_true, w_pred)
+        if self.latent_dim < self.x_dim:
+            mse_term = linear_sem_loss_with_factors(x_true, w_pred, self._factor_mat())
+        else:
+            mse_term = linear_sem_loss(x_true, w_pred)
         l1_term = l1_loss(w_pred, self.ss_l1)
         dag_term = dag_loss(w_pred, self.ss_alpha, self.ss_rho)
         notears = mse_term + l1_term + dag_term
         W_arch = self.explainer.get_archetypes()
         arch_l1_term = l1_loss(W_arch, self.arch_l1)
         arch_dag_term = len(W_arch) * dag_loss(W_arch, self.arch_alpha, self.arch_rho)
-        loss = notears + arch_l1_term + arch_dag_term  # todo: scale archetype loss?
+        factor_mat_term = l1_loss(self.factor_mat_raw, self.factor_mat_l1)
+        loss = (
+            notears + arch_l1_term + arch_dag_term + factor_mat_term
+        )  # todo: scale archetype loss?
         return (
             loss,
             notears.detach(),
@@ -141,6 +179,7 @@ class NOTMAD(pl.LightningModule):
             dag_term.detach(),
             arch_l1_term.detach(),
             arch_dag_term.detach(),
+            factor_mat_term.detach(),
         )
 
     def training_step(self, batch, batch_idx):
@@ -152,6 +191,7 @@ class NOTMAD(pl.LightningModule):
             dag_term,
             arch_l1_term,
             arch_dag_term,
+            factor_mat_term,
         ) = self._batch_loss(batch, batch_idx)
         ret = {
             "loss": loss,
@@ -161,6 +201,7 @@ class NOTMAD(pl.LightningModule):
             "train_dag_loss": dag_term,
             "train_arch_l1_loss": arch_l1_term,
             "train_arch_dag_loss": arch_dag_term,
+            "train_factor_l1_loss": factor_mat_term,
         }
         self.log_dict(ret)
         ret.update(
@@ -180,6 +221,7 @@ class NOTMAD(pl.LightningModule):
             dag_term,
             arch_l1_term,
             arch_dag_term,
+            factor_mat_term,
         ) = self._batch_loss(batch, batch_idx)
         ret = {
             "test_loss": loss,
@@ -188,6 +230,7 @@ class NOTMAD(pl.LightningModule):
             "test_dag_loss": dag_term,
             "test_arch_l1_loss": arch_l1_term,
             "test_arch_dag_loss": arch_dag_term,
+            "test_factor_l1_loss": factor_mat_term,
         }
         self.log_dict(ret)
         return ret
@@ -195,17 +238,24 @@ class NOTMAD(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         _, x_true = batch
         w_pred = self.predict_step(batch, batch_idx)
-        X_pred = dag_pred(x_true, w_pred)
+        if self.latent_dim < self.x_dim:
+            X_pred = dag_pred_with_factors(x_true, w_pred, self._factor_mat())
+        else:
+            X_pred = dag_pred(x_true, w_pred)
         mse_term = 0.5 * x_true.shape[-1] * mse_loss(x_true, X_pred)
         l1_term = l1_loss(w_pred, self.ss_l1).mean()
         # ignore archetype loss, use constant alpha/rho upper bound for validation
         dag_term = dag_loss(w_pred, 1e12, 1e12).mean()
-        loss = mse_term + l1_term + dag_term
+        factor_mat_term = actor_mat_term = l1_loss(
+            self.factor_mat_raw, self.factor_mat_l1
+        )
+        loss = mse_term + l1_term + dag_term + factor_mat_term
         ret = {
             "val_loss": loss,
             "val_mse_loss": mse_term,
             "val_l1_loss": l1_term,
             "val_dag_loss": dag_term,
+            "val_factor_l1_loss": factor_mat_term,
         }
         self.log_dict(ret)
         return ret
@@ -216,6 +266,15 @@ class NOTMAD(pl.LightningModule):
         return self._mask(w_pred)
 
     def _format_params(self, w_preds, project_to_dag=False, threshold=0.0):
+        if self.latent_dim > 0 and self.latent_dim < self.x_dim:
+            w_preds = np.tensordot(
+                w_preds, self._factor_mat().detach().numpy(), axes=1
+            )  # n x latent x x_dims
+            w_preds = np.swapaxes(w_preds, 1, 2)  # n x x_dims x latent
+            w_preds = np.tensordot(
+                w_preds, self._factor_mat().detach().numpy(), axes=1
+            )  # n x x_dims x x_dims
+            w_preds = np.swapaxes(w_preds, 1, 2)  # n x x_dims x latent
         if project_to_dag:
             try:
                 w_preds = np.array([project_to_dag_torch(w)[0] for w in w_preds])
