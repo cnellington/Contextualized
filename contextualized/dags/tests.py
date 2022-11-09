@@ -118,32 +118,12 @@ class TestNOTMAD(unittest.TestCase):
     def _create_cwx_dataset(self, n=500):
         np.random.seed(0)
         C = np.linspace(1, 2, n).reshape((n, 1))
-        blank = np.zeros_like(C)
-        W_00 = blank
-        W_01 = C - 2
-        W_02 = blank
-        W_03 = blank
-        W_10 = blank
-        W_11 = blank
-        W_12 = blank
-        W_13 = blank
-        W_20 = blank
-        W_21 = C**2
-        W_22 = blank
-        W_23 = blank
-        W_30 = blank
-        W_31 = C**3
-        W_32 = C
-        W_33 = blank
-
-        W = np.array(
-            [
-                [W_00, W_01, W_02, W_03],
-                [W_10, W_11, W_12, W_13],
-                [W_20, W_21, W_22, W_23],
-                [W_30, W_31, W_32, W_33],
-            ]
-        ).squeeze()
+        W = np.zeros((4, 4, n, 1))
+        W[0, 1] = C - 2
+        W[2, 1] = C**2
+        W[3, 1] = C**3
+        W[3, 2] = C
+        W = np.squeeze(W)
 
         W = np.transpose(W, (2, 0, 1))
         X = np.zeros((n, 4))
