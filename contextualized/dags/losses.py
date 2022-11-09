@@ -1,5 +1,5 @@
 import torch
-from contextualized.dags.graph_utils import dag_pred
+from contextualized.dags.graph_utils import dag_pred, dag_pred_with_factors
 
 
 def dag_loss(w, alpha, rho):
@@ -18,6 +18,22 @@ l1_loss = lambda w, l1: l1 * torch.sum(torch.abs(w))
 
 # Mean squared error of y_true vs. y_pred
 mse_loss = lambda y_true, y_pred: ((y_true - y_pred) ** 2).mean()
+
+
+def linear_sem_loss_with_factors(x_true, w_pred, factor_mat):
+    """Computes MSE loss between true x and predicted linear structural equation model,
+    for torch tensors. Works on batches only.
+
+    Args:
+        x_true (torch.FloatTensor): Vector of True features x
+        w_pred (torch.FloatTensor): Predicted linear structural equation model
+        factor_mat (torch.FloatTensor): Factor matrix, size latent factors x x.shape[-1]
+        
+    Returns:
+        torch.tensor: MSE loss for data features and predicted SEM.
+    """
+    x_prime = dag_pred_with_factors(x_true, w_pred, factor_mat)
+    return (0.5 / x_true.shape[0]) * torch.square(torch.linalg.norm(x_true - x_prime))
 
 
 def linear_sem_loss(x_true, w_pred):
