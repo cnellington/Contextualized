@@ -30,6 +30,9 @@ class SKLearnWrapper:
         self.default_train_batch_size = 1
         self.default_test_batch_size = 16
         self.default_val_split = 0.2
+        self.default_encoder_width = 25
+        self.default_encoder_layers = 3
+        self.default_encoder_link_fn = LINK_FUNCTIONS["identity"]
         self.n_bootstraps = 1
         self.models = None
         self.trainers = None
@@ -69,6 +72,11 @@ class SKLearnWrapper:
             "fit": [],
             "wrapper": [
                 "n_bootstraps",
+                "es_patience",
+                "es_monitor",
+                "es_mode",
+                "es_min_delta",
+                "es_verbose",
             ],
         }
         self._update_acceptable_kwargs("model", extra_model_kwargs)
@@ -96,7 +104,7 @@ class SKLearnWrapper:
             "layers", self.constructor_kwargs["encoder_kwargs"]["layers"]
         )
         self.constructor_kwargs["encoder_kwargs"]["link_fn"] = kwargs.get(
-            "encoder_link_fn", self.constructor_kwargs["encoder_kwargs"]["link_fn"]
+            "encoder_link_fn", self.constructor_kwargs["encoder_kwargs"].get("link_fn", self.default_encoder_link_fn)
         )
         self.not_constructor_kwargs = {
             k: v
@@ -165,6 +173,7 @@ class SKLearnWrapper:
                 )
             ],
         )
+        print(organized_kwargs["trainer"]["callback_constructors"])
         organized_kwargs["trainer"]["callback_constructors"].append(
             lambda i: ModelCheckpoint(
                 monitor=kwargs.get("es_monitor", "val_loss"),
@@ -260,13 +269,13 @@ class SKLearnWrapper:
         :param **kwargs:
         """
         train_dataloader = self._build_dataloader(
-            model, kwargs.get("train_batch_size", 1), *train_data
+            model, kwargs.get("train_batch_size", self.default_train_batch_size), *train_data
         )
         if val_data is None:
             val_dataloader = None
         else:
             val_dataloader = self._build_dataloader(
-                model, kwargs.get("val_batch_size", 16), *val_data
+                model, kwargs.get("val_batch_size", self.default_val_batch_size), *val_data
             )
 
         return train_dataloader, val_dataloader
@@ -287,7 +296,9 @@ class SKLearnWrapper:
         maybe_add_constructor_kwarg("loss_fn", LOSSES["mse"])
         maybe_add_constructor_kwarg(
             "encoder_kwargs",
-            {"width": 25, "layers": 2, "link_fn": LINK_FUNCTIONS["identity"]},
+            {"width": kwargs.get("encoder_width", self.default_encoder_width),
+            "layers": kwargs.get("encoder_layers", self.default_encoder_layers),
+            "link_fn": kwargs.get("encoder_link_fn", self.default_encoder_link_fn)},
         )
         if kwargs.get("subtype_probabilities", False):
             constructor_kwargs["encoder_kwargs"]["link_fn"] = LINK_FUNCTIONS["softmax"]
@@ -363,7 +374,7 @@ class SKLearnWrapper:
             else:
                 return np.mean(betas, axis=0), np.mean(mus, axis=0)
         betas = np.array(preds)
-        if individual_preds:
+        if not individual_preds:
             return np.mean(betas, axis=0)
         return betas
 
