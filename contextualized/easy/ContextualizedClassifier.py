@@ -6,6 +6,7 @@ import numpy as np
 
 from contextualized.functions import LINK_FUNCTIONS
 from contextualized.easy import ContextualizedRegressor
+from contextualized.regression import LOSSES
 
 
 class ContextualizedClassifier(ContextualizedRegressor):
@@ -15,6 +16,7 @@ class ContextualizedClassifier(ContextualizedRegressor):
 
     def __init__(self, **kwargs):
         kwargs["link_fn"] = LINK_FUNCTIONS["logistic"]
+        kwargs["loss_fn"] = LOSSES["bceloss"]
         super().__init__(**kwargs)
 
     def predict(self, C, X, individual_preds=False, **kwargs):
