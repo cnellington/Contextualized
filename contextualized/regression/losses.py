@@ -2,6 +2,7 @@
 Losses used in regression.
 """
 
+import torch
 
 def MSE(Y_true, Y_pred):
     """
@@ -20,3 +21,8 @@ def MSE(Y_true, Y_pred):
     """
     residual = Y_true - Y_pred
     return residual.pow(2).mean()
+
+
+def BCELoss(Y_true, Y_pred):
+    loss = -(Y_true * torch.log(Y_pred + 1e-8) + (1 - Y_true) * torch.log(1 - Y_pred + 1e-8))
+    return loss.mean()

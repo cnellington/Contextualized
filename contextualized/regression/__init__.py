@@ -7,7 +7,7 @@ from contextualized.regression.datasets import (
     MultitaskMultivariateDataset,
     MultitaskUnivariateDataset,
 )
-from contextualized.regression.losses import MSE
+from contextualized.regression.losses import MSE, BCELoss
 from contextualized.regression.regularizers import REGULARIZERS
 from contextualized.regression.lightning_modules import (
     NaiveContextualizedRegression,
@@ -25,7 +25,7 @@ DATASETS = {
     "multitask_multivariate": MultitaskMultivariateDataset,
     "multitask_univariate": MultitaskUnivariateDataset,
 }
-LOSSES = {"mse": MSE}
+LOSSES = {"mse": MSE, "bceloss": BCELoss}
 MODELS = ["multivariate", "univariate"]
 METAMODELS = ["simple", "subtype", "multitask", "tasksplit"]
 TRAINERS = {"regression_trainer": RegressionTrainer}
