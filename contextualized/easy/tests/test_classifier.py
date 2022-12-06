@@ -47,7 +47,7 @@ class TestEasyClassifier(unittest.TestCase):
             alpha=1e-1, encoder_type='mlp'
         )
         self._quicktest(
-            model, C, X, Y, max_epochs=10
+            model, C, X, Y, max_epochs=10, es_patience=float('inf')
         )
 
 
