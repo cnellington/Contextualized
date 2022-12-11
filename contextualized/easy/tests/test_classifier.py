@@ -7,6 +7,7 @@ import numpy as np
 
 from contextualized.easy import ContextualizedClassifier
 
+
 class TestEasyClassifier(unittest.TestCase):
     """
     Test Easy Classifier models.
@@ -32,30 +33,18 @@ class TestEasyClassifier(unittest.TestCase):
         print(err_trained, err_init)
 
     def test_classifier(self):
-        """ Test Case for ContextualizedClassifier.
-        """
+        """Test Case for ContextualizedClassifier."""
 
         n_samples = 1000
         c_dim = 100
         x_dim = 3
         y_dim = 1
-        C = np.random.uniform(-1, 1, size = (n_samples, c_dim))
-        X = np.random.uniform(-1, 1, size = (n_samples, x_dim))
-        Y = np.random.binomial(1, 0.5, size = (n_samples, y_dim))
+        C = np.random.uniform(-1, 1, size=(n_samples, c_dim))
+        X = np.random.uniform(-1, 1, size=(n_samples, x_dim))
+        Y = np.random.binomial(1, 0.5, size=(n_samples, y_dim))
 
-        model = ContextualizedClassifier(
-            alpha=1e-1, encoder_type='mlp'
-        )
-        self._quicktest(
-            model, C, X, Y, max_epochs=10, es_patience=float('inf')
-        )
-
-
-
-
-
-
-
+        model = ContextualizedClassifier(alpha=1e-1, encoder_type="mlp")
+        self._quicktest(model, C, X, Y, max_epochs=10, es_patience=float("inf"))
 
 
 if __name__ == "__main__":

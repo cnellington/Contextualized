@@ -56,7 +56,7 @@ class TestEasyNetworks(unittest.TestCase):
         assert np.shape(omegas) == (self.n_samples, self.x_dim, self.x_dim)
 
     def test_bayesian(self):
-        """ Test case for ContextualizedBayesianNetworks."""
+        """Test case for ContextualizedBayesianNetworks."""
         model = ContextualizedBayesianNetworks()
         self._quicktest(model, self.C, self.X, max_epochs=10, learning_rate=1e-3)
 

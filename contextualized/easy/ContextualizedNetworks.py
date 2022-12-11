@@ -82,7 +82,7 @@ class ContextualizedCorrelationNetworks(ContextualizedNetworks):
             for j in range(X.shape[-1]):
                 tiled_xi = np.array([X[:, i] for _ in range(len(betas))])
                 tiled_xj = np.array([X[:, j] for _ in range(len(betas))])
-                residuals = tiled_xi - betas[:, :, i, j]*tiled_xj + mus[:, :, i ,j]
+                residuals = tiled_xi - betas[:, :, i, j] * tiled_xj + mus[:, :, i, j]
                 mses += residuals**2 / (X.shape[-1] ** 2)
         if not individual_preds:
             mses = np.mean(mses, axis=0)
@@ -178,8 +178,9 @@ class ContextualizedBayesianNetworks(ContextualizedNetworks):
             individual_preds=kwargs.get("individual_preds", False),
             model_includes_mus=False,
             uses_y=False,
-            project_to_dag=kwargs.get("project_to_dag", True))
-        
+            project_to_dag=kwargs.get("project_to_dag", True),
+        )
+
     def predict_networks(self, C, with_offsets=False, project_to_dag=True, **kwargs):
         """
         Predicts context-specific networks.
