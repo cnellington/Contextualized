@@ -254,7 +254,7 @@ def plot_homogeneous_predictor_effects(
                 x_encoder=encoder,
                 x_means=x_means,
                 x_stds=x_stds,
-                xlabel=f"{kwargs.get('xlabel_prefix',  '')} {X.columns[k]}",
+                xlabel=f"{kwargs.get('xlabel_prefix',  '')} {X.columns[j]}",
                 **kwargs,
             )
 
