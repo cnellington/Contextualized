@@ -4,6 +4,7 @@ Losses used in regression.
 
 import torch
 
+
 def MSE(Y_true, Y_pred):
     """
     Returns
@@ -24,5 +25,7 @@ def MSE(Y_true, Y_pred):
 
 
 def BCELoss(Y_true, Y_pred):
-    loss = -(Y_true * torch.log(Y_pred + 1e-8) + (1 - Y_true) * torch.log(1 - Y_pred + 1e-8))
+    loss = -(
+        Y_true * torch.log(Y_pred + 1e-8) + (1 - Y_true) * torch.log(1 - Y_pred + 1e-8)
+    )
     return loss.mean()

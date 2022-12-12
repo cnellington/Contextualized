@@ -33,8 +33,7 @@ class TestEasyRegression(unittest.TestCase):
         print(err_trained, err_init)
 
     def test_regressor(self):
-        """ Test Case for ContextualizedRegressor.
-        """
+        """Test Case for ContextualizedRegressor."""
         n_samples = 1000
         c_dim = 2
         x_dim = 3
@@ -57,26 +56,35 @@ class TestEasyRegression(unittest.TestCase):
         model = ContextualizedRegressor(
             base_param_predictor=parambase, base_y_predictor=ybase
         )
-        self._quicktest(model, C, X, Y, max_epochs=10, learning_rate=1e-3)
+        self._quicktest(
+            model, C, X, Y, max_epochs=10, learning_rate=1e-3, es_patience=float("inf")
+        )
 
         model = ContextualizedRegressor(num_archetypes=0)
-        self._quicktest(model, C, X, Y, max_epochs=10)
+        self._quicktest(model, C, X, Y, max_epochs=10, es_patience=float("inf"))
 
         model = ContextualizedRegressor(num_archetypes=4)
-        self._quicktest(model, C, X, Y, max_epochs=10)
+        self._quicktest(model, C, X, Y, max_epochs=10, es_patience=float("inf"))
 
         # With regularization
         model = ContextualizedRegressor(
             num_archetypes=4, alpha=1e-1, l1_ratio=0.5, mu_ratio=0.1
         )
-        self._quicktest(model, C, X, Y, max_epochs=10)
+        self._quicktest(model, C, X, Y, max_epochs=10, es_patience=float("inf"))
 
         # With bootstrap
         model = ContextualizedRegressor(
             num_archetypes=4, alpha=1e-1, l1_ratio=0.5, mu_ratio=0.1
         )
         self._quicktest(
-            model, C, X, Y, max_epochs=10, n_bootstraps=2, learning_rate=1e-3
+            model,
+            C,
+            X,
+            Y,
+            max_epochs=10,
+            n_bootstraps=2,
+            learning_rate=1e-3,
+            es_patience=float("inf"),
         )
 
 
