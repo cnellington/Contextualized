@@ -14,7 +14,8 @@ from contextualized.dags.losses import mse_loss as mse
 
 
 class TestNOTMAD(unittest.TestCase):
-    """ Unit tests for NOTMAD. """
+    """Unit tests for NOTMAD."""
+
     def __init__(self, *args, **kwargs):
         super(TestNOTMAD, self).__init__(*args, **kwargs)
 
@@ -84,39 +85,51 @@ class TestNOTMAD(unittest.TestCase):
     def _train(self, model_args, n_epochs):
         seed_everything(0)
         k = 6
-        INIT_MAT = np.random.uniform(-0.1, 0.1, size=(k, 4, 4))*np.tile(1-np.eye(4), (k, 1, 1))
+        INIT_MAT = np.random.uniform(-0.1, 0.1, size=(k, 4, 4)) * np.tile(
+            1 - np.eye(4), (k, 1, 1)
+        )
         model = NOTMAD(
             self.C.shape[-1],
             self.X.shape[-1],
-            archetype_params = {
-                "l1": 0.,
-                "dag":
-                    model_args.get("dag", {
+            archetype_params={
+                "l1": 0.0,
+                "dag": model_args.get(
+                    "dag",
+                    {
                         "loss_type": "NOTEARS",
                         "params": {
                             "alpha": 1e-1,
                             "rho": 1e-2,
                             "h_old": 0.0,
                             "tol": 0.25,
-                            "use_dynamic_alpha_rho": True
-                        }
-                    }),
+                            "use_dynamic_alpha_rho": True,
+                        },
+                    },
+                ),
                 "init_mat": INIT_MAT,
                 "num_factors": model_args.get("num_factors", 0),
-                "factor_mat_l1": 0.,
-                "num_archetypes": model_args.get("num_archetypes", k)
-            }
+                "factor_mat_l1": 0.0,
+                "num_archetypes": model_args.get("num_archetypes", k),
+            },
         )
-        train_dataloader = model.dataloader(self.C_train, self.X_train, batch_size=1, num_workers=1)
-        test_dataloader = model.dataloader(self.C_test, self.X_test, batch_size=10, num_workers=1)
-        val_dataloader = model.dataloader(self.C_val, self.X_val, batch_size=10, num_workers=1)
+        train_dataloader = model.dataloader(
+            self.C_train, self.X_train, batch_size=1, num_workers=1
+        )
+        test_dataloader = model.dataloader(
+            self.C_test, self.X_test, batch_size=10, num_workers=1
+        )
+        val_dataloader = model.dataloader(
+            self.C_val, self.X_val, batch_size=10, num_workers=1
+        )
         trainer = GraphTrainer(max_epochs=n_epochs, callbacks=[], deterministic=True)
         preds_train = trainer.predict_params(
             model, train_dataloader, project_to_dag=True
         )
         preds_test = trainer.predict_params(model, test_dataloader, project_to_dag=True)
         preds_val = trainer.predict_params(model, val_dataloader, project_to_dag=True)
-        init_train_l2, init_test_l2, init_val_l2, init_train_mse, _, _ = self._evaluate(preds_train, preds_test, preds_val)
+        init_train_l2, init_test_l2, init_val_l2, init_train_mse, _, _ = self._evaluate(
+            preds_train, preds_test, preds_val
+        )
         trainer.tune(model)
         trainer.fit(model, train_dataloader)
         trainer.validate(model, val_dataloader)
@@ -139,13 +152,17 @@ class TestNOTMAD(unittest.TestCase):
         )
 
     def test_notmad_dagma(self):
-        train_preds, test_preds, val_preds, _, _, _ = self._train({"dag": {
-            "loss_type": "DAGMA",
-                        "params": {
-                            "alpha": 1.0,
-                        }
-                    }
-        }, 10)
+        train_preds, test_preds, val_preds, _, _, _ = self._train(
+            {
+                "dag": {
+                    "loss_type": "DAGMA",
+                    "params": {
+                        "alpha": 1.0,
+                    },
+                }
+            },
+            10,
+        )
         train_l2, test_l2, val_l2, train_mse, test_mse, val_mse = self._evaluate(
             train_preds, test_preds, val_preds
         )
@@ -161,7 +178,6 @@ class TestNOTMAD(unittest.TestCase):
         assert train_mse < 1e-2
         assert test_mse < 1e-2
         assert val_mse < 1e-2
-
 
     def test_notmad_notears(self):
         train_preds, test_preds, val_preds, _, _, _ = self._train({}, 10)
@@ -180,7 +196,6 @@ class TestNOTMAD(unittest.TestCase):
         assert train_mse < 1e-2
         assert test_mse < 1e-2
         assert val_mse < 1e-2
-
 
     def test_notmad_factor_graphs(self):
         """
