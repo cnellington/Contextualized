@@ -88,7 +88,7 @@ class NOTMAD(pl.LightningModule):
 
     def __init__(
         self,
-        c_dim,
+        context_dim,
         x_dim,
         sample_specific_params=DEFAULT_SS_PARAMS,
         archetype_params=DEFAULT_ARCH_PARAMS,
@@ -99,7 +99,7 @@ class NOTMAD(pl.LightningModule):
         """Initialize NOTMAD.
 
         Args:
-            c_dim (int): context dimensionality
+            context_dim (int): context dimensionality
             x_dim (int): predictor dimensionality
 
         Kwargs:
@@ -126,7 +126,7 @@ class NOTMAD(pl.LightningModule):
         super(NOTMAD, self).__init__()
 
         # dataset params
-        self.c_dim = c_dim
+        self.context_dim = context_dim
         self.x_dim = x_dim
         if archetype_params.get("num_factors", 0) > 0 and archetype_params.get("num_factors", 0) < self.x_dim:
             self.latent_dim = archetype_params.get("num_factors", 0)
@@ -141,7 +141,7 @@ class NOTMAD(pl.LightningModule):
         # DAG regularizers
         self.ss_dag_params = sample_specific_params["dag"].get("params", DEFAULT_DAG_LOSS_PARAMS[sample_specific_params["dag"]["loss_type"]])
         self.arch_dag_params = archetype_params["dag"].get("params", DEFAULT_DAG_LOSS_PARAMS[archetype_params["dag"]["loss_type"]])
-        self.val_dag_loss_params = {"alpha": 1e0, "rho": 1e0} # TODO
+        self.val_dag_loss_params = {"alpha": 1e0, "rho": 1e0}
 
         self.ss_dag_loss = DAG_LOSSES[sample_specific_params["dag"]["loss_type"]]
         self.arch_dag_loss = DAG_LOSSES[archetype_params["dag"]["loss_type"]]
@@ -161,7 +161,7 @@ class NOTMAD(pl.LightningModule):
         
         # layers
         self.encoder = ENCODERS[encoder_kwargs["type"]](
-            c_dim,
+            context_dim,
             self.num_archetypes,
             **encoder_kwargs["params"],
         )
@@ -299,7 +299,6 @@ class NOTMAD(pl.LightningModule):
         mse_term = 0.5 * x_true.shape[-1] * mse_loss(x_true, X_pred)
         l1_term = l1_loss(w_pred, self.ss_l1).mean()
         # ignore archetype loss, use constant alpha/rho upper bound for validation
-        # TODO: Restore this for normal NOTMAD
         dag_term = self.ss_dag_loss(w_pred, **self.val_dag_loss_params).mean()
         factor_mat_term = actor_mat_term = l1_loss(
             self.factor_mat_raw, self.factor_mat_l1
@@ -351,7 +350,6 @@ class NOTMAD(pl.LightningModule):
             epoch_dag_loss += (
                 len(ret["train_batch"][0]) / epoch_samples * batch_dag_loss
             )
-        # TODO: May or may not have an h_old, etc.
         self.ss_dag_params = self._maybe_update_alpha_rho(epoch_dag_loss, self.ss_dag_params)
         self.arch_dag_params = self._maybe_update_alpha_rho(epoch_dag_loss, self.arch_dag_params)
 
