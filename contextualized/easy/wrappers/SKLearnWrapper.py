@@ -126,12 +126,6 @@ class SKLearnWrapper:
                 "link_fn", self.default_encoder_link_fn
             ),
         )
-        self.constructor_kwargs["encoder_kwargs"]["type"] = kwargs.get(
-            "encoder_type",
-            self.constructor_kwargs["encoder_kwargs"].get(
-                "type", self.default_encoder_type
-            ),
-        )
         self.not_constructor_kwargs = {
             k: v
             for k, v in kwargs.items()
@@ -321,7 +315,7 @@ class SKLearnWrapper:
 
         maybe_add_constructor_kwarg("link_fn", LINK_FUNCTIONS["identity"])
         maybe_add_constructor_kwarg("univariate", False)
-        maybe_add_constructor_kwarg("encoder_type", "mlp")
+        maybe_add_constructor_kwarg("encoder_type", self.default_encoder_type)
         maybe_add_constructor_kwarg("loss_fn", LOSSES["mse"])
         maybe_add_constructor_kwarg(
             "encoder_kwargs",

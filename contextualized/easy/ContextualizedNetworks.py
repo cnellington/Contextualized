@@ -166,7 +166,7 @@ class ContextualizedBayesianNetworks(ContextualizedNetworks):
         )
         self._init_kwargs["model"]["encoder_kwargs"] = {
             "type": kwargs.get(
-                "encoder_type", self.constructor_kwargs["encoder_kwargs"]["type"]
+                "encoder_type", self._init_kwargs["model"]["encoder_type"]
             ),
             "params": {
                 "width": self.constructor_kwargs["encoder_kwargs"]["width"],
