@@ -11,7 +11,8 @@ from contextualized.dags.graph_utils import (
     dag_pred_with_factors,
 )
 from contextualized.dags.losses import (
-    dag_loss,
+    dag_loss_notears,
+    dag_loss_dagma,
     l1_loss,
     mse_loss,
     linear_sem_loss,
@@ -19,6 +20,66 @@ from contextualized.dags.losses import (
 )
 from contextualized.modules import ENCODERS, Explainer
 
+DAG_LOSSES = {
+    "NOTEARS": dag_loss_notears,
+    "DAGMA": dag_loss_dagma
+}
+DEFAULT_DAG_LOSS_PARAMS = {
+    "NOTEARS":
+        {
+            "alpha": 1e-1,
+            "rho": 1e-2
+        },
+    "DAGMA":
+        {
+            "s": 1,
+            "alpha": 1e0
+        }
+}
+DEFAULT_SS_PARAMS = {
+    "l1": 0.,
+    "dag":
+        {
+            "loss_type": "NOTEARS",
+            "params": {
+                "alpha": 1e-1,
+                "rho": 1e-2,
+                "h_old": 0.0,
+                "tol": 0.25,
+                "use_dynamic_alpha_rho": False,
+            }
+        }
+}
+DEFAULT_ARCH_PARAMS = {
+    "l1": 0.,
+    "dag":
+        {
+            "loss_type": "NOTEARS",
+            "params": {
+                "alpha": 0.0,
+                "rho": 0.0,
+                "h_old": 0.0,
+                "tol": 0.25,
+                "use_dynamic_alpha_rho": False,
+            }
+        },
+    "init_mat": None,
+    "num_factors": 0,
+    "factor_mat_l1": 0.,
+    "num_archetypes": 4
+}
+DEFAULT_ENCODER_KWARGS = {
+    "type": "mlp",
+    "params": {
+        "width": 32,
+        "layers": 2,
+        "link_fn": identity_link
+    }
+}
+DEFAULT_OPT_PARAMS = {
+    "learning_rate": 1e-3,
+    "step": 50,
+}
 
 class NOTMAD(pl.LightningModule):
     """
@@ -27,24 +88,19 @@ class NOTMAD(pl.LightningModule):
 
     def __init__(
         self,
-        context_dim,
+        c_dim,
         x_dim,
-        num_archetypes=4,
-        use_dynamic_alpha_rho=True,
-        sample_specific_loss_params={"l1": 0.0, "alpha": 1e-1, "rho": 1e-2},
-        archetype_loss_params={"l1": 0.0, "alpha": 0.0, "rho": 0.0},
-        learning_rate=1e-3,
-        opt_step=50,
-        encoder_type="mlp",
-        encoder_kwargs={"width": 32, "layers": 2, "link_fn": identity_link},
-        init_mat=None,
-        num_factors=0,
+        sample_specific_params=DEFAULT_SS_PARAMS,
+        archetype_params=DEFAULT_ARCH_PARAMS,
+        opt_params=DEFAULT_OPT_PARAMS,
+        encoder_kwargs=DEFAULT_ENCODER_KWARGS,
+        **kwargs
     ):
         """Initialize NOTMAD.
 
         Args:
-            context_dim (int):
-            x_dim (int):
+            c_dim (int): context dimensionality
+            x_dim (int): predictor dimensionality
 
         Kwargs:
             Explainer Kwargs
@@ -63,59 +119,57 @@ class NOTMAD(pl.LightningModule):
 
             Loss Kwargs
             -----------
-            sample_specific_loss_params (dict of str: int): Dict of params used by NOTEARS loss (l1, alpha, rho)
-            archetype_specific_loss_params (dict of str: int): Dict of params used by Archetype loss (l1, alpha, rho)
+            sample_specific_params (dict of str: int): Dict of params used by NOTEARS loss (l1, alpha, rho)
+            archetype_params (dict of str: int): Dict of params used by Archetype loss (l1, alpha, rho)
 
         """
         super(NOTMAD, self).__init__()
 
         # dataset params
-        self.context_dim = context_dim
+        self.c_dim = c_dim
         self.x_dim = x_dim
-        if num_factors > 0 and num_factors < self.x_dim:
-            self.latent_dim = num_factors
+        if archetype_params.get("num_factors", 0) > 0 and archetype_params.get("num_factors", 0) < self.x_dim:
+            self.latent_dim = archetype_params.get("num_factors", 0)
         else:
-            if num_factors < 0:
+            if archetype_params.get("num_factors", 0) < 0:
                 print(
                     f"Requested negative factors {num_factors}, but this should be a positive integer."
                 )
             self.latent_dim = self.x_dim
-        self.num_archetypes = num_archetypes
+        self.num_archetypes = archetype_params.get("num_archetypes", 4)
 
-        # dag/loss params
-        self.project_distance = 0.1
-        self.archetype_loss_params = archetype_loss_params
-        self.use_dynamic_alpha_rho = use_dynamic_alpha_rho
-        self.ss_l1 = sample_specific_loss_params["l1"]
-        self.ss_alpha = sample_specific_loss_params["alpha"]
-        self.ss_rho = sample_specific_loss_params["rho"]
-        self.arch_l1 = archetype_loss_params["l1"]
-        self.arch_alpha = archetype_loss_params["alpha"]
-        self.arch_rho = archetype_loss_params["rho"]
-        self.factor_mat_l1 = archetype_loss_params.get("factor_mat_l1", 0.0)
+        # DAG regularizers
+        self.ss_dag_params = sample_specific_params["dag"].get("params", DEFAULT_DAG_LOSS_PARAMS[sample_specific_params["dag"]["loss_type"]])
+        self.arch_dag_params = archetype_params["dag"].get("params", DEFAULT_DAG_LOSS_PARAMS[archetype_params["dag"]["loss_type"]])
+        self.val_dag_loss_params = {"alpha": 1e0, "rho": 1e0} # TODO
 
-        # layer params
-        self.init_mat = init_mat
+        self.ss_dag_loss = DAG_LOSSES[sample_specific_params["dag"]["loss_type"]]
+        self.arch_dag_loss = DAG_LOSSES[archetype_params["dag"]["loss_type"]]
+        
+        # Sparsity regularizers
+        self.arch_l1 = archetype_params.get("l1", 0.)
+        self.ss_l1 = sample_specific_params.get("l1", 0.)
+        
+        # Archetype params
+        self.init_mat = archetype_params.get("init_mat", None)
+        self.factor_mat_l1 = archetype_params.get("factor_mat_l1", 0.0)
 
         # opt params
-        self.learning_rate = learning_rate
-        self.opt_step = opt_step
-
-        # dynamic alpha rho params
-        self.h_old = 0.0
-        self.tol = 0.25
-
+        self.learning_rate = opt_params.get("learning_rate", 1e-3)
+        self.opt_step = opt_params.get("opt_step", 50)
+        #self.project_distance = 0.1
+        
         # layers
-        self.encoder = ENCODERS[encoder_type](
-            context_dim,
-            num_archetypes,
-            **encoder_kwargs,
+        self.encoder = ENCODERS[encoder_kwargs["type"]](
+            c_dim,
+            self.num_archetypes,
+            **encoder_kwargs["params"],
         )
         self.register_buffer(
             "diag_mask",
             torch.ones(self.latent_dim, self.latent_dim) - torch.eye(self.latent_dim),
         )
-        self.explainer = Explainer(num_archetypes, (self.latent_dim, self.latent_dim))
+        self.explainer = Explainer(self.num_archetypes, (self.latent_dim, self.latent_dim))
         self.explainer.set_archetypes(
             self._mask(self.explainer.get_archetypes())
         )  # intialized archetypes with 0 diagonal
@@ -162,11 +216,11 @@ class NOTMAD(pl.LightningModule):
         else:
             mse_term = linear_sem_loss(x_true, w_pred)
         l1_term = l1_loss(w_pred, self.ss_l1)
-        dag_term = dag_loss(w_pred, self.ss_alpha, self.ss_rho)
+        dag_term = self.ss_dag_loss(w_pred, **self.ss_dag_params)
         notears = mse_term + l1_term + dag_term
         W_arch = self.explainer.get_archetypes()
         arch_l1_term = l1_loss(W_arch, self.arch_l1)
-        arch_dag_term = len(W_arch) * dag_loss(W_arch, self.arch_alpha, self.arch_rho)
+        arch_dag_term = len(W_arch) * self.arch_dag_loss(W_arch, **self.arch_dag_params)
         factor_mat_term = l1_loss(self.factor_mat_raw, self.factor_mat_l1)
         loss = (
             notears + arch_l1_term + arch_dag_term + factor_mat_term
@@ -245,7 +299,8 @@ class NOTMAD(pl.LightningModule):
         mse_term = 0.5 * x_true.shape[-1] * mse_loss(x_true, X_pred)
         l1_term = l1_loss(w_pred, self.ss_l1).mean()
         # ignore archetype loss, use constant alpha/rho upper bound for validation
-        dag_term = dag_loss(w_pred, 1e12, 1e12).mean()
+        # TODO: Restore this for normal NOTMAD
+        dag_term = self.ss_dag_loss(w_pred, **self.val_dag_loss_params).mean()
         factor_mat_term = actor_mat_term = l1_loss(
             self.factor_mat_raw, self.factor_mat_l1
         )
@@ -289,23 +344,28 @@ class NOTMAD(pl.LightningModule):
         )
         epoch_dag_loss = 0
         for ret in training_step_outputs:
-            batch_dag_loss = dag_loss(
+            batch_dag_loss = self.ss_dag_loss(
                 self.predict_step(ret["train_batch"], ret["train_batch_idx"]),
-                self.ss_alpha,
-                self.ss_rho,
+                **self.ss_dag_params
             ).detach()
             epoch_dag_loss += (
                 len(ret["train_batch"][0]) / epoch_samples * batch_dag_loss
             )
+        # TODO: May or may not have an h_old, etc.
+        self.ss_dag_params = self._maybe_update_alpha_rho(epoch_dag_loss, self.ss_dag_params)
+        self.arch_dag_params = self._maybe_update_alpha_rho(epoch_dag_loss, self.arch_dag_params)
+
+    def _maybe_update_alpha_rho(self, epoch_dag_loss, dag_params):
         if (
-            self.use_dynamic_alpha_rho
-            and epoch_dag_loss > self.tol * self.h_old
-            and self.ss_alpha < 1e12
-            and self.ss_rho < 1e12
+            dag_params.get("use_dynamic_alpha_rho", False)
+            and epoch_dag_loss > dag_params["tol"] * dag_params["h_old"]
+            and dag_params["alpha"] < 1e12
+            and dag_params["rho"] < 1e12
         ):
-            self.ss_alpha = self.ss_alpha + self.ss_rho * epoch_dag_loss
-            self.ss_rho = self.ss_rho * 1.1
-        self.h_old = epoch_dag_loss
+            dag_params["alpha"] = dag_params["alpha"] + dag_params["rho"] * epoch_dag_loss
+            dag_params["rho"] = dag_params["rho"] * 1.1
+        dag_params["h_old"] = epoch_dag_loss
+        return dag_params
 
     # helpers
     def _mask(self, W):

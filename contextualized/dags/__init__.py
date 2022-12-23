@@ -8,7 +8,8 @@ from contextualized.dags.trainers import GraphTrainer
 from contextualized.dags.losses import (
     mse_loss,
     l1_loss,
-    dag_loss,
+    dag_loss_notears,
+    dag_loss_dagma,
     linear_sem_loss,
     NOTEARS_loss,
 )
