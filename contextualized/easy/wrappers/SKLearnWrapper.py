@@ -316,7 +316,7 @@ class SKLearnWrapper:
 
         maybe_add_constructor_kwarg("link_fn", LINK_FUNCTIONS["identity"])
         maybe_add_constructor_kwarg("univariate", False)
-        maybe_add_constructor_kwarg("encoder_type", "mlp")
+        maybe_add_constructor_kwarg("encoder_type", self.default_encoder_type)
         maybe_add_constructor_kwarg("loss_fn", LOSSES["mse"])
         maybe_add_constructor_kwarg(
             "encoder_kwargs",
