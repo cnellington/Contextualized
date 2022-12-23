@@ -3,7 +3,9 @@ import igraph as ig
 import numpy as np
 
 
-dag_pred_with_factors = lambda X, W, P: torch.matmul(torch.matmul(torch.matmul(X, P.T), W), P)
+dag_pred_with_factors = lambda X, W, P: torch.matmul(
+    torch.matmul(torch.matmul(X, P.T), W), P
+)
 
 dag_pred = lambda X, W: torch.matmul(X.unsqueeze(1), W).squeeze(1)
 dag_pred_np = lambda x, w: np.matmul(x[:, np.newaxis, :], w).squeeze()

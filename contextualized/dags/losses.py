@@ -2,20 +2,21 @@ import numpy as np
 import torch
 from contextualized.dags.graph_utils import dag_pred, dag_pred_with_factors
 
-def dag_loss_dagma_indiv(w, s=1):
-    M = s*torch.eye(w.shape[-1]) - w*w
-    return w.shape[-1]*np.log(s) - torch.slogdet(M)[1]
-    
 
-def dag_loss_dagma(W, s=1, alpha=0., **kwargs):
-    """ DAG loss on batched networks W using the
+def dag_loss_dagma_indiv(w, s=1):
+    M = s * torch.eye(w.shape[-1]) - w * w
+    return w.shape[-1] * np.log(s) - torch.slogdet(M)[1]
+
+
+def dag_loss_dagma(W, s=1, alpha=0.0, **kwargs):
+    """DAG loss on batched networks W using the
     DAGMA log-determinant
     """
     sample_losses = torch.Tensor([dag_loss_dagma_indiv(w, s) for w in W])
-    return alpha*torch.mean(sample_losses)
+    return alpha * torch.mean(sample_losses)
 
 
-def dag_loss_notears(W, alpha=0., rho=0., **kwargs):
+def dag_loss_notears(W, alpha=0.0, rho=0.0, **kwargs):
     """
     DAG loss on batched networks W using the
     NOTEARS matrix exponential trace
@@ -41,7 +42,7 @@ def linear_sem_loss_with_factors(x_true, w_pred, factor_mat):
         x_true (torch.FloatTensor): Vector of True features x
         w_pred (torch.FloatTensor): Predicted linear structural equation model
         factor_mat (torch.FloatTensor): Factor matrix, size latent factors x x.shape[-1]
-        
+
     Returns:
         torch.tensor: MSE loss for data features and predicted SEM.
     """
