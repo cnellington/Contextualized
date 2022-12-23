@@ -1,14 +1,27 @@
+import numpy as np
 import torch
 from contextualized.dags.graph_utils import dag_pred, dag_pred_with_factors
 
+def dag_loss_dagma_indiv(w, s=1):
+    M = s*torch.eye(w.shape[-1]) - w*w
+    return w.shape[-1]*np.log(s) - torch.slogdet(M)[1]
+    
 
-def dag_loss(w, alpha, rho):
+def dag_loss_dagma(W, s=1, alpha=0., **kwargs):
+    """ DAG loss on batched networks W using the
+    DAGMA log-determinant
+    """
+    sample_losses = torch.Tensor([dag_loss_dagma_indiv(w, s) for w in W])
+    return alpha*torch.mean(sample_losses)
+
+
+def dag_loss_notears(W, alpha=0., rho=0., **kwargs):
     """
     DAG loss on batched networks W using the
     NOTEARS matrix exponential trace
     """
-    m = torch.linalg.matrix_exp(w * w)
-    h = m.diagonal(offset=0, dim1=-1, dim2=-2).sum(-1) - w.shape[-1]
+    m = torch.linalg.matrix_exp(W * W)
+    h = m.diagonal(offset=0, dim1=-1, dim2=-2).sum(-1) - W.shape[-1]
     return torch.mean(alpha * h + 0.5 * rho * h * h)
 
 
@@ -65,6 +78,6 @@ def NOTEARS_loss(x_true, w_pred, l1_lambda, alpha, rho):
     """
     mse_term = linear_sem_loss(x_true, w_pred)
     l1_term = l1_loss(w_pred, l1_lambda)
-    dag_term = dag_loss(w_pred, alpha, rho)
+    dag_term = dag_loss_notears(w_pred, alpha, rho)
     notears = mse_term + l1_term + dag_term
     return notears
