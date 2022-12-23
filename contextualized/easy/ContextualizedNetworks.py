@@ -193,12 +193,12 @@ class ContextualizedBayesianNetworks(ContextualizedNetworks):
             "num_archetypes": kwargs.get("num_archetypes", 0),
         }
         # Possibly update values with convenience parameters
-        for k, v in self._init_kwargs["model"]["archetype_params"]["dag"][
+        for param, value in self._init_kwargs["model"]["archetype_params"]["dag"][
             "params"
         ].items():
             self._init_kwargs["model"]["archetype_params"]["dag"]["params"][
-                k
-            ] = kwargs.get(f"archetype_{k}", v)
+                param
+            ] = kwargs.get(f"archetype_{param}", value)
 
         sample_specific_dag_loss_type = kwargs.get(
             "sample_specific_dag_loss_type", "NOTEARS"
@@ -217,12 +217,12 @@ class ContextualizedBayesianNetworks(ContextualizedNetworks):
             ),
         }
         # Possibly update values with convenience parameters
-        for k, v in self._init_kwargs["model"]["sample_specific_params"]["dag"][
+        for param, value in self._init_kwargs["model"]["sample_specific_params"]["dag"][
             "params"
         ].items():
             self._init_kwargs["model"]["sample_specific_params"]["dag"]["params"][
-                k
-            ] = kwargs.get(f"sample_specific_{k}", v)
+                param
+            ] = kwargs.get(f"sample_specific_{param}", value)
 
         self._init_kwargs["model"]["opt_params"] = {
             "learning_rate": kwargs.get("learning_rate", 1e-3),
