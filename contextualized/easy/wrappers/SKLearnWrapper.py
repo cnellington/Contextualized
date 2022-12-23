@@ -11,8 +11,34 @@ from contextualized.functions import LINK_FUNCTIONS
 from contextualized.regression import REGULARIZERS, LOSSES
 
 
+DEFAULT_LEARNING_RATE = 1e-3
+DEFAULT_N_BOOTSTRAPS = 1
+DEFAULT_ES_PATIENCE = 1
+DEFAULT_VAL_BATCH_SIZE = 16
+DEFAULT_TRAIN_BATCH_SIZE = 1
+DEFAULT_TEST_BATCH_SIZE = 16
+DEFAULT_VAL_SPLIT = 0.2
+DEFAULT_ENCODER_TYPE = "mlp"
+DEFAULT_ENCODER_WIDTH = 25
+DEFAULT_ENCODER_LAYERS = 3
+DEFAULT_ENCODER_LINK_FN = LINK_FUNCTIONS["identity"]
+
+
 class SKLearnWrapper:
     """An sklearn-like wrapper for Contextualized models."""
+
+    def _set_defaults(self):
+        self.default_learning_rate = DEFAULT_LEARNING_RATE
+        self.default_n_bootstraps = DEFAULT_N_BOOTSTRAPS
+        self.default_es_patience = DEFAULT_ES_PATIENCE
+        self.default_train_batch_size = DEFAULT_TRAIN_BATCH_SIZE
+        self.default_test_batch_size = DEFAULT_TEST_BATCH_SIZE
+        self.default_val_batch_size = DEFAULT_VAL_BATCH_SIZE
+        self.default_val_split = DEFAULT_VAL_SPLIT
+        self.default_encoder_width = DEFAULT_ENCODER_WIDTH
+        self.default_encoder_layers = DEFAULT_ENCODER_LAYERS
+        self.default_encoder_link_fn = DEFAULT_ENCODER_LINK_FN
+        self.default_encoder_type = DEFAULT_ENCODER_TYPE
 
     def __init__(
         self,
@@ -22,17 +48,8 @@ class SKLearnWrapper:
         trainer_constructor,
         **kwargs,
     ):
+        self._set_defaults()
         self.base_constructor = base_constructor
-        self.default_learning_rate = 1e-3
-        self.default_n_bootstraps = 1
-        self.default_es_patience = 1
-        self.default_val_batch_size = 16
-        self.default_train_batch_size = 1
-        self.default_test_batch_size = 16
-        self.default_val_split = 0.2
-        self.default_encoder_width = 25
-        self.default_encoder_layers = 3
-        self.default_encoder_link_fn = LINK_FUNCTIONS["identity"]
         self.n_bootstraps = 1
         self.models = None
         self.trainers = None
@@ -104,7 +121,16 @@ class SKLearnWrapper:
             "layers", self.constructor_kwargs["encoder_kwargs"]["layers"]
         )
         self.constructor_kwargs["encoder_kwargs"]["link_fn"] = kwargs.get(
-            "encoder_link_fn", self.constructor_kwargs["encoder_kwargs"].get("link_fn", self.default_encoder_link_fn)
+            "encoder_link_fn",
+            self.constructor_kwargs["encoder_kwargs"].get(
+                "link_fn", self.default_encoder_link_fn
+            ),
+        )
+        self.constructor_kwargs["encoder_kwargs"]["type"] = kwargs.get(
+            "encoder_type",
+            self.constructor_kwargs["encoder_kwargs"].get(
+                "type", self.default_encoder_type
+            ),
         )
         self.not_constructor_kwargs = {
             k: v
@@ -173,7 +199,6 @@ class SKLearnWrapper:
                 )
             ],
         )
-        print(organized_kwargs["trainer"]["callback_constructors"])
         organized_kwargs["trainer"]["callback_constructors"].append(
             lambda i: ModelCheckpoint(
                 monitor=kwargs.get("es_monitor", "val_loss"),
@@ -269,13 +294,17 @@ class SKLearnWrapper:
         :param **kwargs:
         """
         train_dataloader = self._build_dataloader(
-            model, kwargs.get("train_batch_size", self.default_train_batch_size), *train_data
+            model,
+            kwargs.get("train_batch_size", self.default_train_batch_size),
+            *train_data,
         )
         if val_data is None:
             val_dataloader = None
         else:
             val_dataloader = self._build_dataloader(
-                model, kwargs.get("val_batch_size", self.default_val_batch_size), *val_data
+                model,
+                kwargs.get("val_batch_size", self.default_val_batch_size),
+                *val_data,
             )
 
         return train_dataloader, val_dataloader
@@ -296,9 +325,11 @@ class SKLearnWrapper:
         maybe_add_constructor_kwarg("loss_fn", LOSSES["mse"])
         maybe_add_constructor_kwarg(
             "encoder_kwargs",
-            {"width": kwargs.get("encoder_width", self.default_encoder_width),
-            "layers": kwargs.get("encoder_layers", self.default_encoder_layers),
-            "link_fn": kwargs.get("encoder_link_fn", self.default_encoder_link_fn)},
+            {
+                "width": kwargs.get("encoder_width", self.default_encoder_width),
+                "layers": kwargs.get("encoder_layers", self.default_encoder_layers),
+                "link_fn": kwargs.get("encoder_link_fn", self.default_encoder_link_fn),
+            },
         )
         if kwargs.get("subtype_probabilities", False):
             constructor_kwargs["encoder_kwargs"]["link_fn"] = LINK_FUNCTIONS["softmax"]

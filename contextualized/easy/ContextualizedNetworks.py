@@ -10,7 +10,7 @@ from contextualized.regression.lightning_modules import (
     # TasksplitContextualizedCorrelation, # TODO: Incorporate Tasksplit
     ContextualizedMarkovGraph,
 )
-from contextualized.dags.lightning_modules import NOTMAD
+from contextualized.dags.lightning_modules import NOTMAD, DEFAULT_DAG_LOSS_PARAMS
 from contextualized.dags.trainers import GraphTrainer
 
 
@@ -141,7 +141,8 @@ class ContextualizedBayesianNetworks(ContextualizedNetworks):
     """
     Easy interface to Contextualized Bayesian Networks.
     Uses NOTMAD model.
-    See this paper: https://arxiv.org/abs/2111.01104
+    See this paper:
+    https://arxiv.org/abs/2111.01104
     for more details.
     """
 
@@ -149,9 +150,9 @@ class ContextualizedBayesianNetworks(ContextualizedNetworks):
         super().__init__(
             NOTMAD,
             extra_model_kwargs=[
-                "sample_specific_loss_params",
-                "archetype_loss_params",
-                "init_mat",
+                "sample_specific_params",
+                "archetype_params",
+                "opt_params",
             ],
             extra_data_kwargs=[],
             trainer_constructor=GraphTrainer,
@@ -163,6 +164,70 @@ class ContextualizedBayesianNetworks(ContextualizedNetworks):
             ],
             **kwargs,
         )
+        self._init_kwargs["model"]["encoder_kwargs"] = {
+            "type": kwargs.get(
+                "encoder_type", self.constructor_kwargs["encoder_kwargs"]["type"]
+            ),
+            "params": {
+                "width": self.constructor_kwargs["encoder_kwargs"]["width"],
+                "layers": self.constructor_kwargs["encoder_kwargs"]["layers"],
+                "link_fn": self.constructor_kwargs["encoder_kwargs"]["link_fn"],
+            },
+        }
+        archetype_dag_loss_type = kwargs.get("archetype_dag_loss_type", "NOTEARS")
+        self._init_kwargs["model"]["archetype_params"] = {
+            "l1": kwargs.get("archetype_l1", 0.0),
+            "dag": kwargs.get(
+                "archetype_dag_params",
+                {
+                    "loss_type": archetype_dag_loss_type,
+                    "params": kwargs.get(
+                        "archetype_dag_loss_params",
+                        DEFAULT_DAG_LOSS_PARAMS[archetype_dag_loss_type],
+                    ),
+                },
+            ),
+            "init_mat": kwargs.get("init_mat", None),
+            "num_factors": kwargs.get("num_factors", 0),
+            "factor_mat_l1": kwargs.get("factor_mat_l1", 0),
+            "num_archetypes": kwargs.get("num_archetypes", 0),
+        }
+        # Possibly update values with convenience parameters
+        for k, v in self._init_kwargs["model"]["archetype_params"]["dag"][
+            "params"
+        ].items():
+            self._init_kwargs["model"]["archetype_params"]["dag"]["params"][
+                k
+            ] = kwargs.get(f"archetype_{k}", v)
+
+        sample_specific_dag_loss_type = kwargs.get(
+            "sample_specific_dag_loss_type", "NOTEARS"
+        )
+        self._init_kwargs["model"]["sample_specific_params"] = {
+            "l1": kwargs.get("sample_specific_l1", 0.0),
+            "dag": kwargs.get(
+                "sample_specific_params",
+                {
+                    "loss_type": sample_specific_dag_loss_type,
+                    "params": kwargs.get(
+                        "sample_specific_dag_loss_params",
+                        DEFAULT_DAG_LOSS_PARAMS[sample_specific_dag_loss_type],
+                    ),
+                },
+            ),
+        }
+        # Possibly update values with convenience parameters
+        for k, v in self._init_kwargs["model"]["sample_specific_params"]["dag"][
+            "params"
+        ].items():
+            self._init_kwargs["model"]["sample_specific_params"]["dag"]["params"][
+                k
+            ] = kwargs.get(f"sample_specific_{k}", v)
+
+        self._init_kwargs["model"]["opt_params"] = {
+            "learning_rate": kwargs.get("learning_rate", 1e-3),
+            "step": kwargs.get("step", 50),
+        }
 
     def predict_params(self, C, individual_preds=False, **kwargs):
         """
@@ -173,9 +238,10 @@ class ContextualizedBayesianNetworks(ContextualizedNetworks):
         """
         # Returns betas
         # TODO: No mus for NOTMAD at present.
-        return super().predict_params(C, individual_preds,
-            model_includes_mus=False, **kwargs)
-        
+        return super().predict_params(
+            C, individual_preds, model_includes_mus=False, **kwargs
+        )
+
     def predict_networks(self, C, with_offsets=False, project_to_dag=True, **kwargs):
         """
         Predicts context-specific networks.
