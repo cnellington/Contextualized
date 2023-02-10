@@ -204,7 +204,7 @@ class SKLearnWrapper:
                         C, X, Y, test_size=kwargs["val_split"], shuffle=True
                     )
                 else:
-                    C_train, C_val, X_train, X_val, Y_train, Y_val = train_test_split(
+                    C_train, C_val, X_train, X_val = train_test_split(
                         C, X, test_size=kwargs["val_split"], shuffle=True
                     )
             else:
