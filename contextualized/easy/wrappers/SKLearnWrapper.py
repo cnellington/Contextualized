@@ -48,6 +48,7 @@ class SKLearnWrapper:
                 "test_batch_size",
                 "C_val",
                 "X_val",
+                "val_split"
             ],
             "model": [
                 "loss_fn",
@@ -176,7 +177,6 @@ class SKLearnWrapper:
                 )
             ],
         )
-        print(organized_kwargs["trainer"]["callback_constructors"])
         organized_kwargs["trainer"]["callback_constructors"].append(
             lambda i: ModelCheckpoint(
                 monitor=kwargs.get("es_monitor", "val_loss"),
@@ -204,7 +204,7 @@ class SKLearnWrapper:
                         C, X, Y, test_size=kwargs["val_split"], shuffle=True
                     )
                 else:
-                    C_train, C_val, X_train, X_val, Y_train, Y_val = train_test_split(
+                    C_train, C_val, X_train, X_val = train_test_split(
                         C, X, test_size=kwargs["val_split"], shuffle=True
                     )
             else:
