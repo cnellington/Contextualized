@@ -48,6 +48,7 @@ class SKLearnWrapper:
                 "test_batch_size",
                 "C_val",
                 "X_val",
+                "val_split"
             ],
             "model": [
                 "loss_fn",
