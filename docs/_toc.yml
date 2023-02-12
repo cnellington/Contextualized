@@ -16,3 +16,4 @@ parts:
     - file: demos/easy_regression
     - file: demos/easy_classification
     - file: demos/easy_networks
+    - file: demos/custom_models

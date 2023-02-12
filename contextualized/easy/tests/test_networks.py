@@ -46,6 +46,7 @@ class TestEasyNetworks(unittest.TestCase):
         """Test Case for ContextualizedMarkovNetworks."""
         model = ContextualizedMarkovNetworks()
         self._quicktest(model, self.C, self.X, max_epochs=10, learning_rate=1e-3)
+        self._quicktest(model, self.C, self.X, max_epochs=10, learning_rate=1e-3, val_split=0.5)
 
         model = ContextualizedMarkovNetworks(num_archetypes=16)
         self._quicktest(model, self.C, self.X, max_epochs=10, learning_rate=1e-3)
@@ -56,9 +57,10 @@ class TestEasyNetworks(unittest.TestCase):
         assert np.shape(omegas) == (self.n_samples, self.x_dim, self.x_dim)
 
     def test_bayesian(self):
-        """ Test case for ContextualizedBayesianNetworks."""
+        """Test case for ContextualizedBayesianNetworks."""
         model = ContextualizedBayesianNetworks()
         self._quicktest(model, self.C, self.X, max_epochs=10, learning_rate=1e-3)
+        self._quicktest(model, self.C, self.X, max_epochs=10, learning_rate=1e-3, val_split=0.5)
 
         model = ContextualizedBayesianNetworks(num_archetypes=16)
         self._quicktest(model, self.C, self.X, max_epochs=10, learning_rate=1e-3)
@@ -73,6 +75,7 @@ class TestEasyNetworks(unittest.TestCase):
 
         model = ContextualizedCorrelationNetworks()
         self._quicktest(model, self.C, self.X, max_epochs=10, learning_rate=1e-3)
+        self._quicktest(model, self.C, self.X, max_epochs=10, learning_rate=1e-3, val_split=0.5)
 
         model = ContextualizedCorrelationNetworks(num_archetypes=16)
         self._quicktest(model, self.C, self.X, max_epochs=10, learning_rate=1e-3)

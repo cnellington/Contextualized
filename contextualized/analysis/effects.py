@@ -29,9 +29,15 @@ def simple_plot(
     plt.plot(x_vals, y_vals)
     plt.xlabel(kwargs.get("x_label", "X"))
     plt.ylabel(kwargs.get("y_label", "Y"))
-    if kwargs.get("x_ticks", None) is not None and kwargs.get("x_ticklabels", None) is not None:
+    if (
+        kwargs.get("x_ticks", None) is not None
+        and kwargs.get("x_ticklabels", None) is not None
+    ):
         plt.xticks(kwargs["x_ticks"], kwargs["x_ticklabels"])
-    if kwargs.get("y_ticks", None) is not None and kwargs.get("y_ticklabels", None) is not None:
+    if (
+        kwargs.get("y_ticks", None) is not None
+        and kwargs.get("y_ticklabels", None) is not None
+    ):
         plt.yticks(kwargs["y_ticks"], kwargs["y_ticklabels"])
     plt.show()
 
@@ -248,7 +254,7 @@ def plot_homogeneous_predictor_effects(
                 x_encoder=encoder,
                 x_means=x_means,
                 x_stds=x_stds,
-                xlabel=f"{kwargs.get('xlabel_prefix',  '')} {X.columns[k]}",
+                xlabel=f"{kwargs.get('xlabel_prefix',  '')} {X.columns[j]}",
                 **kwargs,
             )
 

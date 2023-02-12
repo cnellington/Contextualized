@@ -30,11 +30,7 @@ class ContextualizedRegressor(SKLearnWrapper):
                 archetypes, but this should be a non-negative integer."""
             )
 
-        extra_model_kwargs = [
-            "base_param_predictor",
-            "base_y_predictor",
-            "y_dim"
-        ]
+        extra_model_kwargs = ["base_param_predictor", "base_y_predictor", "y_dim"]
         extra_data_kwargs = ["Y_val"]
         trainer_constructor = RegressionTrainer
         super().__init__(
