@@ -385,19 +385,25 @@ class SKLearnWrapper:
 
     def fit(self, *args, **kwargs):
         """
+        Fit model to data.
+        Requires numpy arrays C, X, with optional Y.
+        If target Y is not given, then X is assumed to be the target.
         :param *args: C, X, Y (optional)
         :param **kwargs:
         """
         self.models = []
         self.trainers = []
         self.dataloaders = {"train": [], "val": [], "test": []}
-        C = args[0]
-        self.context_dim = C.shape[-1]
-        X = args[1]
-        self.x_dim = X.shape[-1]
+        self.context_dim = args[0].shape[-1]
+        self.x_dim = args[1].shape[-1]
         if len(args) == 3:
             Y = args[2]
+            if kwargs.get("Y", None) is not None:
+                Y = kwargs.get("Y")
+            if len(Y.shape) == 1: # add feature dimension to Y if not given.
+                Y = np.expand_dims(Y, 1)
             self.y_dim = Y.shape[-1]
+            args = (args[0], args[1], Y)
         else:
             self.y_dim = X.shape[-1]
         organized_kwargs = self._organize_and_expand_kwargs(**kwargs)

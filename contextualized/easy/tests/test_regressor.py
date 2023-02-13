@@ -24,11 +24,15 @@ class TestEasyRegression(unittest.TestCase):
         err_init = np.linalg.norm(Y - model.predict(C, X), ord=2)
         model.fit(C, X, Y, **kwargs)
         beta_preds, mu_preds = model.predict_params(C)
-        assert beta_preds.shape == (X.shape[0], Y.shape[1], X.shape[1])
-        assert mu_preds.shape == (X.shape[0], Y.shape[1])
+        try:
+            y_dim = Y.shape[1]
+        except IndexError:
+            y_dim = 1
+        assert beta_preds.shape == (X.shape[0], y_dim, X.shape[1])
+        assert mu_preds.shape == (X.shape[0], y_dim)
         y_preds = model.predict(C, X)
-        assert y_preds.shape == Y.shape
-        err_trained = np.linalg.norm(Y - y_preds, ord=2)
+        assert y_preds.shape == (len(Y), y_dim)
+        err_trained = np.linalg.norm(Y - np.squeeze(y_preds), ord=2)
         assert err_trained < err_init
         print(err_trained, err_init)
 
