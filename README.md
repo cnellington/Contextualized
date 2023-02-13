@@ -85,4 +85,4 @@ Many people have helped. Check out [ACKNOWLEDGEMENTS.md](https://github.com/cnel
 - [Sample-Specific Models for Interpretable Analysis with Applications to Disease Subtyping](http://www.birs.ca/events/2022/5-day-workshops/22w5055/videos/watch/202205051559-Lengerich.html)
 
 ## Contact Us
-Please get in touch with any questions, feature requests, or applications.
+Please get in touch with any questions, feature requests, or applications by using the [GitHub discussions page](https://github.com/cnellington/Contextualized/discussions).
