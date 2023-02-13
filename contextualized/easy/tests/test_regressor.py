@@ -86,6 +86,21 @@ class TestEasyRegression(unittest.TestCase):
             learning_rate=1e-3,
             es_patience=float("inf"),
         )
+        
+        # Check smaller Y.
+        model = ContextualizedRegressor(
+            num_archetypes=4, alpha=1e-1, l1_ratio=0.5, mu_ratio=0.1
+        )
+        self._quicktest(
+            model,
+            C,
+            X,
+            Y[:, 0],
+            max_epochs=10,
+            n_bootstraps=2,
+            learning_rate=1e-3,
+            es_patience=float("inf"),
+        )
 
 
 if __name__ == "__main__":
