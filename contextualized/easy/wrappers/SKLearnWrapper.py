@@ -100,12 +100,11 @@ class SKLearnWrapper:
         self._update_acceptable_kwargs("model", extra_model_kwargs)
         self._update_acceptable_kwargs("data", extra_data_kwargs)
         self._update_acceptable_kwargs(
-            "model", kwargs.get("remove_model_kwargs", []), extra=False
+            "model", kwargs.pop("remove_model_kwargs", []), extra=False
         )
         self._update_acceptable_kwargs(
-            "data", kwargs.get("remove_data_kwargs", []), extra=False
+            "data", kwargs.pop("remove_data_kwargs", []), extra=False
         )
-        self.constructor_kwargs = self._organize_constructor_kwargs(**kwargs)
         self.convenience_kwargs = [
             "alpha",
             "l1_ratio",
@@ -115,13 +114,14 @@ class SKLearnWrapper:
             "layers",
             "encoder_link_fn",
         ]
-        self.constructor_kwargs["encoder_kwargs"]["width"] = kwargs.get(
+        self.constructor_kwargs = self._organize_constructor_kwargs(**kwargs)
+        self.constructor_kwargs["encoder_kwargs"]["width"] = kwargs.pop(
             "width", self.constructor_kwargs["encoder_kwargs"]["width"]
         )
-        self.constructor_kwargs["encoder_kwargs"]["layers"] = kwargs.get(
+        self.constructor_kwargs["encoder_kwargs"]["layers"] = kwargs.pop(
             "layers", self.constructor_kwargs["encoder_kwargs"]["layers"]
         )
-        self.constructor_kwargs["encoder_kwargs"]["link_fn"] = kwargs.get(
+        self.constructor_kwargs["encoder_kwargs"]["link_fn"] = kwargs.pop(
             "encoder_link_fn",
             self.constructor_kwargs["encoder_kwargs"].get(
                 "link_fn", self.default_encoder_link_fn
