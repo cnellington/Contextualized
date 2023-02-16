@@ -127,12 +127,6 @@ class SKLearnWrapper:
                 "link_fn", self.default_encoder_link_fn
             ),
         )
-        self.constructor_kwargs["encoder_kwargs"]["type"] = kwargs.get(
-            "encoder_type",
-            self.constructor_kwargs["encoder_kwargs"].get(
-                "type", self.default_encoder_type
-            ),
-        )
         self.not_constructor_kwargs = {
             k: v
             for k, v in kwargs.items()
@@ -428,7 +422,7 @@ class SKLearnWrapper:
             self.y_dim = Y.shape[-1]
             args = (args[0], args[1], Y)
         else:
-            self.y_dim = X.shape[-1]
+            self.y_dim = self.x_dim
         organized_kwargs = self._organize_and_expand_kwargs(**kwargs)
         self.n_bootstraps = organized_kwargs["wrapper"].get(
             "n_bootstraps", self.n_bootstraps
