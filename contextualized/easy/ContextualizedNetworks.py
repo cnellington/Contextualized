@@ -239,7 +239,7 @@ class ContextualizedBayesianNetworks(ContextualizedNetworks):
         # Returns betas
         # TODO: No mus for NOTMAD at present.
         return super().predict_params(
-            C, individual_preds, model_includes_mus=False, **kwargs
+            C, model_includes_mus=False, **kwargs
         )
 
     def predict_networks(self, C, with_offsets=False, project_to_dag=True, **kwargs):
