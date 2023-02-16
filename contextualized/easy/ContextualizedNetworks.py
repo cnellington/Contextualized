@@ -199,7 +199,6 @@ class ContextualizedBayesianNetworks(ContextualizedNetworks):
             self._init_kwargs["model"]["archetype_params"]["dag"]["params"][
                 param
             ] = kwargs.get(f"archetype_{param}", value)
-
         sample_specific_dag_loss_type = kwargs.get(
             "sample_specific_dag_loss_type", "NOTEARS"
         )

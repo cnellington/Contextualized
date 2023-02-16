@@ -22,3 +22,4 @@ parts:
         - file: demos/easy_markov_networks
         - file: demos/easy_bayesian_networks
     - file: demos/custom_models
+
