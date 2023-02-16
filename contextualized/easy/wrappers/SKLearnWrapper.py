@@ -177,6 +177,7 @@ class SKLearnWrapper:
                 )
             ],
         )
+        print(organized_kwargs["trainer"]["callback_constructors"])
         organized_kwargs["trainer"]["callback_constructors"].append(
             lambda i: ModelCheckpoint(
                 monitor=kwargs.get("es_monitor", "val_loss"),
