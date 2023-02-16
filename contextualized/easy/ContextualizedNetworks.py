@@ -39,7 +39,7 @@ class ContextualizedNetworks(SKLearnWrapper):
 
 
 class ContextualizedCorrelationNetworks(ContextualizedNetworks):
-    """ "
+    """
     Easy interface to Contextualized Correlation Networks.
     """
 
@@ -90,7 +90,7 @@ class ContextualizedCorrelationNetworks(ContextualizedNetworks):
 
 
 class ContextualizedMarkovNetworks(ContextualizedNetworks):
-    """ "
+    """
     Easy interface to Contextualized Markov Networks.
     """
 
