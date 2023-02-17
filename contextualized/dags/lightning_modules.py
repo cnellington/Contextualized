@@ -358,7 +358,7 @@ class NOTMAD(pl.LightningModule):
                 w_preds = np.array([project_to_dag_torch(w)[0] for w in w_preds])
             except:
                 print("Error, couldn't project to dag. Returning normal predictions.")
-        return trim_params(w_preds, thresh=kwargs.get("threshold", 0.00))
+        return trim_params(w_preds, thresh=kwargs.get("threshold", 0.0))
 
     def training_epoch_end(self, training_step_outputs, logs=None):
         # update alpha/rho based on average end-of-epoch dag loss
@@ -382,6 +382,9 @@ class NOTMAD(pl.LightningModule):
         )
 
     def _maybe_update_alpha_rho(self, epoch_dag_loss, dag_params):
+        """
+            Update alpha/rho use_dynamic_alpha_rho is True.
+        """
         if (
             dag_params.get("use_dynamic_alpha_rho", False)
             and epoch_dag_loss > dag_params["tol"] * dag_params["h_old"]
@@ -391,7 +394,7 @@ class NOTMAD(pl.LightningModule):
             dag_params["alpha"] = (
                 dag_params["alpha"] + dag_params["rho"] * epoch_dag_loss
             )
-            dag_params["rho"] = dag_params["rho"] * 1.1
+            dag_params["rho"] *= dag_params.get("rho_mult", 1.1)
         dag_params["h_old"] = epoch_dag_loss
         return dag_params
 
