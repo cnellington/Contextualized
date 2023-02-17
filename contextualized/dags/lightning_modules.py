@@ -78,8 +78,8 @@ class NOTMAD(pl.LightningModule):
         self,
         context_dim,
         x_dim,
-        sample_specific_params=DEFAULT_SS_PARAMS,
-        archetype_params=DEFAULT_ARCH_PARAMS,
+        sample_specific_loss_params=DEFAULT_SS_PARAMS,
+        archetype_loss_params=DEFAULT_ARCH_PARAMS,
         opt_params=DEFAULT_OPT_PARAMS,
         encoder_kwargs=DEFAULT_ENCODER_KWARGS,
         **kwargs,
@@ -107,8 +107,8 @@ class NOTMAD(pl.LightningModule):
 
             Loss Kwargs
             -----------
-            sample_specific_params (dict of str: int): Dict of params used by NOTEARS loss (l1, alpha, rho)
-            archetype_params (dict of str: int): Dict of params used by Archetype loss (l1, alpha, rho)
+            sample_specific_loss_params (dict of str: int): Dict of params used by NOTEARS loss (l1, alpha, rho)
+            archetype_loss_params (dict of str: int): Dict of params used by Archetype loss (l1, alpha, rho)
 
         """
         super(NOTMAD, self).__init__()
@@ -116,9 +116,9 @@ class NOTMAD(pl.LightningModule):
         # dataset params
         self.context_dim = context_dim
         self.x_dim = x_dim
-        self.num_archetypes = archetype_params.get("num_archetypes",
+        self.num_archetypes = archetype_loss_params.get("num_archetypes",
                                                    DEFAULT_ARCH_PARAMS["num_archetypes"])
-        num_factors = archetype_params.pop("num_factors", 0)
+        num_factors = archetype_loss_params.pop("num_factors", 0)
         if 0 < num_factors < self.x_dim:
             self.latent_dim = num_factors
         else:
@@ -137,25 +137,25 @@ class NOTMAD(pl.LightningModule):
             self.latent_dim = self.x_dim
 
         # DAG regularizers
-        self.ss_dag_params = sample_specific_params["dag"].get(
+        self.ss_dag_params = sample_specific_loss_params["dag"].get(
             "params",
-            DEFAULT_DAG_LOSS_PARAMS[sample_specific_params["dag"]["loss_type"]],
+            DEFAULT_DAG_LOSS_PARAMS[sample_specific_loss_params["dag"]["loss_type"]],
         )
-        self.arch_dag_params = archetype_params["dag"].get(
-            "params", DEFAULT_DAG_LOSS_PARAMS[archetype_params["dag"]["loss_type"]]
+        self.arch_dag_params = archetype_loss_params["dag"].get(
+            "params", DEFAULT_DAG_LOSS_PARAMS[archetype_loss_params["dag"]["loss_type"]]
         )
         self.val_dag_loss_params = {"alpha": 1e0, "rho": 1e0}
 
-        self.ss_dag_loss = DAG_LOSSES[sample_specific_params["dag"]["loss_type"]]
-        self.arch_dag_loss = DAG_LOSSES[archetype_params["dag"]["loss_type"]]
+        self.ss_dag_loss = DAG_LOSSES[sample_specific_loss_params["dag"]["loss_type"]]
+        self.arch_dag_loss = DAG_LOSSES[archetype_loss_params["dag"]["loss_type"]]
 
         # Sparsity regularizers
-        self.arch_l1 = archetype_params.get("l1", 0.0)
-        self.ss_l1 = sample_specific_params.get("l1", 0.0)
+        self.arch_l1 = archetype_loss_params.get("l1", 0.0)
+        self.ss_l1 = sample_specific_loss_params.get("l1", 0.0)
 
         # Archetype params
-        self.init_mat = archetype_params.get("init_mat", None)
-        self.factor_mat_l1 = archetype_params.get("factor_mat_l1", 0.0)
+        self.init_mat = archetype_loss_params.get("init_mat", None)
+        self.factor_mat_l1 = archetype_loss_params.get("factor_mat_l1", 0.0)
 
         # opt params
         self.learning_rate = opt_params.get("learning_rate", 1e-3)

@@ -161,7 +161,7 @@ class ContextualizedBayesianNetworks(ContextualizedNetworks):
             },
         }
         archetype_dag_loss_type = kwargs.pop("archetype_dag_loss_type", DEFAULT_DAG_LOSS_TYPE)
-        self._init_kwargs["model"]["archetype_params"] = {
+        self._init_kwargs["model"]["archetype_loss_params"] = {
             "l1": kwargs.get("archetype_l1", 0.0),
             "dag": kwargs.get(
                 "archetype_dag_params",
@@ -179,19 +179,19 @@ class ContextualizedBayesianNetworks(ContextualizedNetworks):
             "num_archetypes": kwargs.pop("num_archetypes", 0),
         }
         # Possibly update values with convenience parameters
-        for param, value in self._init_kwargs["model"]["archetype_params"]["dag"][
+        for param, value in self._init_kwargs["model"]["archetype_loss_params"]["dag"][
             "params"
         ].items():
-            self._init_kwargs["model"]["archetype_params"]["dag"]["params"][
+            self._init_kwargs["model"]["archetype_loss_params"]["dag"]["params"][
                 param
             ] = kwargs.pop(f"archetype_{param}", value)
         sample_specific_dag_loss_type = kwargs.pop(
             "sample_specific_dag_loss_type", DEFAULT_DAG_LOSS_TYPE
         )
-        self._init_kwargs["model"]["sample_specific_params"] = {
+        self._init_kwargs["model"]["sample_specific_loss_params"] = {
             "l1": kwargs.pop("sample_specific_l1", 0.0),
             "dag": kwargs.pop(
-                "sample_specific_params",
+                "sample_specific_loss_params",
                 {
                     "loss_type": sample_specific_dag_loss_type,
                     "params": kwargs.pop(
@@ -202,10 +202,10 @@ class ContextualizedBayesianNetworks(ContextualizedNetworks):
             ),
         }
         # Possibly update values with convenience parameters
-        for param, value in self._init_kwargs["model"]["sample_specific_params"]["dag"][
+        for param, value in self._init_kwargs["model"]["sample_specific_loss_params"]["dag"][
             "params"
         ].items():
-            self._init_kwargs["model"]["sample_specific_params"]["dag"]["params"][
+            self._init_kwargs["model"]["sample_specific_loss_params"]["dag"]["params"][
                 param
             ] = kwargs.pop(f"sample_specific_{param}", value)
 
@@ -223,7 +223,7 @@ class ContextualizedBayesianNetworks(ContextualizedNetworks):
             "init_mat",
             "num_factors",
             "factor_mat_l1",
-            "archetype_params",
+            "archetype_loss_params",
             "sample_specific_dag_loss_type",
             "sample_specific_alpha"
         ]
@@ -232,8 +232,8 @@ class ContextualizedBayesianNetworks(ContextualizedNetworks):
         super().__init__(
             NOTMAD,
             extra_model_kwargs=[
-                "sample_specific_params",
-                "archetype_params",
+                "sample_specific_loss_params",
+                "archetype_loss_params",
                 "opt_params",
             ],
             extra_data_kwargs=[],
