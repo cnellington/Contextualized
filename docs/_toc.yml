@@ -21,5 +21,6 @@ parts:
         - file: demos/easy_correlation_networks
         - file: demos/easy_markov_networks
         - file: demos/easy_bayesian_networks
+        - file: demos/easy_bayesian_networks_factors
     - file: demos/custom_models
 
