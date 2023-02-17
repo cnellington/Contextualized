@@ -20,7 +20,11 @@ from contextualized.dags.losses import (
 )
 from contextualized.modules import ENCODERS, Explainer
 
-DAG_LOSSES = {"NOTEARS": dag_loss_notears, "DAGMA": dag_loss_dagma}
+DAG_LOSSES = {
+    "NOTEARS": dag_loss_notears,
+    "DAGMA": dag_loss_dagma
+}
+DEFAULT_DAG_LOSS_TYPE = "NOTEARS"
 DEFAULT_DAG_LOSS_PARAMS = {
     "NOTEARS": {"alpha": 1e-1, "rho": 1e-2},
     "DAGMA": {"s": 1, "alpha": 1e0},
@@ -112,18 +116,25 @@ class NOTMAD(pl.LightningModule):
         # dataset params
         self.context_dim = context_dim
         self.x_dim = x_dim
-        if (
-            archetype_params.get("num_factors", 0) > 0
-            and archetype_params.get("num_factors", 0) < self.x_dim
-        ):
-            self.latent_dim = archetype_params.get("num_factors", 0)
+        self.num_archetypes = archetype_params.get("num_archetypes",
+                                                   DEFAULT_ARCH_PARAMS["num_archetypes"])
+        num_factors = archetype_params.pop("num_factors", 0)
+        if 0 < num_factors < self.x_dim:
+            self.latent_dim = num_factors
         else:
-            if archetype_params.get("num_factors", 0) < 0:
+            if num_factors < 0:
                 print(
-                    f"Requested negative factors {num_factors}, but this should be a positive integer."
+                    f"Requested num_factors={num_factors}, but this should be a positive integer."
+                )
+            if num_factors > self.x_dim:
+                print(
+                    f"Requested num_factors={num_factors}, but this should be smaller than x_dim={self.x_dim}."
+                )
+            if num_factors == self.x_dim:
+                print(
+                    f"Requested num_factors={num_factors}, but this equals x_dim={self.x_dim}, so ignoring."
                 )
             self.latent_dim = self.x_dim
-        self.num_archetypes = archetype_params.get("num_archetypes", 4)
 
         # DAG regularizers
         self.ss_dag_params = sample_specific_params["dag"].get(
@@ -166,16 +177,17 @@ class NOTMAD(pl.LightningModule):
         )
         self.explainer.set_archetypes(
             self._mask(self.explainer.get_archetypes())
-        )  # intialized archetypes with 0 diagonal
+        )  # intialize archetypes with 0 diagonal
         if self.latent_dim != self.x_dim:
             factor_mat_init = (
                 torch.rand([self.latent_dim, self.x_dim]) * 2e-2 - 1e-2
-            )  # np.random.uniform(-0.1, 0.1, size=(self.latent_dim, self.x_dim))
+            )
         else:
             factor_mat_init = torch.zeros([1, 1])
         self.factor_mat_raw = nn.parameter.Parameter(
             factor_mat_init, requires_grad=True
         )
+        #self.factor_softmax = self.factor_mat_raw
         self.factor_softmax = nn.Softmax(
             dim=0
         )  # Sums to one along the latent factor axis, so each feature should only be projected to a single factor.
@@ -294,7 +306,7 @@ class NOTMAD(pl.LightningModule):
         l1_term = l1_loss(w_pred, self.ss_l1).mean()
         # ignore archetype loss, use constant alpha/rho upper bound for validation
         dag_term = self.ss_dag_loss(w_pred, **self.val_dag_loss_params).mean()
-        factor_mat_term = actor_mat_term = l1_loss(
+        factor_mat_term = l1_loss(
             self.factor_mat_raw, self.factor_mat_l1
         )
         loss = mse_term + l1_term + dag_term + factor_mat_term
@@ -313,22 +325,40 @@ class NOTMAD(pl.LightningModule):
         w_pred = self(c)
         return self._mask(w_pred)
 
-    def _format_params(self, w_preds, project_to_dag=False, threshold=0.0):
-        if self.latent_dim > 0 and self.latent_dim < self.x_dim:
-            w_preds = np.tensordot(
-                w_preds, self._factor_mat().detach().numpy(), axes=1
-            )  # n x latent x x_dims
-            w_preds = np.swapaxes(w_preds, 1, 2)  # n x x_dims x latent
-            w_preds = np.tensordot(
-                w_preds, self._factor_mat().detach().numpy(), axes=1
-            )  # n x x_dims x x_dims
-            w_preds = np.swapaxes(w_preds, 1, 2)  # n x x_dims x latent
-        if project_to_dag:
+    def _project_factor_graph_to_var(self, w_preds):
+        """
+        Projects the graphs in factor space to variable space.
+        w_preds: n x latent x latent
+        """
+        P_sums = self._factor_mat().sum(axis=1)
+        w_preds = np.tensordot(
+            w_preds, (self._factor_mat().T.detach().numpy() / P_sums.detach().numpy()).T,
+            axes=1
+        )  # n x latent x x_dims
+        w_preds = np.swapaxes(w_preds, 1, 2)  # n x x_dims x latent
+        w_preds = np.tensordot(
+            w_preds, self._factor_mat().detach().numpy(), axes=1
+        )  # n x x_dims x x_dims
+        w_preds = np.swapaxes(w_preds, 1, 2)  # n x x_dims x x_dims
+        return w_preds
+
+    def _format_params(self, w_preds, **kwargs):
+        """
+        Format the parameters to be returned by the model.
+        args:
+            w_preds: the predicted parameters
+            project_to_dag: whether to project the parameters to a DAG
+            threshold: the threshold to use for minimum edge weight magnitude
+            factors: whether to return the factor graph or the variable graph.
+        """
+        if 0 < self.latent_dim < self.x_dim and not kwargs.get("factors", False):
+            w_preds = self._project_factor_graph_to_var(w_preds)
+        if kwargs.get("project_to_dag", False):
             try:
                 w_preds = np.array([project_to_dag_torch(w)[0] for w in w_preds])
             except:
                 print("Error, couldn't project to dag. Returning normal predictions.")
-        return trim_params(w_preds, thresh=threshold)
+        return trim_params(w_preds, thresh=kwargs.get("threshold", 0.00))
 
     def training_epoch_end(self, training_step_outputs, logs=None):
         # update alpha/rho based on average end-of-epoch dag loss
@@ -367,14 +397,16 @@ class NOTMAD(pl.LightningModule):
 
     # helpers
     def _mask(self, W):
+        """
+        Mask out the diagonal of the adjacency matrix.
+        """
         return torch.multiply(W, self.diag_mask)
 
-    def dataloader(selfself, C, X, **kwargs):
+    def dataloader(self, C, X, **kwargs):
         """
 
         :param C:
         :param X:
-        :param batch_size:  (Default value = 10)
 
         """
         kwargs["num_workers"] = kwargs.get("num_workers", 0)
