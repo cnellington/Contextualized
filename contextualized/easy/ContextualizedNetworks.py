@@ -10,7 +10,7 @@ from contextualized.regression.lightning_modules import (
     # TasksplitContextualizedCorrelation, # TODO: Incorporate Tasksplit
     ContextualizedMarkovGraph,
 )
-from contextualized.dags.lightning_modules import NOTMAD, DEFAULT_DAG_LOSS_PARAMS
+from contextualized.dags.lightning_modules import NOTMAD, DEFAULT_DAG_LOSS_TYPE, DEFAULT_DAG_LOSS_PARAMS
 from contextualized.dags.trainers import GraphTrainer
 
 
@@ -146,6 +146,88 @@ class ContextualizedBayesianNetworks(ContextualizedNetworks):
     for more details.
     """
 
+    def _parse_private_init_kwargs(self, **kwargs):
+        """
+            Parses private init kwargs.
+        """
+        self._init_kwargs["model"]["encoder_kwargs"] = {
+            "type": kwargs.pop(
+                "encoder_type", self._init_kwargs["model"]["encoder_type"]
+            ),
+            "params": {
+                "width": self.constructor_kwargs["encoder_kwargs"]["width"],
+                "layers": self.constructor_kwargs["encoder_kwargs"]["layers"],
+                "link_fn": self.constructor_kwargs["encoder_kwargs"]["link_fn"],
+            },
+        }
+        archetype_dag_loss_type = kwargs.pop("archetype_dag_loss_type", DEFAULT_DAG_LOSS_TYPE)
+        self._init_kwargs["model"]["archetype_params"] = {
+            "l1": kwargs.get("archetype_l1", 0.0),
+            "dag": kwargs.get(
+                "archetype_dag_params",
+                {
+                    "loss_type": archetype_dag_loss_type,
+                    "params": kwargs.get(
+                        "archetype_dag_loss_params",
+                        DEFAULT_DAG_LOSS_PARAMS[archetype_dag_loss_type],
+                    ),
+                },
+            ),
+            "init_mat": kwargs.pop("init_mat", None),
+            "num_factors": kwargs.pop("num_factors", 0),
+            "factor_mat_l1": kwargs.pop("factor_mat_l1", 0),
+            "num_archetypes": kwargs.pop("num_archetypes", 0),
+        }
+        # Possibly update values with convenience parameters
+        for param, value in self._init_kwargs["model"]["archetype_params"]["dag"][
+            "params"
+        ].items():
+            self._init_kwargs["model"]["archetype_params"]["dag"]["params"][
+                param
+            ] = kwargs.pop(f"archetype_{param}", value)
+        sample_specific_dag_loss_type = kwargs.pop(
+            "sample_specific_dag_loss_type", DEFAULT_DAG_LOSS_TYPE
+        )
+        self._init_kwargs["model"]["sample_specific_params"] = {
+            "l1": kwargs.pop("sample_specific_l1", 0.0),
+            "dag": kwargs.pop(
+                "sample_specific_params",
+                {
+                    "loss_type": sample_specific_dag_loss_type,
+                    "params": kwargs.pop(
+                        "sample_specific_dag_loss_params",
+                        DEFAULT_DAG_LOSS_PARAMS[sample_specific_dag_loss_type],
+                    ),
+                },
+            ),
+        }
+        # Possibly update values with convenience parameters
+        for param, value in self._init_kwargs["model"]["sample_specific_params"]["dag"][
+            "params"
+        ].items():
+            self._init_kwargs["model"]["sample_specific_params"]["dag"]["params"][
+                param
+            ] = kwargs.pop(f"sample_specific_{param}", value)
+
+        self._init_kwargs["model"]["opt_params"] = {
+            "learning_rate": kwargs.pop("learning_rate", 1e-3),
+            "step": kwargs.pop("step", 50),
+        }
+        return [
+            "archetype_dag_loss_type",
+            "archetype_l1",
+            "archetype_dag_params",
+            "archetype_dag_loss_params",
+            "archetype_dag_loss_type",
+            "archetype_alpha",
+            "init_mat",
+            "num_factors",
+            "factor_mat_l1",
+            "archetype_params",
+            "sample_specific_dag_loss_type",
+            "sample_specific_alpha"
+        ]
+
     def __init__(self, **kwargs):
         super().__init__(
             NOTMAD,
@@ -164,69 +246,6 @@ class ContextualizedBayesianNetworks(ContextualizedNetworks):
             ],
             **kwargs,
         )
-        self._init_kwargs["model"]["encoder_kwargs"] = {
-            "type": kwargs.get(
-                "encoder_type", self._init_kwargs["model"]["encoder_type"]
-            ),
-            "params": {
-                "width": self.constructor_kwargs["encoder_kwargs"]["width"],
-                "layers": self.constructor_kwargs["encoder_kwargs"]["layers"],
-                "link_fn": self.constructor_kwargs["encoder_kwargs"]["link_fn"],
-            },
-        }
-        archetype_dag_loss_type = kwargs.get("archetype_dag_loss_type", "NOTEARS")
-        self._init_kwargs["model"]["archetype_params"] = {
-            "l1": kwargs.get("archetype_l1", 0.0),
-            "dag": kwargs.get(
-                "archetype_dag_params",
-                {
-                    "loss_type": archetype_dag_loss_type,
-                    "params": kwargs.get(
-                        "archetype_dag_loss_params",
-                        DEFAULT_DAG_LOSS_PARAMS[archetype_dag_loss_type],
-                    ),
-                },
-            ),
-            "init_mat": kwargs.get("init_mat", None),
-            "num_factors": kwargs.get("num_factors", 0),
-            "factor_mat_l1": kwargs.get("factor_mat_l1", 0),
-            "num_archetypes": kwargs.get("num_archetypes", 0),
-        }
-        # Possibly update values with convenience parameters
-        for param, value in self._init_kwargs["model"]["archetype_params"]["dag"][
-            "params"
-        ].items():
-            self._init_kwargs["model"]["archetype_params"]["dag"]["params"][
-                param
-            ] = kwargs.get(f"archetype_{param}", value)
-        sample_specific_dag_loss_type = kwargs.get(
-            "sample_specific_dag_loss_type", "NOTEARS"
-        )
-        self._init_kwargs["model"]["sample_specific_params"] = {
-            "l1": kwargs.get("sample_specific_l1", 0.0),
-            "dag": kwargs.get(
-                "sample_specific_params",
-                {
-                    "loss_type": sample_specific_dag_loss_type,
-                    "params": kwargs.get(
-                        "sample_specific_dag_loss_params",
-                        DEFAULT_DAG_LOSS_PARAMS[sample_specific_dag_loss_type],
-                    ),
-                },
-            ),
-        }
-        # Possibly update values with convenience parameters
-        for param, value in self._init_kwargs["model"]["sample_specific_params"]["dag"][
-            "params"
-        ].items():
-            self._init_kwargs["model"]["sample_specific_params"]["dag"]["params"][
-                param
-            ] = kwargs.get(f"sample_specific_{param}", value)
-
-        self._init_kwargs["model"]["opt_params"] = {
-            "learning_rate": kwargs.get("learning_rate", 1e-3),
-            "step": kwargs.get("step", 50),
-        }
 
     def predict_params(self, C, **kwargs):
         """
@@ -241,15 +260,19 @@ class ContextualizedBayesianNetworks(ContextualizedNetworks):
             C, model_includes_mus=False, **kwargs
         )
 
-    def predict_networks(self, C, with_offsets=False, project_to_dag=True, **kwargs):
+    def predict_networks(self, C, **kwargs):
         """
         Predicts context-specific networks.
         """
+        if kwargs.pop("with_offsets", False):
+            print("No offsets can be returned by NOTMAD.")
         betas = self.predict_params(
-            C, uses_y=False, project_to_dag=project_to_dag, **kwargs
+            C,
+            uses_y=False,
+            project_to_dag=kwargs.pop("project_to_dag", True),
+            **kwargs
         )
-        if with_offsets:
-            print("No offsets returned by NOTMAD.")
+
         return betas
 
     def measure_mses(self, C, X, individual_preds=False):
