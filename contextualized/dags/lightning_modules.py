@@ -13,6 +13,7 @@ from contextualized.dags.graph_utils import (
 from contextualized.dags.losses import (
     dag_loss_notears,
     dag_loss_dagma,
+    dag_loss_poly,
     l1_loss,
     mse_loss,
     linear_sem_loss,
@@ -22,12 +23,14 @@ from contextualized.modules import ENCODERS, Explainer
 
 DAG_LOSSES = {
     "NOTEARS": dag_loss_notears,
-    "DAGMA": dag_loss_dagma
+    "DAGMA": dag_loss_dagma,
+    "poly": dag_loss_poly,
 }
 DEFAULT_DAG_LOSS_TYPE = "NOTEARS"
 DEFAULT_DAG_LOSS_PARAMS = {
     "NOTEARS": {"alpha": 1e-1, "rho": 1e-2},
     "DAGMA": {"s": 1, "alpha": 1e0},
+    "poly": {},
 }
 DEFAULT_SS_PARAMS = {
     "l1": 0.0,
@@ -188,8 +191,6 @@ class NOTMAD(pl.LightningModule):
             self.factor_softmax = nn.Softmax(
                 dim=0
             )  # Sums to one along the latent factor axis, so each feature should only be projected to a single factor.
-        #else:
-        #    factor_mat_init = torch.ones([1, 1])
 
     def forward(self, context):
         subtype = self.encoder(context)
