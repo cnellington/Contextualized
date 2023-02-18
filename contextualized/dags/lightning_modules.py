@@ -182,15 +182,14 @@ class NOTMAD(pl.LightningModule):
             factor_mat_init = (
                 torch.rand([self.latent_dim, self.x_dim]) * 2e-2 - 1e-2
             )
-        else:
-            factor_mat_init = torch.zeros([1, 1])
-        self.factor_mat_raw = nn.parameter.Parameter(
-            factor_mat_init, requires_grad=True
-        )
-        #self.factor_softmax = self.factor_mat_raw
-        self.factor_softmax = nn.Softmax(
-            dim=0
-        )  # Sums to one along the latent factor axis, so each feature should only be projected to a single factor.
+            self.factor_mat_raw = nn.parameter.Parameter(
+                factor_mat_init, requires_grad=True
+            )
+            self.factor_softmax = nn.Softmax(
+                dim=0
+            )  # Sums to one along the latent factor axis, so each feature should only be projected to a single factor.
+        #else:
+        #    factor_mat_init = torch.ones([1, 1])
 
     def forward(self, context):
         subtype = self.encoder(context)
@@ -227,20 +226,32 @@ class NOTMAD(pl.LightningModule):
         W_arch = self.explainer.get_archetypes()
         arch_l1_term = l1_loss(W_arch, self.arch_l1)
         arch_dag_term = len(W_arch) * self.arch_dag_loss(W_arch, **self.arch_dag_params)
-        factor_mat_term = l1_loss(self.factor_mat_raw, self.factor_mat_l1)
-        loss = (
-            notears + arch_l1_term + arch_dag_term + factor_mat_term
-        )  # todo: scale archetype loss?
-        return (
-            loss,
-            notears.detach(),
-            mse_term.detach(),
-            l1_term.detach(),
-            dag_term.detach(),
-            arch_l1_term.detach(),
-            arch_dag_term.detach(),
-            factor_mat_term.detach(),
-        )
+        # todo: scale archetype loss?
+        if self.latent_dim < self.x_dim:
+            factor_mat_term = l1_loss(self.factor_mat_raw, self.factor_mat_l1)
+            loss = notears + arch_l1_term + arch_dag_term + factor_mat_term
+            return (
+                loss,
+                notears.detach(),
+                mse_term.detach(),
+                l1_term.detach(),
+                dag_term.detach(),
+                arch_l1_term.detach(),
+                arch_dag_term.detach(),
+                factor_mat_term.detach(),
+            )
+        else:
+            loss = notears + arch_l1_term + arch_dag_term
+            return (
+                loss,
+                notears.detach(),
+                mse_term.detach(),
+                l1_term.detach(),
+                dag_term.detach(),
+                arch_l1_term.detach(),
+                arch_dag_term.detach(),
+                0.0
+            )
 
     def training_step(self, batch, batch_idx):
         (
@@ -306,17 +317,27 @@ class NOTMAD(pl.LightningModule):
         l1_term = l1_loss(w_pred, self.ss_l1).mean()
         # ignore archetype loss, use constant alpha/rho upper bound for validation
         dag_term = self.ss_dag_loss(w_pred, **self.val_dag_loss_params).mean()
-        factor_mat_term = l1_loss(
-            self.factor_mat_raw, self.factor_mat_l1
-        )
-        loss = mse_term + l1_term + dag_term + factor_mat_term
-        ret = {
-            "val_loss": loss,
-            "val_mse_loss": mse_term,
-            "val_l1_loss": l1_term,
-            "val_dag_loss": dag_term,
-            "val_factor_l1_loss": factor_mat_term,
-        }
+        if self.latent_dim < self.x_dim:
+            factor_mat_term = l1_loss(
+                self.factor_mat_raw, self.factor_mat_l1
+            )
+            loss = mse_term + l1_term + dag_term + factor_mat_term
+            ret = {
+                "val_loss": loss,
+                "val_mse_loss": mse_term,
+                "val_l1_loss": l1_term,
+                "val_dag_loss": dag_term,
+                "val_factor_l1_loss": factor_mat_term,
+            }
+        else:
+            loss = mse_term + l1_term + dag_term
+            ret = {
+                "val_loss": loss,
+                "val_mse_loss": mse_term,
+                "val_l1_loss": l1_term,
+                "val_dag_loss": dag_term,
+                "val_factor_l1_loss": 0.,
+            }
         self.log_dict(ret)
         return ret
 
