@@ -176,8 +176,11 @@ class ContextualizedBayesianNetworks(ContextualizedNetworks):
             "init_mat": kwargs.pop("init_mat", None),
             "num_factors": kwargs.pop("num_factors", 0),
             "factor_mat_l1": kwargs.pop("factor_mat_l1", 0),
-            "num_archetypes": kwargs.pop("num_archetypes", 0),
+            "num_archetypes": kwargs.pop("num_archetypes", 16),
         }
+        if self._init_kwargs["model"]["archetype_loss_params"]["num_archetypes"] <= 0:
+            print("WARNING: num_archetypes is 0. NOTMAD requires archetypes. Setting num_archetypes to 16.")
+            self._init_kwargs["model"]["archetype_loss_params"]["num_archetypes"] = 16
         # Possibly update values with convenience parameters
         for param, value in self._init_kwargs["model"]["archetype_loss_params"]["dag"][
             "params"
