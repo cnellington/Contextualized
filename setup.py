@@ -16,6 +16,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         'lightning',
+        'lightning_lite',
         'pytorch-lightning',
         'torch',
         'torchvision',
