@@ -1,6 +1,5 @@
 import numpy as np
-from sklearn.linear_model import LinearRegression, Lasso
-from sklearn.cluster import KMeans
+from sklearn.linear_model import LinearRegression
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
@@ -109,7 +108,7 @@ class CorrelationNetwork:
         corrs = betas * betas.T
         return np.tile(np.expand_dims(corrs, axis=0), (n, 1, 1))
     
-    def mses(self, X):
+    def measure_mses(self, X):
         mses = np.zeros(len(X))
         for i in range(self.p):
             for j in range(self.p):
@@ -140,7 +139,7 @@ class MarkovNetwork:
         precision = - np.sign(betas) * np.sqrt(np.abs(betas * betas.T))
         return np.tile(np.expand_dims(precision, axis=0), (n, 1, 1))
     
-    def mses(self, X):
+    def measure_mses(self, X):
         mses = np.zeros(len(X))
         for i in range(self.p):
             mask = np.ones_like(X)
@@ -172,7 +171,7 @@ class BayesianNetwork:
         dummy_dataset = self.model.dataloader(dummy_X)
         return self.trainer.predict_w(self.model, dummy_dataset)
 
-    def mses(self, X):
+    def measure_mses(self, X):
         mses = np.zeros(len(X))
         W_pred = self.model.W.detach()
         X_preds = dag_pred(torch.tensor(X, dtype=torch.float32), W_pred).detach().numpy()
@@ -200,56 +199,14 @@ class GroupedNetworks:
             networks[label_idx] = self.models[label].predict(label_idx.sum())
         return networks
     
-    def mses(self, X, labels):
+    def measure_mses(self, X, labels):
         mses = np.zeros(len(X))
         for label in np.unique(labels):
             label_idx = labels == label
             X_label = X[label_idx]
-            mses[label_idx] = self.models[label].mses(X_label)
+            mses[label_idx] = self.models[label].measure_mses(X_label)
         return mses
 
-
-class ClusteredCorrelation:
-    def __init__(self, K, clusterer=None):
-        self.K = K
-        if clusterer is None:
-            self.kmeans = KMeans(n_clusters=K)
-            self.prefit = False
-        else:
-            self.kmeans = clusterer
-            self.prefit = True
-        self.models = {k: PopulationCorrelation() for k in range(K)}
-    
-    def fit(self, C, X):
-        self.p = X.shape[-1]
-        if not self.prefit:
-            self.kmeans.fit(C)
-        labels = self.kmeans.predict(C)
-        for k in range(self.K):
-            k_idx = labels == k
-            X_k, C_k = X[k_idx], C[k_idx]
-            self.models[k].fit(C_k, X_k)
-        return self
-    
-    def predict(self, C):
-        labels = self.kmeans.predict(C)
-        corrs = np.zeros((len(C), self.p, self.p))
-        for label in np.unique(labels):
-            l_idx = labels == label
-            C_l = C[l_idx]
-            corrs[l_idx] = self.models[label].predict(C_l)
-        return corrs
-    
-    def mses(self, C, X):
-        labels = self.kmeans.predict(C)
-        mses = np.zeros(len(C))
-        for label in np.unique(labels):
-            l_idx = labels == label
-            l_count = sum(l_idx)
-            C_l, X_l = C[l_idx], X[l_idx]
-            mses[l_idx] = self.models[label].mses(C_l, X_l)
-        return mses
-    
 
 if __name__ == '__main__':
     n, x_dim = 100, 20
@@ -258,24 +215,24 @@ if __name__ == '__main__':
 
     corr = CorrelationNetwork().fit(X)
     corr.predict(n)
-    print(corr.mses(X).mean())
+    print(corr.measure_mses(X).mean())
 
     grouped_corr = GroupedNetworks(CorrelationNetwork).fit(X, labels)
     grouped_corr.predict(labels)
-    print(grouped_corr.mses(X, labels).mean())
+    print(grouped_corr.measure_mses(X, labels).mean())
     
     mark = MarkovNetwork().fit(X)
     mark.predict(n)
-    print(mark.mses(X).mean())
+    print(mark.measure_mses(X).mean())
 
     grouped_mark = GroupedNetworks(MarkovNetwork).fit(X, labels)
     grouped_mark.predict(labels)
-    print(grouped_mark.mses(X, labels).mean())
+    print(grouped_mark.measure_mses(X, labels).mean())
 
     dag = BayesianNetwork().fit(X)
     dag.predict(n)
-    print(dag.mses(X).mean())
+    print(dag.measure_mses(X).mean())
 
     grouped_dag = GroupedNetworks(BayesianNetwork).fit(X, labels)
     grouped_dag.predict(labels)
-    print(grouped_dag.mses(X, labels).mean())
+    print(grouped_dag.measure_mses(X, labels).mean())
