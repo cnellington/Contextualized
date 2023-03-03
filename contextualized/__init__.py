@@ -7,5 +7,6 @@ from contextualized import analysis
 from contextualized import dags
 from contextualized import easy
 from contextualized import regression
+from contextualized import baselines
 from contextualized import utils
 from contextualized.utils import *
