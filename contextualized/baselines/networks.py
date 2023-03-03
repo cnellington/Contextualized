@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.linear_model import LinearRegression
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data import DataLoader
 import pytorch_lightning as pl
 from contextualized.dags.graph_utils import project_to_dag_torch
 
@@ -207,32 +207,3 @@ class GroupedNetworks:
             mses[label_idx] = self.models[label].measure_mses(X_label)
         return mses
 
-
-if __name__ == '__main__':
-    n, x_dim = 100, 20
-    labels = np.random.randint(0, 5, (n,))
-    X = np.random.uniform(-1, 1, (n, x_dim))
-
-    corr = CorrelationNetwork().fit(X)
-    corr.predict(n)
-    print(corr.measure_mses(X).mean())
-
-    grouped_corr = GroupedNetworks(CorrelationNetwork).fit(X, labels)
-    grouped_corr.predict(labels)
-    print(grouped_corr.measure_mses(X, labels).mean())
-    
-    mark = MarkovNetwork().fit(X)
-    mark.predict(n)
-    print(mark.measure_mses(X).mean())
-
-    grouped_mark = GroupedNetworks(MarkovNetwork).fit(X, labels)
-    grouped_mark.predict(labels)
-    print(grouped_mark.measure_mses(X, labels).mean())
-
-    dag = BayesianNetwork().fit(X)
-    dag.predict(n)
-    print(dag.measure_mses(X).mean())
-
-    grouped_dag = GroupedNetworks(BayesianNetwork).fit(X, labels)
-    grouped_dag.predict(labels)
-    print(grouped_dag.measure_mses(X, labels).mean())
