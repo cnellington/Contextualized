@@ -20,7 +20,7 @@ dag_pred = lambda X, W: torch.matmul(X.unsqueeze(1), W).squeeze(1)
 dag_pred_np = lambda x, w: np.matmul(x[:, np.newaxis, :], w).squeeze()
 
 
-def simulate_linear_sem(W, n_samples, sem_type, noise_scale=None):
+def simulate_linear_sem(W, n_samples, sem_type, noise_scale=None, init_noise_scale=0.1):
     """Simulate samples from linear SEM with specified type of noise.
 
     For uniform, noise z ~ uniform(-a, a), where a = noise_scale.
@@ -30,6 +30,7 @@ def simulate_linear_sem(W, n_samples, sem_type, noise_scale=None):
         n (int): num of samples, n=inf mimics population risk
         sem_type (str): gauss, exp, gumbel, uniform, logistic, poisson
         noise_scale (np.ndarray): scale parameter of additive noise, default all ones
+        init_noise_scale (float): scale parameter of variance of parent nodes, default=0.1
 
     Returns:
         X (np.ndarray): [n, d] sample matrix, [d, d] if n=inf
@@ -85,12 +86,12 @@ def simulate_linear_sem(W, n_samples, sem_type, noise_scale=None):
     G = ig.Graph.Weighted_Adjacency(W.tolist())
     ordered_vertices = G.topological_sorting()
     assert len(ordered_vertices) == d
-    X = np.zeros([n_samples, d])
+    X = np.random.normal(0, init_noise_scale, size=(n_samples, d))
     for j in ordered_vertices:
         parents = G.neighbors(j, mode=ig.IN)
-        X[:, j] = _simulate_single_equation(X[:, parents], W[parents, j], scale_vec[j])
+        if len(parents) > 0:
+            X[:, j] = _simulate_single_equation(X[:, parents], W[parents, j], scale_vec[j])
     return X
-
 
 def break_symmetry(w):
     for i in range(w.shape[0]):
@@ -165,3 +166,4 @@ def is_dag(W):
 
 def trim_params(w, thresh=0.2):
     return w * (np.abs(w) > thresh)
+
