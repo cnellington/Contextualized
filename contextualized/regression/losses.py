@@ -29,3 +29,6 @@ def BCELoss(Y_true, Y_pred):
         Y_true * torch.log(Y_pred + 1e-8) + (1 - Y_true) * torch.log(1 - Y_pred + 1e-8)
     )
     return loss.mean()
+
+
+LOSSES = {"mse": MSE, "bceloss": BCELoss}

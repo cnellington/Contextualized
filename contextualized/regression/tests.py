@@ -1,13 +1,16 @@
 """
 Unit tests for Contextualized Regression.
 """
+
 import unittest
 import numpy as np
 import torch
 
+
 # from contextualized.modules import NGAM, MLP, SoftSelect, Explainer
 from contextualized.regression.lightning_modules import *
 from contextualized.regression.trainers import *
+from contextualized.regression.datamodules import RegressionDataModule
 from contextualized.functions import LINK_FUNCTIONS
 from contextualized.utils import DummyParamPredictor, DummyYPredictor
 
@@ -47,46 +50,114 @@ class TestRegression(unittest.TestCase):
         self.c_dim, self.x_dim, self.y_dim = c_dim, x_dim, y_dim
         self.C, self.X, self.Y = C.numpy(), X.numpy(), Y.numpy()
 
-    def _quicktest(self, model, univariate=False, correlation=False, markov=False):
+    def _quicktest(
+        self,
+        model,
+        univariate=False,
+        correlation=False,
+        markov=False,
+        dataclass_type="dataloader",
+    ):
         """
-
         :param model:
         :param univariate:  (Default value = False)
         :param correlation:  (Default value = False)
         :param markov:  (Default value = False)
+        :param dm_pred_dl_type: Dataset to use for predict (Default value = 'Full', choose from 'test', 'train', 'val', 'full')
 
         """
+
         print(f"\n{type(model)} quicktest")
+
+        get_dataclass = {
+            "datamodule": lambda x, **kwargs: x.datamodule(**kwargs),
+            "dataloader": lambda x, **kwargs: x.dataloader(**kwargs),
+        }
+
+        # get dataclass & trainer
         if correlation:
-            dataloader = model.dataloader(self.C, self.X, batch_size=self.batch_size)
-            trainer = CorrelationTrainer(max_epochs=self.epochs)
-            y_true = np.tile(self.X[:, :, np.newaxis], (1, 1, self.X.shape[-1]))
-        elif markov:
-            dataloader = model.dataloader(self.C, self.X, batch_size=self.batch_size)
-            trainer = MarkovTrainer(max_epochs=self.epochs)
-            y_true = self.X
-        else:
-            dataloader = model.dataloader(
-                self.C, self.X, self.Y, batch_size=self.batch_size
+            dataclass = get_dataclass[dataclass_type](
+                model,
+                C=self.C,
+                X=np.hstack((self.X, self.Y)),
+                batch_size=self.batch_size,
             )
-            trainer = RegressionTrainer(max_epochs=self.epochs)
-            if univariate:
-                y_true = np.tile(self.Y[:, :, np.newaxis], (1, 1, self.X.shape[-1]))
-            else:
-                y_true = self.Y
-        y_preds = trainer.predict_y(model, dataloader)
-        err_init = ((y_true - y_preds) ** 2).mean()
-        trainer.fit(model, dataloader)
-        trainer.validate(model, dataloader)
-        trainer.test(model, dataloader)
-        beta_preds, mu_preds = trainer.predict_params(model, dataloader)
-        if correlation:
-            rhos = trainer.predict_correlation(model, dataloader)
-        if markov:
-            omegas = trainer.predict_precision(model, dataloader)
-        y_preds = trainer.predict_y(model, dataloader)
-        err_trained = ((y_true - y_preds) ** 2).mean()
-        assert err_trained < err_init, "Model failed to converge"
+            trainer = CorrelationTrainer(max_epochs=self.epochs)
+
+        elif markov:
+            # use concatenated X,Y for X -> Y prediction
+            dataclass = get_dataclass[dataclass_type](
+                model,
+                C=self.C,
+                X=np.hstack((self.X, self.Y)),
+                batch_size=self.batch_size,
+            )
+            trainer = MarkovTrainer(max_epochs=self.epochs)
+        else:
+            dataclass = get_dataclass[dataclass_type](
+                model, C=self.C, X=self.X, Y=self.Y, batch_size=self.batch_size
+            )
+            trainer = RegressionTrainer(max_epochs=self.epochs, univariate=univariate)
+
+        # train / eval models
+        if type(dataclass_type) in (
+            pl.LightningDataModule,
+            RegressionDataModule,
+        ):  # datamodule
+            err_init = {}
+            err_trained = {}
+            # pre-train mse/preds
+            for p_type in ["train", "test", "val", "full"]:
+                y_preds = trainer.predict_y(model, dataclass, dm_pred_type=p_type)
+
+            # train
+            trainer.fit(model, dataclass)
+            trainer.validate(model, dataclass)
+            trainer.test(model, dataclass)
+
+            # post-train predictions
+            for p_type in ["train", "test", "val", "full"]:
+                y_preds = trainer.predict_y(model, dataclass, p_type)
+
+                beta_preds, mu_preds = trainer.predict_params(model, dataclass, p_type)
+
+                if correlation:
+                    rhos = trainer.predict_correlation(model, dataclass, p_type)
+                if markov:
+                    omegas = trainer.predict_precision(model, dataclass, p_type)
+
+                err_trained[p_type] = ((y_true - y_preds) ** 2).mean()
+
+                assert (
+                    err_trained[p_type] < err_init[p_type]
+                ), "Model failed to converge"
+
+        else:  # dataloader
+            # pre-train mse/preds
+            y_preds = trainer.predict_y(model=model, dataclass=dataclass)
+            mse_pre = trainer.measure_mses(
+                model, dataclass, dm_pred_type="test", individual_preds=False
+            )
+
+            # train
+            trainer.fit(model, dataclass)
+            trainer.validate(model, dataclass)
+            trainer.test(model, dataclass)
+
+            # post-train mse/preds
+            y_preds = trainer.predict_y(model, dataclass)
+            mse_post = trainer.measure_mses(
+                model, dataclass, dm_pred_type="test", individual_preds=False
+            )
+
+            beta_preds, mu_preds = trainer.predict_params(model, dataclass)
+
+            if correlation:
+                rhos = trainer.predict_correlation(model, dataclass)
+            if markov:
+                omegas = trainer.predict_precision(model, dataclass)
+
+            assert mse_post < mse_pre, "Model failed to converge"
 
     def test_naive(self):
         """
@@ -104,7 +175,8 @@ class TestRegression(unittest.TestCase):
             },
             link_fn=LINK_FUNCTIONS["identity"],
         )
-        self._quicktest(model)
+        self._quicktest(model, dataclass_type="dataloader")
+        self._quicktest(model, dataclass_type="datamodule")
 
         model = NaiveContextualizedRegression(
             self.c_dim,
@@ -118,7 +190,8 @@ class TestRegression(unittest.TestCase):
             },
             link_fn=LINK_FUNCTIONS["identity"],
         )
-        self._quicktest(model)
+        self._quicktest(model, dataclass_type="dataloader")
+        self._quicktest(model, dataclass_type="datamodule")
 
         model = NaiveContextualizedRegression(
             self.c_dim,
@@ -131,7 +204,8 @@ class TestRegression(unittest.TestCase):
             },
             link_fn=LINK_FUNCTIONS["identity"],
         )
-        self._quicktest(model)
+        self._quicktest(model, dataclass_type="dataloader")
+        self._quicktest(model, dataclass_type="datamodule")
 
         model = NaiveContextualizedRegression(
             self.c_dim,
@@ -144,7 +218,8 @@ class TestRegression(unittest.TestCase):
             },
             link_fn=LINK_FUNCTIONS["logistic"],
         )
-        self._quicktest(model)
+        self._quicktest(model, dataclass_type="dataloader")
+        self._quicktest(model, dataclass_type="datamodule")
 
         model = NaiveContextualizedRegression(
             self.c_dim,
@@ -157,7 +232,8 @@ class TestRegression(unittest.TestCase):
             },
             link_fn=LINK_FUNCTIONS["logistic"],
         )
-        self._quicktest(model)
+        self._quicktest(model, dataclass_type="dataloader")
+        self._quicktest(model, dataclass_type="datamodule")
 
         parambase = DummyParamPredictor((self.y_dim, self.x_dim), (self.y_dim, 1))
         model = NaiveContextualizedRegression(
@@ -172,7 +248,8 @@ class TestRegression(unittest.TestCase):
             link_fn=LINK_FUNCTIONS["logistic"],
             base_param_predictor=parambase,
         )
-        self._quicktest(model)
+        self._quicktest(model, dataclass_type="dataloader")
+        self._quicktest(model, dataclass_type="datamodule")
 
         ybase = DummyYPredictor((self.y_dim, 1))
         model = NaiveContextualizedRegression(
@@ -187,7 +264,8 @@ class TestRegression(unittest.TestCase):
             link_fn=LINK_FUNCTIONS["logistic"],
             base_y_predictor=ybase,
         )
-        self._quicktest(model)
+        self._quicktest(model, dataclass_type="dataloader")
+        self._quicktest(model, dataclass_type="datamodule")
 
     def test_subtype(self):
         """
@@ -203,7 +281,10 @@ class TestRegression(unittest.TestCase):
             base_param_predictor=parambase,
             base_y_predictor=ybase,
         )
-        self._quicktest(model)
+        # self._quicktest(model, dataclass="dataloader")
+
+        self._quicktest(model, dataclass_type="dataloader")
+        self._quicktest(model, dataclass_type="datamodule")
 
     def test_multitask(self):
         """
@@ -219,7 +300,8 @@ class TestRegression(unittest.TestCase):
             base_param_predictor=parambase,
             base_y_predictor=ybase,
         )
-        self._quicktest(model)
+        # self._quicktest(model, dataclass_type="dataloader")
+        self._quicktest(model, dataclass_type="datamodule")
 
     def test_tasksplit(self):
         """
@@ -235,7 +317,8 @@ class TestRegression(unittest.TestCase):
             base_param_predictor=parambase,
             base_y_predictor=ybase,
         )
-        self._quicktest(model)
+        self._quicktest(model, dataclass_type="dataloader")
+        self._quicktest(model, dataclass_type="datamodule")
 
     def test_univariate_subtype(self):
         """
@@ -253,7 +336,8 @@ class TestRegression(unittest.TestCase):
             base_param_predictor=parambase,
             base_y_predictor=ybase,
         )
-        self._quicktest(model, univariate=True)
+        self._quicktest(model, univariate=True, dataclass_type="dataloader")
+        self._quicktest(model, univariate=True, dataclass_type="datamodule")
 
     def test_univariate_tasksplit(self):
         """
@@ -269,7 +353,8 @@ class TestRegression(unittest.TestCase):
             base_param_predictor=parambase,
             base_y_predictor=ybase,
         )
-        self._quicktest(model, univariate=True)
+        self._quicktest(model, univariate=True, dataclass_type="dataloader")
+        self._quicktest(model, univariate=True, dataclass_type="datamodule")
 
     def test_correlation_subtype(self):
         """
@@ -277,16 +362,18 @@ class TestRegression(unittest.TestCase):
         """
         # Correlation
         parambase = DummyParamPredictor(
-            (self.x_dim, self.x_dim, 1), (self.x_dim, self.x_dim, 1)
+            (self.x_dim + self.y_dim, self.x_dim + self.y_dim, 1),
+            (self.x_dim + self.y_dim, self.x_dim + self.y_dim, 1),
         )
-        ybase = DummyYPredictor((self.x_dim, self.x_dim, 1))
+        ybase = DummyYPredictor((self.x_dim + self.y_dim, self.x_dim + self.y_dim, 1))
         model = ContextualizedCorrelation(
             self.c_dim,
-            self.x_dim,
+            self.x_dim + self.y_dim,
             base_param_predictor=parambase,
             base_y_predictor=ybase,
         )
-        self._quicktest(model, correlation=True)
+        self._quicktest(model, correlation=True, dataclass_type="dataloader")
+        self._quicktest(model, correlation=True, dataclass_type="datamodule")
 
     def test_correlation_tasksplit(self):
         """
@@ -297,26 +384,30 @@ class TestRegression(unittest.TestCase):
         ybase = DummyYPredictor((1,))
         model = TasksplitContextualizedCorrelation(
             self.c_dim,
-            self.x_dim,
+            self.x_dim + self.y_dim,
             base_param_predictor=parambase,
             base_y_predictor=ybase,
         )
-        self._quicktest(model, correlation=True)
+        self._quicktest(model, correlation=True, dataclass_type="dataloader")
+        self._quicktest(model, correlation=True, dataclass_type="datamodule")
 
     def test_markov_subtype(self):
         """
         Test Markov Graphs.
         """
         # Markov Graph
-        parambase = DummyParamPredictor((self.x_dim, self.x_dim), (self.x_dim, 1))
-        ybase = DummyYPredictor((self.x_dim, 1))
+        parambase = DummyParamPredictor(
+            (self.y_dim + self.x_dim, 1), (self.y_dim + self.x_dim, 1)
+        )
+        ybase = DummyYPredictor((self.y_dim + self.x_dim, 1))
         model = ContextualizedMarkovGraph(
             self.c_dim,
-            self.x_dim,
+            self.x_dim + self.y_dim,
             base_param_predictor=parambase,
             base_y_predictor=ybase,
         )
-        self._quicktest(model, markov=True)
+        self._quicktest(model, markov=True, dataclass_type="dataloader")
+        self._quicktest(model, markov=True, dataclass_type="datamodule")
 
 
 if __name__ == "__main__":

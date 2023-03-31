@@ -11,13 +11,13 @@ g: Link Function for contextualized generalized linear models.
 Implemented with PyTorch Lightning
 """
 
-
 from abc import abstractmethod
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
 import pytorch_lightning as pl
 
+from contextualized.regression.datamodules import RegressionDataModule
 from contextualized.regression.regularizers import REGULARIZERS
 from contextualized.regression.losses import MSE
 from contextualized.functions import LINK_FUNCTIONS
@@ -28,8 +28,8 @@ from contextualized.regression.metamodels import (
     MultitaskMetamodel,
     TasksplitMetamodel,
 )
+
 from contextualized.regression.datasets import (
-    DataIterable,
     MultivariateDataset,
     UnivariateDataset,
     MultitaskMultivariateDataset,
@@ -73,6 +73,18 @@ class ContextualizedRegressionBase(pl.LightningModule):
         # builds the metamodel
 
     @abstractmethod
+    def datamodule(self, C, X, Y, batch_size=32):
+        """
+
+        :param C:
+        :param X:
+        :param Y:
+        :param batch_size:  (Default value = 32)
+
+        """
+        # returns the datamodule for this class
+
+    @abstractmethod
     def dataloader(self, C, X, Y, batch_size=32):
         """
 
@@ -106,7 +118,7 @@ class ContextualizedRegressionBase(pl.LightningModule):
         # returns predicted params on the given batch
 
     @abstractmethod
-    def _params_reshape(self, beta_preds, mu_preds, dataloader):
+    def _params_reshape(self, beta_preds, mu_preds, dataclass):
         """
 
         :param beta_preds:
@@ -117,7 +129,7 @@ class ContextualizedRegressionBase(pl.LightningModule):
         # reshapes the batch parameter predictions into beta (y_dim, x_dim)
 
     @abstractmethod
-    def _y_reshape(self, y_preds, dataloader):
+    def _y_reshape(self, y_preds, dataclass):
         """
 
         :param y_preds:
@@ -132,7 +144,9 @@ class ContextualizedRegressionBase(pl.LightningModule):
         :param *args:
 
         """
+
         beta, mu = self.metamodel(*args)
+
         if self.base_param_predictor is not None:
             base_beta, base_mu = self.base_param_predictor.predict_params(*args)
             beta = beta + base_beta
@@ -187,6 +201,7 @@ class ContextualizedRegressionBase(pl.LightningModule):
         :param mu_hat:
 
         """
+
         return self.link_fn((beta_hat * X).sum(axis=-1).unsqueeze(-1) + mu_hat)
 
     def _predict_y(self, C, X, beta_hat, mu_hat):
@@ -203,19 +218,60 @@ class ContextualizedRegressionBase(pl.LightningModule):
             Y = Y + self.base_y_predictor.predict_y(C, X)
         return Y
 
-    def _dataloader(self, C, X, Y, dataset_constructor, **kwargs):
+    def _dataclass_to_dataloader(self, dataclass, dataloader_type="pred"):
+        """
+        Input an ambigous dataloader/datamodule and return a dataloader (type specifiable).
+
+        :param dc: the dataclass to convert to dataloader
+        :param dl_type: if a datamodule, which of its dataloaders to use
+        """
+        dataloader = None
+
+        if type(dataclass) == DataLoader:
+            dataloader = dataclass
+        elif type(dataclass) in (pl.LightningDataModule, RegressionDataModule):
+            dl_type_to_dl = {
+                "full": lambda x: x.full_dataloader(),
+                "train": lambda x: x.train_dataloader(),
+                "test": lambda x: x.test_dataloader(),
+                "val": lambda x: x.val_dataloader(),
+                "pred": lambda x: x.predict_dataloader(),
+            }
+            dataloader = dl_type_to_dl[dataloader_type](dataclass)
+        else:
+            print("Error, dataloader nor datamodule are specified.")
+
+        return dataloader
+
+    def _datamodule(self, C, X, Y, dataset, **kwargs):
         """
 
         :param C:
         :param X:
         :param Y:
-        :param dataset_constructor:
+        :param correlation:
         :param **kwargs:
 
         """
         kwargs["num_workers"] = kwargs.get("num_workers", 0)
         kwargs["batch_size"] = kwargs.get("batch_size", 32)
-        return DataLoader(dataset=DataIterable(dataset_constructor(C, X, Y)), **kwargs)
+        kwargs["correlation"] = kwargs.get("correlation", False)
+        kwargs["markov"] = kwargs.get("markov", False)
+
+        return RegressionDataModule(C, X, Y, dataset=dataset, **kwargs)
+
+    def _dataloader(self, C, X, Y, dataset, **kwargs):
+        """
+        :param C:
+        :param X:
+        :param Y:
+        :param dataset_constructor:
+        :param **kwargs:
+        """
+
+        kwargs["num_workers"] = kwargs.get("num_workers", 0)
+        kwargs["batch_size"] = kwargs.get("batch_size", 32)
+        return DataLoader(dataset=dataset(C, X, Y), **kwargs)
 
 
 class NaiveContextualizedRegression(ContextualizedRegressionBase):
@@ -255,14 +311,17 @@ class NaiveContextualizedRegression(ContextualizedRegressionBase):
         beta_hat, mu_hat = self(C)
         return beta_hat, mu_hat
 
-    def _params_reshape(self, preds, dataloader):
+    def _params_reshape(self, preds, dataclass):
         """
 
         :param preds:
         :param dataloader:
 
         """
-        ds = dataloader.dataset.dataset
+
+        dataloader = self._dataclass_to_dataloader(dataclass, dataloader_type="pred")
+
+        ds = dataloader.dataset
         betas = np.zeros((ds.n, ds.y_dim, ds.x_dim))
         mus = np.zeros((ds.n, ds.y_dim))
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
@@ -271,21 +330,24 @@ class NaiveContextualizedRegression(ContextualizedRegressionBase):
             mus[n_idx] = mu_hats.squeeze(-1)
         return betas, mus
 
-    def _y_reshape(self, preds, dataloader):
+    def _y_reshape(self, preds, dataclass):
         """
 
         :param preds:
         :param dataloader:
 
         """
-        ds = dataloader.dataset.dataset
+
+        dataloader = self._dataclass_to_dataloader(dataclass, dataloader_type="pred")
+
+        ds = dataloader.dataset
         ys = np.zeros((ds.n, ds.y_dim))
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
             C, X, _, n_idx = data
             ys[n_idx] = self._predict_y(C, X, beta_hats, mu_hats).squeeze(-1)
         return ys
 
-    def dataloader(self, C, X, Y, **kwargs):
+    def datamodule(self, C, X, Y, **kwargs):
         """
 
         :param C:
@@ -293,6 +355,15 @@ class NaiveContextualizedRegression(ContextualizedRegressionBase):
         :param Y:
         :param **kwargs:
 
+        """
+        return self._datamodule(C, X, Y, "multivariate", **kwargs)
+
+    def dataloader(self, C, X, Y, **kwargs):
+        """
+        :param C:
+        :param X:
+        :param Y:
+        :param **kwargs:
         """
         return self._dataloader(C, X, Y, MultivariateDataset, **kwargs)
 
@@ -317,12 +388,8 @@ class ContextualizedRegression(ContextualizedRegressionBase):
         :param batch_idx:
 
         """
-        (
-            C,
-            X,
-            Y,
-            _,
-        ) = batch
+        (C, X, Y, _,) = batch
+
         beta_hat, mu_hat = self.predict_step(batch, batch_idx)
         pred_loss = self.loss_fn(Y, self._predict_y(C, X, beta_hat, mu_hat))
         reg_loss = self.model_regularizer(beta_hat, mu_hat)
@@ -339,14 +406,16 @@ class ContextualizedRegression(ContextualizedRegressionBase):
         beta_hat, mu_hat = self(C)
         return beta_hat, mu_hat
 
-    def _params_reshape(self, preds, dataloader):
+    def _params_reshape(self, preds, dataclass):
         """
 
         :param preds:
         :param dataloader:
 
         """
-        ds = dataloader.dataset.dataset
+        dataloader = self._dataclass_to_dataloader(dataclass, dataloader_type="pred")
+
+        ds = dataloader.dataset
         betas = np.zeros((ds.n, ds.y_dim, ds.x_dim))
         mus = np.zeros((ds.n, ds.y_dim))
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
@@ -355,21 +424,22 @@ class ContextualizedRegression(ContextualizedRegressionBase):
             mus[n_idx] = mu_hats.squeeze(-1)
         return betas, mus
 
-    def _y_reshape(self, preds, dataloader):
+    def _y_reshape(self, preds, dataclass):
         """
 
         :param preds:
         :param dataloader:
 
         """
-        ds = dataloader.dataset.dataset
+        dataloader = self._dataclass_to_dataloader(dataclass, dataloader_type="pred")
+        ds = dataloader.dataset
         ys = np.zeros((ds.n, ds.y_dim))
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
             C, X, _, n_idx = data
             ys[n_idx] = self._predict_y(C, X, beta_hats, mu_hats).squeeze(-1)
         return ys
 
-    def dataloader(self, C, X, Y, **kwargs):
+    def datamodule(self, C, X, Y, **kwargs):
         """
 
         :param C:
@@ -377,6 +447,15 @@ class ContextualizedRegression(ContextualizedRegressionBase):
         :param Y:
         :param **kwargs:
 
+        """
+        return self._datamodule(C, X, Y, "multivariate", **kwargs)
+
+    def dataloader(self, C, X, Y, **kwargs):
+        """
+        :param C:
+        :param X:
+        :param Y:
+        :param **kwargs:
         """
         return self._dataloader(C, X, Y, MultivariateDataset, **kwargs)
 
@@ -418,14 +497,16 @@ class MultitaskContextualizedRegression(ContextualizedRegressionBase):
         beta_hat, mu_hat = self(C, T)
         return beta_hat, mu_hat
 
-    def _params_reshape(self, preds, dataloader):
+    def _params_reshape(self, preds, dataclass):
         """
 
         :param preds:
         :param dataloader:
 
         """
-        ds = dataloader.dataset.dataset
+        dataloader = self._dataclass_to_dataloader(dataclass, dataloader_type="pred")
+
+        ds = dataloader.dataset
         betas = np.zeros((ds.n, ds.y_dim, ds.x_dim))
         mus = np.zeros((ds.n, ds.y_dim))
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
@@ -434,21 +515,24 @@ class MultitaskContextualizedRegression(ContextualizedRegressionBase):
             mus[n_idx, y_idx] = mu_hats.squeeze(-1)
         return betas, mus
 
-    def _y_reshape(self, preds, dataloader):
+    def _y_reshape(self, preds, dataclass):
         """
 
         :param preds:
         :param dataloader:
 
         """
-        ds = dataloader.dataset.dataset
+
+        dataloader = self._dataclass_to_dataloader(dataclass, dataloader_type="pred")
+
+        ds = dataloader.dataset
         ys = np.zeros((ds.n, ds.y_dim))
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
             C, _, X, _, n_idx, y_idx = data
             ys[n_idx, y_idx] = self._predict_y(C, X, beta_hats, mu_hats).squeeze(-1)
         return ys
 
-    def dataloader(self, C, X, Y, **kwargs):
+    def datamodule(self, C, X, Y, **kwargs):
         """
 
         :param C:
@@ -456,6 +540,15 @@ class MultitaskContextualizedRegression(ContextualizedRegressionBase):
         :param Y:
         :param **kwargs:
 
+        """
+        return self._datamodule(C, X, Y, "multitask_multivariate", **kwargs)
+
+    def dataloader(self, C, X, Y, **kwargs):
+        """
+        :param C:
+        :param X:
+        :param Y:
+        :param **kwargs:
         """
         return self._dataloader(C, X, Y, MultitaskMultivariateDataset, **kwargs)
 
@@ -497,14 +590,17 @@ class TasksplitContextualizedRegression(ContextualizedRegressionBase):
         beta_hat, mu_hat = self(C, T)
         return beta_hat, mu_hat
 
-    def _params_reshape(self, preds, dataloader):
+    def _params_reshape(self, preds, dataclass):
         """
 
         :param preds:
         :param dataloader:
 
         """
-        ds = dataloader.dataset.dataset
+
+        dataloader = self._dataclass_to_dataloader(dataclass, dataloader_type="pred")
+
+        ds = dataloader.dataset
         betas = np.zeros((ds.n, ds.y_dim, ds.x_dim))
         mus = np.zeros((ds.n, ds.y_dim))
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
@@ -513,21 +609,23 @@ class TasksplitContextualizedRegression(ContextualizedRegressionBase):
             mus[n_idx, y_idx] = mu_hats.squeeze(-1)
         return betas, mus
 
-    def _y_reshape(self, preds, dataloader):
+    def _y_reshape(self, preds, dataclass):
         """
 
         :param preds:
         :param dataloader:
 
         """
-        ds = dataloader.dataset.dataset
+        dataloader = self._dataclass_to_dataloader(dataclass, dataloader_type="pred")
+
+        ds = dataloader.dataset
         ys = np.zeros((ds.n, ds.y_dim))
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
             C, _, X, _, n_idx, y_idx = data
             ys[n_idx, y_idx] = self._predict_y(C, X, beta_hats, mu_hats).squeeze(-1)
         return ys
 
-    def dataloader(self, C, X, Y, **kwargs):
+    def datamodule(self, C, X, Y, **kwargs):
         """
 
         :param C:
@@ -535,6 +633,15 @@ class TasksplitContextualizedRegression(ContextualizedRegressionBase):
         :param Y:
         :param **kwargs:
 
+        """
+        return self._datamodule(C, X, Y, "multitask_multivariate", **kwargs)
+
+    def dataloader(self, C, X, Y, **kwargs):
+        """
+        :param C:
+        :param X:
+        :param Y:
+        :param **kwargs:
         """
         return self._dataloader(C, X, Y, MultitaskMultivariateDataset, **kwargs)
 
@@ -552,14 +659,16 @@ class ContextualizedUnivariateRegression(ContextualizedRegression):
         kwargs["univariate"] = True
         self.metamodel = SubtypeMetamodel(*args, **kwargs)
 
-    def _params_reshape(self, preds, dataloader):
+    def _params_reshape(self, preds, dataclass):
         """
 
         :param preds:
         :param dataloader:
 
         """
-        ds = dataloader.dataset.dataset
+        dataloader = self._dataclass_to_dataloader(dataclass, dataloader_type="pred")
+
+        ds = dataloader.dataset
         betas = np.zeros((ds.n, ds.y_dim, ds.x_dim))
         mus = np.zeros((ds.n, ds.y_dim, ds.x_dim))
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
@@ -568,21 +677,23 @@ class ContextualizedUnivariateRegression(ContextualizedRegression):
             mus[n_idx] = mu_hats.squeeze(-1)
         return betas, mus
 
-    def _y_reshape(self, preds, dataloader):
+    def _y_reshape(self, preds, dataclass):
         """
 
         :param preds:
         :param dataloader:
 
         """
-        ds = dataloader.dataset.dataset
+        dataloader = self._dataclass_to_dataloader(dataclass, dataloader_type="pred")
+
+        ds = dataloader.dataset
         ys = np.zeros((ds.n, ds.y_dim, ds.x_dim))
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
             C, X, _, n_idx = data
             ys[n_idx] = self._predict_y(C, X, beta_hats, mu_hats).squeeze(-1)
         return ys
 
-    def dataloader(self, C, X, Y, **kwargs):
+    def datamodule(self, C, X, Y, **kwargs):
         """
 
         :param C:
@@ -590,6 +701,15 @@ class ContextualizedUnivariateRegression(ContextualizedRegression):
         :param Y:
         :param **kwargs:
 
+        """
+        return self._datamodule(C, X, Y, "univariate", **kwargs)
+
+    def dataloader(self, C, X, Y, **kwargs):
+        """
+        :param C:
+        :param X:
+        :param Y:
+        :param **kwargs:
         """
         return self._dataloader(C, X, Y, UnivariateDataset, **kwargs)
 
@@ -631,14 +751,16 @@ class TasksplitContextualizedUnivariateRegression(TasksplitContextualizedRegress
         beta_hat, mu_hat = self(C, T)
         return beta_hat, mu_hat
 
-    def _params_reshape(self, preds, dataloader):
+    def _params_reshape(self, preds, dataclass):
         """
 
         :param preds:
         :param dataloader:
 
         """
-        ds = dataloader.dataset.dataset
+        dataloader = self._dataclass_to_dataloader(dataclass, dataloader_type="pred")
+
+        ds = dataloader.dataset
         betas = np.zeros((ds.n, ds.y_dim, ds.x_dim))
         mus = betas.copy()
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
@@ -647,14 +769,16 @@ class TasksplitContextualizedUnivariateRegression(TasksplitContextualizedRegress
             mus[n_idx, y_idx, x_idx] = mu_hats.squeeze(-1)
         return betas, mus
 
-    def _y_reshape(self, preds, dataloader):
+    def _y_reshape(self, preds, dataclass):
         """
 
         :param preds:
         :param dataloader:
 
         """
-        ds = dataloader.dataset.dataset
+        dataloader = self._dataclass_to_dataloader(dataclass, dataloader_type="pred")
+
+        ds = dataloader.dataset
         ys = np.zeros((ds.n, ds.y_dim, ds.x_dim))
         for (beta_hats, mu_hats), data in zip(preds, dataloader):
             C, _, X, _, n_idx, x_idx, y_idx = data
@@ -663,7 +787,7 @@ class TasksplitContextualizedUnivariateRegression(TasksplitContextualizedRegress
             )
         return ys
 
-    def dataloader(self, C, X, Y, **kwargs):
+    def datamodule(self, C, X, Y, correlation=False, **kwargs):
         """
 
         :param C:
@@ -671,6 +795,17 @@ class TasksplitContextualizedUnivariateRegression(TasksplitContextualizedRegress
         :param Y:
         :param **kwargs:
 
+        """
+        return self._datamodule(
+            C, X, Y, "multitask_univariate", correlation=correlation, **kwargs
+        )
+
+    def dataloader(self, C, X, Y, **kwargs):
+        """
+        :param C:
+        :param X:
+        :param Y:
+        :param **kwargs:
         """
         return self._dataloader(C, X, Y, MultitaskUnivariateDataset, **kwargs)
 
@@ -687,7 +822,7 @@ class ContextualizedCorrelation(ContextualizedUnivariateRegression):
             del kwargs["y_dim"]
         super().__init__(context_dim, x_dim, x_dim, **kwargs)
 
-    def dataloader(self, C, X, Y=None, **kwargs):
+    def datamodule(self, C, X, Y=None, **kwargs):
         """
 
         :param C:
@@ -695,6 +830,19 @@ class ContextualizedCorrelation(ContextualizedUnivariateRegression):
         :param Y:
         :param **kwargs:
 
+        """
+        if Y is not None:
+            print(
+                "Passed a Y, but this is self-correlation between X featuers. Ignoring Y."
+            )
+        return self._datamodule(C, X, X, "univariate", correlation=True, **kwargs)
+
+    def dataloader(self, C, X, Y=None, **kwargs):
+        """
+        :param C:
+        :param X:
+        :param Y:
+        :param **kwargs:
         """
         if Y is not None:
             print(
@@ -715,7 +863,7 @@ class TasksplitContextualizedCorrelation(TasksplitContextualizedUnivariateRegres
             del kwargs["y_dim"]
         super().__init__(context_dim, x_dim, x_dim, **kwargs)
 
-    def dataloader(self, C, X, Y=None, **kwargs):
+    def datamodule(self, C, X, Y=None, **kwargs):
         """
 
         :param C:
@@ -726,7 +874,20 @@ class TasksplitContextualizedCorrelation(TasksplitContextualizedUnivariateRegres
         """
         if Y is not None:
             print(
-                "Passed a Y, but this is self-correlation between X featuers. Ignoring Y."
+                "Passed a Y, but this is self-correlation between X features. Ignoring Y."
+            )
+        return super().datamodule(C, X, X, correlation=True, **kwargs)
+
+    def dataloader(self, C, X, Y=None, **kwargs):
+        """
+        :param C:
+        :param X:
+        :param Y:
+        :param **kwargs:
+        """
+        if Y is not None:
+            print(
+                "Passed a Y, but this is self-correlation between X features. Ignoring Y."
             )
         return super().dataloader(C, X, X, **kwargs)
 
@@ -760,7 +921,7 @@ class ContextualizedMarkovGraph(ContextualizedRegression):
         beta_hat = beta_hat * self.diag_mask.expand(beta_hat.shape[0], -1, -1)
         return beta_hat, mu_hat
 
-    def dataloader(self, C, X, Y=None, **kwargs):
+    def datamodule(self, C, X, Y=None, **kwargs):
         """
 
         :param C:
@@ -772,6 +933,33 @@ class ContextualizedMarkovGraph(ContextualizedRegression):
 
         if Y is not None:
             print(
-                "Passed a Y, but this is a Markov Graph between X featuers. Ignoring Y."
+                "Passed a Y, but this is a Markov Graph between X features. Ignoring Y."
+            )
+        return self._datamodule(C, X, X, "multivariate", **kwargs)
+
+    def dataloader(self, C, X, Y=None, **kwargs):
+        """
+        :param C:
+        :param X:
+        :param Y:
+        :param **kwargs:
+        """
+
+        if Y is not None:
+            print(
+                "Passed a Y, but this is a Markov Graph between X features. Ignoring Y."
             )
         return super().dataloader(C, X, X, **kwargs)
+
+
+MODELS = {
+    "naive": NaiveContextualizedRegression,
+    "multivariate": ContextualizedRegression,
+    "multitask": MultitaskContextualizedRegression,
+    "tasksplit": TasksplitContextualizedRegression,
+    "univariate": ContextualizedUnivariateRegression,
+    "tasksplit_univariate": TasksplitContextualizedUnivariateRegression,
+    "correlation": ContextualizedCorrelation,
+    "tasksplit_correlation": TasksplitContextualizedCorrelation,
+    "markov": ContextualizedMarkovGraph,
+}
