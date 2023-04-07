@@ -754,11 +754,24 @@ class ContextualizedNeighborhoodSelection(ContextualizedRegression):
         """
         C, _, _, _ = batch
         beta_hat, mu_hat = self(C)
-        beta_hat = beta_hat + torch.transpose(
-            beta_hat, 1, 2
-        )  # hotfix to enforce symmetry
         beta_hat = beta_hat * self.diag_mask.expand(beta_hat.shape[0], -1, -1)
         return beta_hat, mu_hat
+
+    def dataloader(self, C, X, Y=None, **kwargs):
+        """
+
+        :param C:
+        :param X:
+        :param Y:
+        :param **kwargs:
+
+        """
+
+        if Y is not None:
+            print(
+                "Passed a Y, but this is a Markov Graph between X featuers. Ignoring Y."
+            )
+        return super().dataloader(C, X, X, **kwargs)
 
 
 class ContextualizedMarkovGraph(ContextualizedRegression):

@@ -4,6 +4,7 @@ Unit tests for DAG models.
 import unittest
 import numpy as np
 import igraph as ig
+from pytorch_lightning import seed_everything
 
 
 from contextualized.dags.lightning_modules import NOTMAD
@@ -82,6 +83,7 @@ class TestNOTMAD(unittest.TestCase):
         )
 
     def _train(self, model_args, n_epochs):
+        seed_everything(0)
         k = 6
         INIT_MAT = np.random.uniform(-0.1, 0.1, size=(k, 4, 4)) * np.tile(
             1 - np.eye(4), (k, 1, 1)
