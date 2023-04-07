@@ -731,6 +731,36 @@ class TasksplitContextualizedCorrelation(TasksplitContextualizedUnivariateRegres
         return super().dataloader(C, X, X, **kwargs)
 
 
+class ContextualizedNeighborhoodSelection(ContextualizedRegression):
+    """Using singletask multivariate contextualized regression to do edge-regression for
+    estimating conditional dependencies
+    See SubtypeMetamodel for assumptions and full docstring
+
+
+    """
+
+    def __init__(self, context_dim, x_dim, model_regularizer=REGULARIZERS["l1"](1e-3, mu_ratio=0), **kwargs):
+        if "y_dim" in kwargs:
+            del kwargs["y_dim"]
+        super().__init__(context_dim, x_dim, x_dim, model_regularizer=model_regularizer, **kwargs)
+        self.register_buffer("diag_mask", torch.ones(x_dim, x_dim) - torch.eye(x_dim))
+
+    def predict_step(self, batch, batch_idx):
+        """
+
+        :param batch:
+        :param batch_idx:
+
+        """
+        C, _, _, _ = batch
+        beta_hat, mu_hat = self(C)
+        beta_hat = beta_hat + torch.transpose(
+            beta_hat, 1, 2
+        )  # hotfix to enforce symmetry
+        beta_hat = beta_hat * self.diag_mask.expand(beta_hat.shape[0], -1, -1)
+        return beta_hat, mu_hat
+
+
 class ContextualizedMarkovGraph(ContextualizedRegression):
     """Using singletask multivariate contextualized regression to do edge-regression for
     estimating conditional dependencies
