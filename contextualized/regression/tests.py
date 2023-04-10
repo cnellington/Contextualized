@@ -322,7 +322,6 @@ class TestRegression(unittest.TestCase):
         """
         Test Neighborhood Selection.
         """
-        # Markov Graph
         parambase = DummyParamPredictor((self.x_dim, self.x_dim), (self.x_dim, 1))
         ybase = DummyYPredictor((self.x_dim, 1))
         model = ContextualizedNeighborhoodSelection(
