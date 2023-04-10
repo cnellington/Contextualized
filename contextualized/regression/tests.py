@@ -318,6 +318,20 @@ class TestRegression(unittest.TestCase):
         )
         self._quicktest(model, markov=True)
 
+    def test_neighborhood_subtype(self):
+        """
+        Test Neighborhood Selection.
+        """
+        parambase = DummyParamPredictor((self.x_dim, self.x_dim), (self.x_dim, 1))
+        ybase = DummyYPredictor((self.x_dim, 1))
+        model = ContextualizedNeighborhoodSelection(
+            self.c_dim,
+            self.x_dim,
+            base_param_predictor=parambase,
+            base_y_predictor=ybase,
+        )
+        self._quicktest(model, markov=True)
+
 
 if __name__ == "__main__":
     unittest.main()
