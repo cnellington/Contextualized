@@ -7,12 +7,12 @@ from torch import nn
 from contextualized.modules import ENCODERS, Explainer, SoftSelect
 from contextualized.functions import LINK_FUNCTIONS
 
+METAMODELS = ["simple", "subtype", "multitask", "tasksplit"]
+
 
 class NaiveMetamodel(nn.Module):
     """Probabilistic assumptions as a graphical model (observed) {unobserved}:
     (C) --> {beta, mu} --> (X, Y)
-
-
     """
 
     def __init__(
