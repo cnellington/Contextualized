@@ -59,17 +59,17 @@ class TestRegression(unittest.TestCase):
         print(f"\n{type(model)} quicktest")
         if correlation:
             dataloader = model.dataloader(self.C, self.X, batch_size=self.batch_size)
-            trainer = CorrelationTrainer(max_epochs=self.epochs)
+            trainer = CorrelationTrainer(max_epochs=self.epochs, enable_progress_bar=False)
             y_true = np.tile(self.X[:, :, np.newaxis], (1, 1, self.X.shape[-1]))
         elif markov:
             dataloader = model.dataloader(self.C, self.X, batch_size=self.batch_size)
-            trainer = MarkovTrainer(max_epochs=self.epochs)
+            trainer = MarkovTrainer(max_epochs=self.epochs, enable_progress_bar=False)
             y_true = self.X
         else:
             dataloader = model.dataloader(
                 self.C, self.X, self.Y, batch_size=self.batch_size
             )
-            trainer = RegressionTrainer(max_epochs=self.epochs)
+            trainer = RegressionTrainer(max_epochs=self.epochs, enable_progress_bar=False)
             if univariate:
                 y_true = np.tile(self.Y[:, :, np.newaxis], (1, 1, self.X.shape[-1]))
             else:
@@ -378,7 +378,7 @@ class TestRegression(unittest.TestCase):
         dataloader = model.dataloader(
             self.C, self.X, self.Y, batch_size=self.batch_size
         )
-        trainer = RegressionTrainer()
+        trainer = RegressionTrainer(enable_progress_bar=False)
         beta_preds, mu_preds = trainer.predict_params(model, dataloader)
         assert (mu_preds == 0).all()
         self._quicktest(model)
