@@ -121,7 +121,7 @@ class TestNOTMAD(unittest.TestCase):
         val_dataloader = model.dataloader(
             self.C_val, self.X_val, batch_size=10, num_workers=1
         )
-        trainer = GraphTrainer(max_epochs=n_epochs, callbacks=[], deterministic=True)
+        trainer = GraphTrainer(max_epochs=n_epochs, callbacks=[], deterministic=True, enable_progress_bar=False)
         preds_train = trainer.predict_params(
             model, train_dataloader, project_to_dag=True
         )

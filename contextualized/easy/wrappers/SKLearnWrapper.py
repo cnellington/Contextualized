@@ -469,7 +469,7 @@ class SKLearnWrapper:
                 for f in organized_kwargs["trainer"]["callback_constructors"]
             ]
             del my_trainer_kwargs["callback_constructors"]
-            trainer = self.trainer_constructor(**my_trainer_kwargs)
+            trainer = self.trainer_constructor(**my_trainer_kwargs, enable_progress_bar=False)
             checkpoint_callback = my_trainer_kwargs["callbacks"][1]
             os.makedirs(checkpoint_callback.dirpath, exist_ok=True)
             try:
