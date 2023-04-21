@@ -332,6 +332,59 @@ class TestRegression(unittest.TestCase):
         )
         self._quicktest(model, markov=True)
 
+    def test_metamodel_switch(self):
+        """
+        Test switching between meta-models.
+        """
+        parambase = DummyParamPredictor((self.y_dim, self.x_dim), (self.y_dim, 1))
+        ybase = DummyYPredictor((self.y_dim, 1))
+        model = ContextualizedRegression(
+            self.c_dim,
+            self.x_dim,
+            self.y_dim,
+            metamodel_type="naive",
+            base_param_predictor=parambase,
+            base_y_predictor=ybase,
+        )
+        self._quicktest(model)
+
+        parambase = DummyParamPredictor((self.y_dim, self.x_dim), (self.y_dim, 1))
+        ybase = DummyYPredictor((self.y_dim, 1))
+        model = ContextualizedRegression(
+            self.c_dim,
+            self.x_dim,
+            self.y_dim,
+            metamodel_type="subtype",
+            base_param_predictor=parambase,
+            base_y_predictor=ybase,
+        )
+        self._quicktest(model)
+
+    def test_fit_intercept(self):
+        """
+        Test switching between meta-models.
+        """
+        parambase = DummyParamPredictor((self.y_dim, self.x_dim), (self.y_dim, 1))
+        ybase = DummyYPredictor((self.y_dim, 1))
+        model = ContextualizedRegression(
+            self.c_dim,
+            self.x_dim,
+            self.y_dim,
+            metamodel_type="naive",
+            fit_intercept=False,
+            base_param_predictor=parambase,
+            base_y_predictor=ybase,
+        )
+        dataloader = model.dataloader(
+            self.C, self.X, self.Y, batch_size=self.batch_size
+        )
+        trainer = RegressionTrainer()
+        beta_preds, mu_preds = trainer.predict_params(model, dataloader)
+        assert (mu_preds == 0).all()
+        self._quicktest(model)
+        beta_preds, mu_preds = trainer.predict_params(model, dataloader)
+        assert (mu_preds == 0).all()
+
 
 if __name__ == "__main__":
     unittest.main()
