@@ -1,5 +1,8 @@
+"""
+Analysis tools for generating pvalues from bootstrap replicates.
+"""
+
 import numpy as np
-import pandas as pd
 
 from contextualized.analysis.effects import (
     get_homogeneous_context_effects,
@@ -55,7 +58,8 @@ def calc_homogeneous_context_effects_pvals(model, C, **kwargs):
 
     Returns
     -------
-    pvals : np.ndarray of shape (n_contexts, n_outcomes) testing whether the sign is consistent across bootstraps
+    pvals : np.ndarray of shape (n_contexts, n_outcomes) testing whether the
+        sign is consistent across bootstraps
     """
     _, effects = get_homogeneous_context_effects(model, C, **kwargs)
     # effects.shape: (n_contexts, n_bootstraps, n_context_vals, n_outcomes)
@@ -92,7 +96,8 @@ def calc_homogeneous_predictor_effects_pvals(model, C, **kwargs):
 
     Returns
     -------
-    pvals : np.ndarray of shape (n_predictors, n_outcomes) testing whether the sign is consistent across bootstraps
+    pvals : np.ndarray of shape (n_predictors, n_outcomes) testing whether the
+        sign is consistent across bootstraps
     """
     _, effects = get_homogeneous_predictor_effects(model, C, **kwargs)
     # effects.shape: (n_predictors, n_bootstraps, n_outcomes)
@@ -127,7 +132,8 @@ def calc_heterogeneous_predictor_effects_pvals(model, C, **kwargs):
 
     Returns
     -------
-    pvals : np.ndarray of shape (n_contexts, n_predictors, n_outcomes) testing whether the sign of the change wrt context is consistent across bootstraps
+    pvals : np.ndarray of shape (n_contexts, n_predictors, n_outcomes) testing
+        whether the sign of the change wrt context is consistent across bootstraps
     """
     _, effects = get_heterogeneous_predictor_effects(model, C, **kwargs)
     # effects.shape is (n_contexts, n_predictors, n_bootstraps, n_context_vals, n_outcomes)
