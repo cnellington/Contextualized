@@ -15,9 +15,8 @@ setup(
     url="https://github.com/cnellington/contextualized",
     packages=find_packages(),
     install_requires=[
-        'lightning',
-        'pytorch-lightning',
-        'torch',
+        'pytorch-lightning<=1.9.4',
+        'torch<=1.13.1',
         'torchvision',
         'numpy',
         'scikit-learn',
