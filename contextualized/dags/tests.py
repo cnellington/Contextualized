@@ -4,7 +4,7 @@ Unit tests for DAG models.
 import unittest
 import numpy as np
 import igraph as ig
-from lightning_lite.utilities.seed import seed_everything
+from pytorch_lightning import seed_everything
 
 
 from contextualized.dags.lightning_modules import NOTMAD
@@ -121,7 +121,7 @@ class TestNOTMAD(unittest.TestCase):
         val_dataloader = model.dataloader(
             self.C_val, self.X_val, batch_size=10, num_workers=1
         )
-        trainer = GraphTrainer(max_epochs=n_epochs, callbacks=[], deterministic=True)
+        trainer = GraphTrainer(max_epochs=n_epochs, callbacks=[], deterministic=True, enable_progress_bar=False)
         preds_train = trainer.predict_params(
             model, train_dataloader, project_to_dag=True
         )
