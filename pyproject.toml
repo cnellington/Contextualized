@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "contextualized-ml"
-version = "0.2.5"
+version = "0.2.6"
 authors = [
   { name="Caleb Ellington", email="cellingt@cs.cmu.edu" },
   { name="Ben Lengerich", email="blengeri@mit.edu" },
