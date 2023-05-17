@@ -82,7 +82,7 @@ class ContextualizedCorrelationNetworks(ContextualizedNetworks):
             for j in range(X.shape[-1]):
                 tiled_xi = np.array([X[:, i] for _ in range(len(betas))])
                 tiled_xj = np.array([X[:, j] for _ in range(len(betas))])
-                residuals = tiled_xi - betas[:, :, i, j] * tiled_xj - mus[:, :, i, j]
+                residuals = tiled_xi - betas[:, :, i, j] * tiled_xj + mus[:, :, i, j]
                 mses += residuals**2 / (X.shape[-1] ** 2)
         if not individual_preds:
             mses = np.mean(mses, axis=0)
@@ -150,6 +150,8 @@ class ContextualizedBayesianNetworks(ContextualizedNetworks):
         """
             Parses private init kwargs.
         """
+
+        # Encoder Parameters
         self._init_kwargs["model"]["encoder_kwargs"] = {
             "type": kwargs.pop(
                 "encoder_type", self._init_kwargs["model"]["encoder_type"]
@@ -160,6 +162,8 @@ class ContextualizedBayesianNetworks(ContextualizedNetworks):
                 "link_fn": self.constructor_kwargs["encoder_kwargs"]["link_fn"],
             },
         }
+        
+        # Archetype-specific parameters
         archetype_dag_loss_type = kwargs.pop("archetype_dag_loss_type", DEFAULT_DAG_LOSS_TYPE)
         self._init_kwargs["model"]["archetype_loss_params"] = {
             "l1": kwargs.get("archetype_l1", 0.0),
@@ -169,7 +173,7 @@ class ContextualizedBayesianNetworks(ContextualizedNetworks):
                     "loss_type": archetype_dag_loss_type,
                     "params": kwargs.get(
                         "archetype_dag_loss_params",
-                        DEFAULT_DAG_LOSS_PARAMS[archetype_dag_loss_type],
+                        DEFAULT_DAG_LOSS_PARAMS[archetype_dag_loss_type].copy(),
                     ),
                 },
             ),
@@ -178,9 +182,11 @@ class ContextualizedBayesianNetworks(ContextualizedNetworks):
             "factor_mat_l1": kwargs.pop("factor_mat_l1", 0),
             "num_archetypes": kwargs.pop("num_archetypes", 16),
         }
+
         if self._init_kwargs["model"]["archetype_loss_params"]["num_archetypes"] <= 0:
             print("WARNING: num_archetypes is 0. NOTMAD requires archetypes. Setting num_archetypes to 16.")
             self._init_kwargs["model"]["archetype_loss_params"]["num_archetypes"] = 16
+        
         # Possibly update values with convenience parameters
         for param, value in self._init_kwargs["model"]["archetype_loss_params"]["dag"][
             "params"
@@ -191,6 +197,8 @@ class ContextualizedBayesianNetworks(ContextualizedNetworks):
         sample_specific_dag_loss_type = kwargs.pop(
             "sample_specific_dag_loss_type", DEFAULT_DAG_LOSS_TYPE
         )
+
+        # Sample-specific parameters
         self._init_kwargs["model"]["sample_specific_loss_params"] = {
             "l1": kwargs.pop("sample_specific_l1", 0.0),
             "dag": kwargs.pop(
@@ -199,11 +207,12 @@ class ContextualizedBayesianNetworks(ContextualizedNetworks):
                     "loss_type": sample_specific_dag_loss_type,
                     "params": kwargs.pop(
                         "sample_specific_dag_loss_params",
-                        DEFAULT_DAG_LOSS_PARAMS[sample_specific_dag_loss_type],
+                        DEFAULT_DAG_LOSS_PARAMS[sample_specific_dag_loss_type].copy(),
                     ),
                 },
             ),
         }
+        
         # Possibly update values with convenience parameters
         for param, value in self._init_kwargs["model"]["sample_specific_loss_params"]["dag"][
             "params"
@@ -212,10 +221,12 @@ class ContextualizedBayesianNetworks(ContextualizedNetworks):
                 param
             ] = kwargs.pop(f"sample_specific_{param}", value)
 
+        # Optimization parameters
         self._init_kwargs["model"]["opt_params"] = {
             "learning_rate": kwargs.pop("learning_rate", 1e-3),
             "step": kwargs.pop("step", 50),
         }
+        
         return [
             "archetype_dag_loss_type",
             "archetype_l1",
@@ -223,12 +234,21 @@ class ContextualizedBayesianNetworks(ContextualizedNetworks):
             "archetype_dag_loss_params",
             "archetype_dag_loss_type",
             "archetype_alpha",
+            "archetype_rho",
+            "archetype_s",
+            "archetype_tol",
+            "archetype_loss_params",
+            "archetype_use_dynamic_alpha_rho",
             "init_mat",
             "num_factors",
             "factor_mat_l1",
-            "archetype_loss_params",
             "sample_specific_dag_loss_type",
-            "sample_specific_alpha"
+            "sample_specific_alpha",
+            "sample_specific_rho",
+            "sample_specific_s",
+            "sample_specific_tol",
+            "sample_specific_loss_params",
+            "sample_specific_use_dynamic_alpha_rho",
         ]
 
     def __init__(self, **kwargs):
