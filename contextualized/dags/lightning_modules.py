@@ -191,6 +191,8 @@ class NOTMAD(pl.LightningModule):
             self.factor_softmax = nn.Softmax(
                 dim=0
             )  # Sums to one along the latent factor axis, so each feature should only be projected to a single factor.
+        
+        self.training_step_outputs = []
 
     def forward(self, context):
         subtype = self.encoder(context)
@@ -282,6 +284,7 @@ class NOTMAD(pl.LightningModule):
                 "train_batch_idx": batch_idx,
             }
         )
+        self.training_step_outputs.append(ret)
         return ret
 
     def test_step(self, batch, batch_idx):
@@ -382,7 +385,8 @@ class NOTMAD(pl.LightningModule):
                 print("Error, couldn't project to dag. Returning normal predictions.")
         return trim_params(w_preds, thresh=kwargs.get("threshold", 0.0))
 
-    def training_epoch_end(self, training_step_outputs, logs=None):
+    def on_train_epoch_end(self, logs=None):
+        training_step_outputs = self.training_step_outputs
         # update alpha/rho based on average end-of-epoch dag loss
         epoch_samples = sum(
             [len(ret["train_batch"][0]) for ret in training_step_outputs]
@@ -402,6 +406,7 @@ class NOTMAD(pl.LightningModule):
         self.arch_dag_params = self._maybe_update_alpha_rho(
             epoch_dag_loss, self.arch_dag_params
         )
+        self.training_step_outputs.clear()  # free memory
 
     def _maybe_update_alpha_rho(self, epoch_dag_loss, dag_params):
         """
