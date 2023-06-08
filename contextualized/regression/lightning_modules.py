@@ -145,8 +145,8 @@ class ContextualizedRegressionBase(pl.LightningModule):
             mu = torch.zeros_like(mu)
         if self.base_param_predictor is not None:
             base_beta, base_mu = self.base_param_predictor.predict_params(*args)
-            beta = beta + base_beta
-            mu = mu + base_mu
+            beta = beta + base_beta.to(beta.device)
+            mu = mu + base_mu.to(mu.device)
         return beta, mu
 
     def configure_optimizers(self):
@@ -210,7 +210,8 @@ class ContextualizedRegressionBase(pl.LightningModule):
         """
         Y = self._predict_from_models(X, beta_hat, mu_hat)
         if self.base_y_predictor is not None:
-            Y = Y + self.base_y_predictor.predict_y(C, X)
+            Y_base = self.base_y_predictor.predict_y(C, X)
+            Y = Y + Y_base.to(Y.device)
         return Y
 
     def _dataloader(self, C, X, Y, dataset_constructor, **kwargs):
