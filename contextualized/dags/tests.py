@@ -122,13 +122,21 @@ class TestNOTMAD(unittest.TestCase):
         val_dataloader = model.dataloader(
             self.C_val, self.X_val, batch_size=10, num_workers=1
         )
-        trainer = GraphTrainer(max_epochs=n_epochs, deterministic=True, enable_progress_bar=False)
-        predict_trainer = GraphTrainer(deterministic=True, enable_progress_bar=False, devices=1)
+        trainer = GraphTrainer(
+            max_epochs=n_epochs, deterministic=True, enable_progress_bar=False
+        )
+        predict_trainer = GraphTrainer(
+            deterministic=True, enable_progress_bar=False, devices=1
+        )
         preds_train = predict_trainer.predict_params(
             model, train_dataloader, project_to_dag=True
         )
-        preds_test = predict_trainer.predict_params(model, test_dataloader, project_to_dag=True)
-        preds_val = predict_trainer.predict_params(model, val_dataloader, project_to_dag=True)
+        preds_test = predict_trainer.predict_params(
+            model, test_dataloader, project_to_dag=True
+        )
+        preds_val = predict_trainer.predict_params(
+            model, val_dataloader, project_to_dag=True
+        )
         init_train_l2, init_test_l2, init_val_l2, init_train_mse, _, _ = self._evaluate(
             preds_train, preds_test, preds_val
         )
@@ -140,8 +148,12 @@ class TestNOTMAD(unittest.TestCase):
         preds_train = predict_trainer.predict_params(
             model, train_dataloader, project_to_dag=True
         )
-        preds_test = predict_trainer.predict_params(model, test_dataloader, project_to_dag=True)
-        preds_val = predict_trainer.predict_params(model, val_dataloader, project_to_dag=True)
+        preds_test = predict_trainer.predict_params(
+            model, test_dataloader, project_to_dag=True
+        )
+        preds_val = predict_trainer.predict_params(
+            model, val_dataloader, project_to_dag=True
+        )
 
         return (
             preds_train,

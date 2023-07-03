@@ -119,8 +119,9 @@ class NOTMAD(pl.LightningModule):
         # dataset params
         self.context_dim = context_dim
         self.x_dim = x_dim
-        self.num_archetypes = archetype_loss_params.get("num_archetypes",
-                                                   DEFAULT_ARCH_PARAMS["num_archetypes"])
+        self.num_archetypes = archetype_loss_params.get(
+            "num_archetypes", DEFAULT_ARCH_PARAMS["num_archetypes"]
+        )
         num_factors = archetype_loss_params.pop("num_factors", 0)
         if 0 < num_factors < self.x_dim:
             self.latent_dim = num_factors
@@ -182,16 +183,14 @@ class NOTMAD(pl.LightningModule):
             self._mask(self.explainer.get_archetypes())
         )  # intialize archetypes with 0 diagonal
         if self.latent_dim != self.x_dim:
-            factor_mat_init = (
-                torch.rand([self.latent_dim, self.x_dim]) * 2e-2 - 1e-2
-            )
+            factor_mat_init = torch.rand([self.latent_dim, self.x_dim]) * 2e-2 - 1e-2
             self.factor_mat_raw = nn.parameter.Parameter(
                 factor_mat_init, requires_grad=True
             )
             self.factor_softmax = nn.Softmax(
                 dim=0
             )  # Sums to one along the latent factor axis, so each feature should only be projected to a single factor.
-        
+
         self.training_step_outputs = []
 
     def forward(self, context):
@@ -253,7 +252,7 @@ class NOTMAD(pl.LightningModule):
                 dag_term.detach(),
                 arch_l1_term.detach(),
                 arch_dag_term.detach(),
-                0.0
+                0.0,
             )
 
     def training_step(self, batch, batch_idx):
@@ -322,9 +321,7 @@ class NOTMAD(pl.LightningModule):
         # ignore archetype loss, use constant alpha/rho upper bound for validation
         dag_term = self.ss_dag_loss(w_pred, **self.val_dag_loss_params).mean()
         if self.latent_dim < self.x_dim:
-            factor_mat_term = l1_loss(
-                self.factor_mat_raw, self.factor_mat_l1
-            )
+            factor_mat_term = l1_loss(self.factor_mat_raw, self.factor_mat_l1)
             loss = mse_term + l1_term + dag_term + factor_mat_term
             ret = {
                 "val_loss": loss,
@@ -340,7 +337,7 @@ class NOTMAD(pl.LightningModule):
                 "val_mse_loss": mse_term,
                 "val_l1_loss": l1_term,
                 "val_dag_loss": dag_term,
-                "val_factor_l1_loss": 0.,
+                "val_factor_l1_loss": 0.0,
             }
         self.log_dict(ret)
         return ret
@@ -357,8 +354,9 @@ class NOTMAD(pl.LightningModule):
         """
         P_sums = self._factor_mat().sum(axis=1)
         w_preds = np.tensordot(
-            w_preds, (self._factor_mat().T.detach().numpy() / P_sums.detach().numpy()).T,
-            axes=1
+            w_preds,
+            (self._factor_mat().T.detach().numpy() / P_sums.detach().numpy()).T,
+            axes=1,
         )  # n x latent x x_dims
         w_preds = np.swapaxes(w_preds, 1, 2)  # n x x_dims x latent
         w_preds = np.tensordot(
@@ -410,7 +408,7 @@ class NOTMAD(pl.LightningModule):
 
     def _maybe_update_alpha_rho(self, epoch_dag_loss, dag_params):
         """
-            Update alpha/rho use_dynamic_alpha_rho is True.
+        Update alpha/rho use_dynamic_alpha_rho is True.
         """
         if (
             dag_params.get("use_dynamic_alpha_rho", False)
