@@ -51,7 +51,7 @@ class TestNOTMAD(unittest.TestCase):
         W = np.zeros((4, 4, n, 1))
         W[0, 1] = C - 2
         W[2, 1] = 2 * C
-        W[3, 1] = -C
+        W[3, 1] = C**2
         W[3, 2] = C
         W = np.squeeze(W)
 
@@ -122,7 +122,7 @@ class TestNOTMAD(unittest.TestCase):
         val_dataloader = model.dataloader(
             self.C_val, self.X_val, batch_size=10, num_workers=1
         )
-        trainer = GraphTrainer(max_epochs=n_epochs, deterministic=True, enable_progress_bar=False, callbacks=[LearningRateFinder()])
+        trainer = GraphTrainer(max_epochs=n_epochs, deterministic=True, enable_progress_bar=False)
         predict_trainer = GraphTrainer(deterministic=True, enable_progress_bar=False, devices=1)
         preds_train = predict_trainer.predict_params(
             model, train_dataloader, project_to_dag=True
