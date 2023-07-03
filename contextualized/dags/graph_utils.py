@@ -2,6 +2,7 @@ import torch
 import igraph as ig
 import numpy as np
 
+
 def dag_pred_with_factors(X, W, P):
     """
     Pass observation X through a linear SEM low-dim network W with factors P.
@@ -9,12 +10,8 @@ def dag_pred_with_factors(X, W, P):
     # For linear SEM with P factors, X is [n, P], W is [P, P], P is [d, P]:
     # X = XP^TWP/||P||_1
     # where the final normalization is performed over the rows of P.
-    return torch.matmul(
-        torch.matmul(
-            torch.matmul(X, P.T),
-                W),
-            (P.T / P.sum(axis=1)).T
-        )
+    return torch.matmul(torch.matmul(torch.matmul(X, P.T), W), (P.T / P.sum(axis=1)).T)
+
 
 dag_pred = lambda X, W: torch.matmul(X.unsqueeze(1), W).squeeze(1)
 dag_pred_np = lambda x, w: np.matmul(x[:, np.newaxis, :], w).squeeze()
