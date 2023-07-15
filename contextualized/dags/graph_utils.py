@@ -88,6 +88,45 @@ def simulate_linear_sem(W, n_samples, sem_type, noise_scale=None):
         X[:, j] = _simulate_single_equation(X[:, parents], W[parents, j], scale_vec[j])
     return X
 
+def is_dag(W):
+    G = ig.Graph.Weighted_Adjacency(W.tolist())
+    return G.is_dag()
+
+
+def trim_params(w, thresh=0.2):
+    return w * (np.abs(w) > thresh)
+
+
+def project_to_dag_torch(w, thresh=0.0):
+    """
+    Project a weight matrix to the closest DAG in Frobenius norm.
+    """
+
+    if is_dag(w):
+        return w
+
+    w_dag = w.copy()
+    # Easy case first: remove diagnoal entries.
+    w_dag *= 1 - np.eye(w.shape[0])
+
+    # First, remove edges with weights smaller than the thresh.
+    w_dag = trim_params(w_dag, thresh)
+
+    # Sort nodes by magnitude of edges pointing out.
+    order = np.argsort(np.abs(w_dag).sum(axis=1))[::-1]
+
+    # Re-order
+    w_dag = w_dag[order, :][:, order]
+
+    # Keep only forward edges (i.e. upper triangular part).
+    w_dag = np.triu(w_dag)
+
+    # Return to original order
+    w_dag = w_dag[np.argsort(order), :][:, np.argsort(order)]
+
+    assert is_dag(w_dag)
+    return w_dag
+
 
 def break_symmetry(w):
     for i in range(w.shape[0]):
@@ -101,7 +140,7 @@ def break_symmetry(w):
 
 
 # w is the weighted adjacency matrix
-def project_to_dag_torch(w):
+def project_to_dag_search(w):
     if is_dag(w):
         return w, 0.0
 
@@ -152,13 +191,4 @@ def project_to_dag_torch(w):
             w_dag[i][j] = 0.0
 
     assert is_dag(w_dag)
-    return w_dag, thresh
-
-
-def is_dag(W):
-    G = ig.Graph.Weighted_Adjacency(W.tolist())
-    return G.is_dag()
-
-
-def trim_params(w, thresh=0.2):
-    return w * (np.abs(w) > thresh)
+    return w_dag
