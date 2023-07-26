@@ -84,71 +84,116 @@ def plot_effect(x_vals, y_means, y_lowers=None, y_uppers=None, **kwargs):
         )
 
 
-def plot_homogeneous_context_effects(
-    model,
-    C,
-    **kwargs,
-):
+def get_homogeneous_context_effects(model, C, **kwargs):
     """
-    Plot the homogeneous (context-invariant) effects of context.
+    Get the homogeneous (context-invariant) effects of context.
     :param model:
     :param C:
+
+    returns:
+        c_vis: the context values that were used to estimate the effects
+        effects: np array of effects, one for each context. Each homogeneous effect is a matrix of shape:
+            (n_bootstraps, n_context_vals, n_outcomes).
     """
     if kwargs.get("verbose", True):
         print("Estimating Homogeneous Contextual Effects.")
-        if kwargs.get("classification", True):
-            print(
-                """Assuming classification and exponentiating odds ratios.
-            If this is wrong, use classification=False parameter."""
-            )
-    if kwargs.get("C_vis", None) is None:
-        if kwargs.get("verbose", True):
-            print(
-                """Generating visualizing datapoints by assuming the encoder is
-            an additive model and thus doesn't require sampling on a manifold.
-            If the encoder has interactions, please supply C_vis so that we
-            can visualize these effects on the correct data manifold."""
-            )
-        c_vis = make_c_vis(C, kwargs.get("n_vis", 1000))
+    c_vis = maybe_make_c_vis(C, **kwargs)
 
+    effects = []
     for j in range(C.shape[1]):
         c_j = np.zeros_like(c_vis)
         c_j[:, j] = c_vis[:, j]
         try:
-            (_, mus) = model.predict_params(c_j, individual_preds=True)
-            mus = np.squeeze(mus)
-            means = np.mean(mus, axis=0)  # Homogeneous Effects
-            lowers = np.percentile(mus, kwargs.get("lower_pct", 2.5), axis=0)
-            uppers = np.percentile(mus, kwargs.get("upper_pct", 97.5), axis=0)
+            (_, mus) = model.predict_params(
+                c_j, individual_preds=kwargs.get("individual_preds", True)
+            )
         except ValueError:
             (_, mus) = model.predict_params(c_j)
-            means = np.squeeze(mus)  # Homogeneous Effects
-            lowers, uppers = None, None
+        effects.append(mus)
+    return c_vis, np.array(effects)
 
-        if "C_encoders" in kwargs:
-            encoder = kwargs["C_encoders"][j]
-        else:
-            encoder = None
-        if "C_means" in kwargs:
-            c_means = kwargs["C_means"][j]
-        else:
-            c_means = None
-        if "C_stds" in kwargs:
-            c_stds = kwargs["C_stds"][j]
-        else:
-            c_stds = None
-        plot_effect(
-            c_j[:, j],
-            means,
-            lowers,
-            uppers,
-            should_exponentiate=kwargs.get("classification", True),
-            x_encoder=encoder,
-            x_means=c_means,
-            x_stds=c_stds,
-            xlabel=C.columns.tolist()[j],
-            **kwargs,
+
+def get_homogeneous_predictor_effects(model, C, **kwargs):
+    """
+    Get the homogeneous (context-invariant) effects of predictors.
+    :param model:
+    :param C:
+
+    returns:
+        c_vis: the context values that were used to estimate the effects
+        effects: np array of effects, one for each predictor. Each homogeneous effect is a matrix of shape:
+            (n_bootstraps, n_outcomes).
+
+    """
+    if kwargs.get("verbose", True):
+        print("Estimating Homogeneous Predictor Effects.")
+    c_vis = maybe_make_c_vis(C, **kwargs)
+    c_idx = 0
+    try:
+        (betas, _) = model.predict_params(
+            c_vis, individual_preds=kwargs.get("individual_preds", True)
         )
+        # bootstraps x C_vis x outcomes x predictors
+        if len(betas.shape) == 4:
+            c_idx = 1
+    except ValueError:
+        (betas, _) = model.predict_params(c_vis)
+    betas = np.mean(
+        betas, axis=c_idx
+    )  # homogeneous predictor effect is context-invariant
+    return c_vis, np.transpose(betas, (2, 0, 1))
+
+
+def get_heterogeneous_predictor_effects(model, C, **kwargs):
+    """
+    Get the heterogeneous (context-variant) effects of predictors.
+    :param model:
+    :param C:
+
+    returns:
+        c_vis: the context values that were used to estimate the effects
+        effects: np array of effects, one for each context x predictor pair.
+            Each heterogeneous effect is a matrix of shape:
+                (n_predictors, n_bootstraps, n_context_vals, n_outcomes).
+    """
+    if kwargs.get("verbose", True):
+        print("Estimating Heterogeneous Predictor Effects.")
+    c_vis = maybe_make_c_vis(C, **kwargs)
+
+    effects = []
+    for j in range(C.shape[1]):
+        c_j = np.zeros_like(c_vis)
+        c_j[:, j] = c_vis[:, j]
+        c_idx = 0
+        try:
+            (betas, _) = model.predict_params(
+                c_j, individual_preds=kwargs.get("individual_preds", True)
+            )
+            # bootstraps x C_vis x outcomes x predictors
+            if len(betas.shape) == 4:
+                c_idx = 1
+        except ValueError:
+            (betas, _) = model.predict_params(c_j)
+        # Heterogeneous Effects are mean-centered wrt C
+        effect = np.transpose(
+            np.transpose(betas, (0, 2, 3, 1))
+            - np.tile(
+                np.expand_dims(np.mean(betas, axis=c_idx), -1),
+                (1, 1, 1, betas.shape[1]),
+            ),
+            (0, 3, 1, 2),
+        )
+        effects.append(effect)
+    effects = np.array(effects)
+    if len(effects.shape) == 5:
+        effects = np.transpose(
+            effects, (0, 4, 1, 2, 3)
+        )  # (n_contexts, n_predictors, n_bootstraps, n_context_vals, n_outcomes)
+    else:
+        effects = np.transpose(
+            effects, (0, 3, 1, 2)
+        )  # (n_contexts, n_predictors, n_context_vals, n_outcomes)
+    return c_vis, effects
 
 
 def plot_boolean_vars(names, y_mean, y_err, **kwargs):
@@ -187,6 +232,56 @@ def plot_boolean_vars(names, y_mean, y_err, **kwargs):
         plt.show()
 
 
+def plot_homogeneous_context_effects(
+    model,
+    C,
+    **kwargs,
+):
+    """
+    Plot the homogeneous (context-invariant) effects of context.
+    :param model:
+    :param C:
+    """
+    c_vis, effects = get_homogeneous_context_effects(model, C, **kwargs)
+    # effects.shape is (n_context, n_bootstraps, n_context_vals, n_outcomes)
+    for outcome in range(effects.shape[-1]):
+        for j in range(effects.shape[0]):
+            try:
+                mus = effects[j, :, :, outcome]
+                means = np.mean(mus, axis=0)
+                lowers = np.percentile(mus, kwargs.get("lower_pct", 2.5), axis=0)
+                uppers = np.percentile(mus, kwargs.get("upper_pct", 97.5), axis=0)
+            except ValueError:
+                mus = effects[j, :, outcome]
+                means = mus  # no bootstraps were provided.
+                lowers, uppers = None, None
+
+            if "C_encoders" in kwargs:
+                encoder = kwargs["C_encoders"][j]
+            else:
+                encoder = None
+            if "C_means" in kwargs:
+                c_means = kwargs["C_means"][j]
+            else:
+                c_means = None
+            if "C_stds" in kwargs:
+                c_stds = kwargs["C_stds"][j]
+            else:
+                c_stds = None
+            plot_effect(
+                c_vis[:, j],
+                means,
+                lowers,
+                uppers,
+                should_exponentiate=kwargs.get("classification", True),
+                x_encoder=encoder,
+                x_means=c_means,
+                x_stds=c_stds,
+                xlabel=C.columns.tolist()[j],
+                **kwargs,
+            )
+
+
 def plot_homogeneous_predictor_effects(
     model,
     C,
@@ -203,7 +298,7 @@ def plot_homogeneous_predictor_effects(
     x_vis = make_grid_mat(X.values, 1000)
     (betas, _) = model.predict_params(
         c_vis, individual_preds=True
-    )  # boostraps x C_vis x outcomes x predictors
+    )  # bootstraps x C_vis x outcomes x predictors
     homogeneous_betas = np.mean(betas, axis=1)  # bootstraps x outcomes x predictors
     for outcome in range(homogeneous_betas.shape[1]):
         betas = homogeneous_betas[:, outcome, :]  # bootstraps x predictors
@@ -225,7 +320,6 @@ def plot_homogeneous_predictor_effects(
                 [np.max(uppers[j]) - max_impacts[j] for j in boolean_vars],
                 **kwargs,
             )
-
         for j in effects_by_desc_impact:
             if j in boolean_vars:
                 continue
@@ -275,8 +369,8 @@ def plot_heterogeneous_predictor_effects(model, C, X, **kwargs):
     :param max_classes_for_discrete:  (Default value = 10)
 
     """
-    n_vis = kwargs.get("n_vis", 1000)
-    c_vis = make_c_vis(C, n_vis)
+    c_vis = maybe_make_c_vis(C, **kwargs)
+    n_vis = c_vis.shape[0]
     # c_names = C.columns.tolist()
     for j in range(C.shape[1]):
         c_j = c_vis.copy()
@@ -337,6 +431,8 @@ def make_grid_mat(observation_mat, n_vis):
     :param observation_mat: defines the domain for each feature.
     :param n_vis:
 
+    returns a matrix of n_vis x n_features that can be used to visualize the effects of the features.
+
     """
     ar_vis = np.zeros((n_vis, observation_mat.shape[1]))
     for j in range(observation_mat.shape[1]):
@@ -352,5 +448,29 @@ def make_c_vis(C, n_vis):
     :param C:
     :param n_vis:
 
+    returns a matrix of n_vis x n_contexts that can be used to visualize the effects of the context variables.
+
     """
     return make_grid_mat(C.values, n_vis)
+
+
+def maybe_make_c_vis(C, **kwargs):
+    """
+
+    :param C:
+    :param n_vis:
+
+    returns a matrix of n_vis x n_contexts that can be used to visualize the effects of the context variables.
+    if C_vis is supplied, then we use that instead.
+
+    """
+    if kwargs.get("C_vis", None) is None:
+        if kwargs.get("verbose", True):
+            print(
+                """Generating datapoints for visualization by assuming the encoder is
+            an additive model and thus doesn't require sampling on a manifold.
+            If the encoder has interactions, please supply C_vis so that we
+            can visualize these effects on the correct data manifold."""
+            )
+        return make_c_vis(C, kwargs.get("n_vis", 1000))
+    return kwargs["C_vis"]

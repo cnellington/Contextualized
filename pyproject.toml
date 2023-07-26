@@ -1,0 +1,43 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "contextualized-ml"
+version = "0.2.6"
+authors = [
+  { name="Caleb Ellington", email="cellingt@cs.cmu.edu" },
+  { name="Ben Lengerich", email="blengeri@mit.edu" },
+]
+description = "A statistical machine learning toolbox for estimating models, distributions, and functions with sample-specific parameters."
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: OS Independent",
+]
+keywords = [
+    "contextual modeling",
+    "machine learning",
+    "graphical models",
+    "meta-learning",
+    "multitask learning",
+]
+dependencies = [
+    'pytorch-lightning<=1.9.4',
+    'torch<=1.13.1',
+    'torchvision',
+    'numpy',
+    'scikit-learn',
+    'igraph',
+    'dill',
+    'matplotlib',
+]
+
+[tool.setuptools.packages]
+find = {}  # Scanning implicit namespaces is active by default
+
+[project.urls]
+"Homepage" = "https://contextualized.ml/"
+"Source" = "https://github.com/cnellington/Contextualized/"

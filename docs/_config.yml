@@ -3,7 +3,7 @@
 
 title: Contextualized.ML Documentation
 author: Contextualized.ML Team
-copyright: "2022"
+copyright: "2023"
 logo: logo.png
 
 baseurl: "/docs"
@@ -13,6 +13,7 @@ url: "https://contextualized.ml"
 # See https://jupyterbook.org/content/execute.html
 execute:
   execute_notebooks: force
+  timeout: 300
 
 only_build_toc_files: true
 

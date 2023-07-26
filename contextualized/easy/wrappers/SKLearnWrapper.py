@@ -1,4 +1,6 @@
-"""An sklearn-like wrapper for Contextualized models."""
+"""
+An sklearn-like wrapper for Contextualized models.
+"""
 import copy
 import os
 import numpy as np
@@ -10,29 +12,47 @@ import torch
 from contextualized.functions import LINK_FUNCTIONS
 from contextualized.regression import REGULARIZERS, LOSSES
 
+DEFAULT_LEARNING_RATE = 1e-3
+DEFAULT_N_BOOTSTRAPS = 1
+DEFAULT_ES_PATIENCE = 1
+DEFAULT_VAL_BATCH_SIZE = 16
+DEFAULT_TRAIN_BATCH_SIZE = 1
+DEFAULT_TEST_BATCH_SIZE = 16
+DEFAULT_VAL_SPLIT = 0.2
+DEFAULT_ENCODER_TYPE = "mlp"
+DEFAULT_ENCODER_WIDTH = 25
+DEFAULT_ENCODER_LAYERS = 3
+DEFAULT_ENCODER_LINK_FN = LINK_FUNCTIONS["identity"]
+
 
 class SKLearnWrapper:
-    """An sklearn-like wrapper for Contextualized models."""
+    """
+    An sklearn-like wrapper for Contextualized models.
+    """
+
+    def _set_defaults(self):
+        self.default_learning_rate = DEFAULT_LEARNING_RATE
+        self.default_n_bootstraps = DEFAULT_N_BOOTSTRAPS
+        self.default_es_patience = DEFAULT_ES_PATIENCE
+        self.default_train_batch_size = DEFAULT_TRAIN_BATCH_SIZE
+        self.default_test_batch_size = DEFAULT_TEST_BATCH_SIZE
+        self.default_val_batch_size = DEFAULT_VAL_BATCH_SIZE
+        self.default_val_split = DEFAULT_VAL_SPLIT
+        self.default_encoder_width = DEFAULT_ENCODER_WIDTH
+        self.default_encoder_layers = DEFAULT_ENCODER_LAYERS
+        self.default_encoder_link_fn = DEFAULT_ENCODER_LINK_FN
+        self.default_encoder_type = DEFAULT_ENCODER_TYPE
 
     def __init__(
-        self,
-        base_constructor,
-        extra_model_kwargs,
-        extra_data_kwargs,
-        trainer_constructor,
-        **kwargs,
+            self,
+            base_constructor,
+            extra_model_kwargs,
+            extra_data_kwargs,
+            trainer_constructor,
+            **kwargs,
     ):
+        self._set_defaults()
         self.base_constructor = base_constructor
-        self.default_learning_rate = 1e-3
-        self.default_n_bootstraps = 1
-        self.default_es_patience = 1
-        self.default_val_batch_size = 16
-        self.default_train_batch_size = 1
-        self.default_test_batch_size = 16
-        self.default_val_split = 0.2
-        self.default_encoder_width = 25
-        self.default_encoder_layers = 3
-        self.default_encoder_link_fn = LINK_FUNCTIONS["identity"]
         self.n_bootstraps = 1
         self.models = None
         self.trainers = None
@@ -40,6 +60,7 @@ class SKLearnWrapper:
         self.context_dim = None
         self.x_dim = None
         self.y_dim = None
+        self.trainer_constructor = trainer_constructor
         self.accelerator = "gpu" if torch.cuda.is_available() else "cpu"
         self.acceptable_kwargs = {
             "data": [
@@ -83,12 +104,11 @@ class SKLearnWrapper:
         self._update_acceptable_kwargs("model", extra_model_kwargs)
         self._update_acceptable_kwargs("data", extra_data_kwargs)
         self._update_acceptable_kwargs(
-            "model", kwargs.get("remove_model_kwargs", []), extra=False
+            "model", kwargs.pop("remove_model_kwargs", []), acceptable=False
         )
         self._update_acceptable_kwargs(
-            "data", kwargs.get("remove_data_kwargs", []), extra=False
+            "data", kwargs.pop("remove_data_kwargs", []), acceptable=False
         )
-        self.constructor_kwargs = self._organize_constructor_kwargs(**kwargs)
         self.convenience_kwargs = [
             "alpha",
             "l1_ratio",
@@ -98,13 +118,14 @@ class SKLearnWrapper:
             "layers",
             "encoder_link_fn",
         ]
-        self.constructor_kwargs["encoder_kwargs"]["width"] = kwargs.get(
+        self.constructor_kwargs = self._organize_constructor_kwargs(**kwargs)
+        self.constructor_kwargs["encoder_kwargs"]["width"] = kwargs.pop(
             "width", self.constructor_kwargs["encoder_kwargs"]["width"]
         )
-        self.constructor_kwargs["encoder_kwargs"]["layers"] = kwargs.get(
+        self.constructor_kwargs["encoder_kwargs"]["layers"] = kwargs.pop(
             "layers", self.constructor_kwargs["encoder_kwargs"]["layers"]
         )
-        self.constructor_kwargs["encoder_kwargs"]["link_fn"] = kwargs.get(
+        self.constructor_kwargs["encoder_kwargs"]["link_fn"] = kwargs.pop(
             "encoder_link_fn",
             self.constructor_kwargs["encoder_kwargs"].get(
                 "link_fn", self.default_encoder_link_fn
@@ -115,22 +136,26 @@ class SKLearnWrapper:
             for k, v in kwargs.items()
             if k not in self.constructor_kwargs and k not in self.convenience_kwargs
         }
+        # Some args will not be ignored by wrapper because sub-class will handle them.
+        #self.private_kwargs = kwargs.pop("private_kwargs", [])
+        #self.private_kwargs.append("private_kwargs")
         # Add Predictor-Specific kwargs for parsing.
-        self._init_kwargs = self._organize_kwargs(**self.not_constructor_kwargs)
-        self.trainer_constructor = trainer_constructor
+        self._init_kwargs, unrecognized_general_kwargs = self._organize_kwargs(**self.not_constructor_kwargs)
         for key, value in self.constructor_kwargs.items():
             self._init_kwargs["model"][key] = value
+        recognized_private_init_kwargs = self._parse_private_init_kwargs(**kwargs)
+        for kwarg in set(unrecognized_general_kwargs) - set(recognized_private_init_kwargs):
+            print(f"Received unknown keyword argument {kwarg}, probably ignoring.")
 
-    def _combine_lists(self, list_1, list_2):
-        """Helper function to combine two lists."""
-        return list(set(list_1).union(set(list_2)))
-
-    def _organize_and_expand_kwargs(self, **kwargs):
-        """Private function to organize kwargs passed to constructor or
+    def _organize_and_expand_fit_kwargs(self, **kwargs):
+        """
+        Private function to organize kwargs passed to constructor or
         fit function.
         """
-        organized_kwargs = self._organize_kwargs(**kwargs)
-
+        organized_kwargs, unrecognized_general_kwargs = self._organize_kwargs(**kwargs)
+        recognized_private_kwargs = self._parse_private_fit_kwargs(**kwargs)
+        for kwarg in set(unrecognized_general_kwargs) - set(recognized_private_kwargs):
+            print(f"Received unknown keyword argument {kwarg}, probably ignoring.")
         # Add kwargs from __init__ to organized_kwargs, keeping more recent kwargs.
         for category, category_kwargs in self._init_kwargs.items():
             for key, value in category_kwargs.items():
@@ -150,8 +175,8 @@ class SKLearnWrapper:
         maybe_add_kwarg("model", "x_dim", self.x_dim)
         maybe_add_kwarg("model", "y_dim", self.y_dim)
         if (
-            "num_archetypes" in organized_kwargs["model"]
-            and organized_kwargs["model"]["num_archetypes"] == 0
+                "num_archetypes" in organized_kwargs["model"]
+                and organized_kwargs["model"]["num_archetypes"] == 0
         ):
             del organized_kwargs["model"]["num_archetypes"]
 
@@ -187,68 +212,48 @@ class SKLearnWrapper:
         maybe_add_kwarg("trainer", "accelerator", self.accelerator)
         return organized_kwargs
 
-    def _split_train_data(self, C, X, Y=None, Y_required=False, **kwargs):
-        train_data, val_data = None, None
-        if "C_val" in kwargs:
-            if "X_val" in kwargs:
-                if Y_required and "Y_val" in kwargs:
-                    train_data = [C, X, Y]
-                    val_data = [kwargs["C_val"], X, kwargs["X_val"], Y, kwargs["Y_val"]]
-                print("Y_val not provided, not using the provided C_val or X_val.")
-            else:
-                print("X_val not provided, not using the provided C_val.")
-        if "val_split" in kwargs:
-            if kwargs["val_split"] > 0 and kwargs["val_split"] < 1:
-                if Y is not None:
-                    C_train, C_val, X_train, X_val, Y_train, Y_val = train_test_split(
-                        C, X, Y, test_size=kwargs["val_split"], shuffle=True
-                    )
-                else:
-                    C_train, C_val, X_train, X_val = train_test_split(
-                        C, X, test_size=kwargs["val_split"], shuffle=True
-                    )
-            else:
-                print(
-                    """val_split {kwargs['val_split']} provided but should be between 0
-                    and 1 to indicate proportion of data to use as validation."""
-                )
-                raise ValueError
-        if Y is not None:
-            C_train, C_val, X_train, X_val, Y_train, Y_val = train_test_split(
-                C, X, Y, test_size=self.default_val_split, shuffle=True
-            )
-        else:
-            C_train, C_val, X_train, X_val = train_test_split(
-                C, X, test_size=self.default_val_split, shuffle=True
-            )
-        if Y is not None:
-            train_data = [C_train, X_train, Y_train]
-            val_data = [C_val, X_val, Y_val]
-        else:
-            train_data = [C_train, X_train]
-            val_data = [C_val, X_val]
-        return train_data, val_data
 
-    def _update_acceptable_kwargs(self, category, new_acceptable_kwargs, extra=True):
-        """Helper function to update the acceptable kwargs."""
-        if extra:
-            self.acceptable_kwargs[category] = self._combine_lists(
-                self.acceptable_kwargs[category], new_acceptable_kwargs
-            )
+    def _parse_private_fit_kwargs(self, **kwargs):
+        """
+        Parse private (model-specific) kwargs passed to fit function.
+        Return the list of parsed kwargs.
+        """
+        return []
+
+    def _parse_private_init_kwargs(self, **kwargs):
+        """
+        Parse private (model-specific) kwargs passed to constructor.
+        Return the list of parsed kwargs.
+        """
+        return []
+
+    def _update_acceptable_kwargs(self, category, new_kwargs, acceptable=True):
+        """
+        Helper function to update the acceptable kwargs.
+        If acceptable=True, the new kwargs will be added to the list of acceptable kwargs.
+        If acceptable=False, the new kwargs will be removed from the list of acceptable kwargs.
+        """
+        if acceptable:
+            self.acceptable_kwargs[category] = list(set(
+                self.acceptable_kwargs[category]).union(set(new_kwargs)))
         else:
             self.acceptable_kwargs[category] = list(
-                set(self.acceptable_kwargs[category]) - set(new_acceptable_kwargs)
+                set(self.acceptable_kwargs[category]) - set(new_kwargs)
             )
 
     def _organize_kwargs(self, **kwargs):
-        """Private helper function to organize kwargs passed to constructor or
+        """
+        Private helper function to organize kwargs passed to constructor or
         fit function.
         Organizes kwargs into data, model, trainer, fit, and wrapper categories.
         """
 
         # Combine default allowed keywords with subclass-specfic
         organized_kwargs = {category: {} for category in self.acceptable_kwargs}
+        unrecognized_kwargs = []
         for kwarg, value in kwargs.items():
+            #if kwarg in self.private_kwargs:
+            #    continue
             not_found = True
             for category, category_kwargs in self.acceptable_kwargs.items():
                 if kwarg in category_kwargs:
@@ -256,36 +261,9 @@ class SKLearnWrapper:
                     not_found = False
                     break
             if not_found:
-                print(f"Received unknown keyword argument {kwarg}, probably ignoring.")
+                unrecognized_kwargs.append(kwarg)
 
-        return organized_kwargs
-
-    def _build_dataloader(self, model, batch_size, *data):
-        """Helper function build a singel dataloder.
-        Expects *args to contain whatever data (C,X,Y) is necessary for this model.
-        """
-        return model.dataloader(*data, batch_size=batch_size)
-
-    def _build_dataloaders(self, model, train_data, val_data, **kwargs):
-        """
-        :param model:
-        :param **kwargs:
-        """
-        train_dataloader = self._build_dataloader(
-            model,
-            kwargs.get("train_batch_size", self.default_train_batch_size),
-            *train_data,
-        )
-        if val_data is None:
-            val_dataloader = None
-        else:
-            val_dataloader = self._build_dataloader(
-                model,
-                kwargs.get("val_batch_size", self.default_val_batch_size),
-                *val_data,
-            )
-
-        return train_dataloader, val_dataloader
+        return organized_kwargs, unrecognized_kwargs
 
     def _organize_constructor_kwargs(self, **kwargs):
         """
@@ -299,7 +277,7 @@ class SKLearnWrapper:
 
         maybe_add_constructor_kwarg("link_fn", LINK_FUNCTIONS["identity"])
         maybe_add_constructor_kwarg("univariate", False)
-        maybe_add_constructor_kwarg("encoder_type", "mlp")
+        maybe_add_constructor_kwarg("encoder_type", self.default_encoder_type)
         maybe_add_constructor_kwarg("loss_fn", LOSSES["mse"])
         maybe_add_constructor_kwarg(
             "encoder_kwargs",
@@ -326,6 +304,69 @@ class SKLearnWrapper:
                 )
         return constructor_kwargs
 
+    def _split_train_data(self, C, X, Y=None, Y_required=False, **kwargs):
+        if "C_val" in kwargs:
+            if "X_val" in kwargs:
+                if Y_required and "Y_val" in kwargs:
+                    train_data = [C, X, Y]
+                    val_data = [kwargs["C_val"], X, kwargs["X_val"], Y, kwargs["Y_val"]]
+                    return train_data, val_data
+                print("Y_val not provided, not using the provided C_val or X_val.")
+            else:
+                print("X_val not provided, not using the provided C_val.")
+        if "val_split" in kwargs:
+            if 0 < kwargs["val_split"] < 1:
+                val_split = kwargs["val_split"]
+            else:
+                print(
+                    """val_split={kwargs['val_split']} provided but should be between 0
+                    and 1 to indicate proportion of data to use as validation."""
+                )
+                raise ValueError
+        else:
+            val_split = self.default_val_split
+        if Y is None:
+            C_train, C_val, X_train, X_val = train_test_split(
+                C, X, test_size=val_split, shuffle=True
+            )
+            train_data = [C_train, X_train]
+            val_data = [C_val, X_val]
+        else:
+            C_train, C_val, X_train, X_val, Y_train, Y_val = train_test_split(
+                C, X, Y, test_size=val_split, shuffle=True
+            )
+            train_data = [C_train, X_train, Y_train]
+            val_data = [C_val, X_val, Y_val]
+        return train_data, val_data
+
+    def _build_dataloader(self, model, batch_size, *data):
+        """
+        Helper function to build a single dataloder.
+        Expects *args to contain whatever data (C,X,Y) is necessary for this model.
+        """
+        return model.dataloader(*data, batch_size=batch_size)
+
+    def _build_dataloaders(self, model, train_data, val_data, **kwargs):
+        """
+        :param model:
+        :param **kwargs:
+        """
+        train_dataloader = self._build_dataloader(
+            model,
+            kwargs.get("train_batch_size", self.default_train_batch_size),
+            *train_data,
+        )
+        if val_data is None:
+            val_dataloader = None
+        else:
+            val_dataloader = self._build_dataloader(
+                model,
+                kwargs.get("val_batch_size", self.default_val_batch_size),
+                *val_data,
+            )
+
+        return train_dataloader, val_dataloader
+
     def predict(self, C, X, individual_preds=False, **kwargs):
         """
         :param C:
@@ -336,7 +377,7 @@ class SKLearnWrapper:
             raise ValueError(
                 "Trying to predict with a model that hasn't been trained yet."
             )
-        preds = np.array(
+        predictions = np.array(
             [
                 self.trainers[i].predict_y(
                     self.models[i],
@@ -347,18 +388,18 @@ class SKLearnWrapper:
             ]
         )
         if individual_preds:
-            return preds
-        return np.mean(preds, axis=0)
+            return predictions
+        return np.mean(predictions, axis=0)
 
     def predict_params(
-        self, C, individual_preds=False, model_includes_mus=True, **kwargs
+            self, C, individual_preds=False, model_includes_mus=True, **kwargs
     ):
         """
         :param C:
         :param individual_preds:  (Default value = False)
         """
         # Returns betas, mus
-        if kwargs.get("uses_y", True):
+        if kwargs.pop("uses_y", True):
             get_dataloader = lambda i: self.models[i].dataloader(
                 C, np.zeros((len(C), self.x_dim)), np.zeros((len(C), self.y_dim))
             )
@@ -366,19 +407,18 @@ class SKLearnWrapper:
             get_dataloader = lambda i: self.models[i].dataloader(
                 C, np.zeros((len(C), self.x_dim))
             )
-            del kwargs["uses_y"]
-        preds = [
+        predictions = [
             self.trainers[i].predict_params(self.models[i], get_dataloader(i), **kwargs)
             for i in range(len(self.models))
         ]
         if model_includes_mus:
-            betas = np.array([p[0] for p in preds])
-            mus = np.array([p[1] for p in preds])
+            betas = np.array([p[0] for p in predictions])
+            mus = np.array([p[1] for p in predictions])
             if individual_preds:
                 return betas, mus
             else:
                 return np.mean(betas, axis=0), np.mean(mus, axis=0)
-        betas = np.array(preds)
+        betas = np.array(predictions)
         if not individual_preds:
             return np.mean(betas, axis=0)
         return betas
@@ -400,13 +440,13 @@ class SKLearnWrapper:
             Y = args[2]
             if kwargs.get("Y", None) is not None:
                 Y = kwargs.get("Y")
-            if len(Y.shape) == 1: # add feature dimension to Y if not given.
+            if len(Y.shape) == 1:  # add feature dimension to Y if not given.
                 Y = np.expand_dims(Y, 1)
             self.y_dim = Y.shape[-1]
             args = (args[0], args[1], Y)
         else:
-            self.y_dim = X.shape[-1]
-        organized_kwargs = self._organize_and_expand_kwargs(**kwargs)
+            self.y_dim = self.x_dim
+        organized_kwargs = self._organize_and_expand_fit_kwargs(**kwargs)
         self.n_bootstraps = organized_kwargs["wrapper"].get(
             "n_bootstraps", self.n_bootstraps
         )
@@ -429,7 +469,7 @@ class SKLearnWrapper:
                 for f in organized_kwargs["trainer"]["callback_constructors"]
             ]
             del my_trainer_kwargs["callback_constructors"]
-            trainer = self.trainer_constructor(**my_trainer_kwargs)
+            trainer = self.trainer_constructor(**my_trainer_kwargs, enable_progress_bar=False)
             checkpoint_callback = my_trainer_kwargs["callbacks"][1]
             os.makedirs(checkpoint_callback.dirpath, exist_ok=True)
             try:
