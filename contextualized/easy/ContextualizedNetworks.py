@@ -12,6 +12,7 @@ from contextualized.regression.lightning_modules import (
 )
 from contextualized.dags.lightning_modules import NOTMAD, DEFAULT_DAG_LOSS_TYPE, DEFAULT_DAG_LOSS_PARAMS
 from contextualized.dags.trainers import GraphTrainer
+from contextualized.dags.graph_utils import dag_pred_np
 
 
 class ContextualizedNetworks(SKLearnWrapper):
@@ -305,17 +306,8 @@ class ContextualizedBayesianNetworks(ContextualizedNetworks):
         betas = self.predict_networks(C, individual_preds=True)
         mses = np.zeros((len(betas), len(C)))  # n_bootstraps x n_samples
         for bootstrap in range(len(betas)):
-            for i in range(X.shape[-1]):
-                # betas are n_boostraps x n_samples x n_features x n_features
-                # preds[bootstrap, sample, i] = X[sample, :].dot(betas[bootstrap, sample, i, :])
-                preds = np.array(
-                    [
-                        X[j].dot(betas[bootstrap, j, i, :])  # + mus[bootstrap, j, i]
-                        for j in range(len(X))
-                    ]
-                )
-                residuals = X[:, i] - preds
-                mses[bootstrap, :] += residuals**2 / (X.shape[-1])
+            X_pred = dag_pred_np(X, betas[bootstrap])
+            mses[bootstrap, :] = np.mean((X - X_pred) ** 2, axis=1)
         if not individual_preds:
             mses = np.mean(mses, axis=0)
         return mses
