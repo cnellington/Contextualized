@@ -23,4 +23,5 @@ parts:
         - file: demos/easy_bayesian_networks
         - file: demos/easy_bayesian_networks_factors
     - file: demos/custom_models
+    - file: demos/robust-outliers
 
