@@ -451,6 +451,8 @@ def make_c_vis(C, n_vis):
     returns a matrix of n_vis x n_contexts that can be used to visualize the effects of the context variables.
 
     """
+    if isinstance(C, np.ndarray):
+        return make_grid_mat(C, n_vis)
     return make_grid_mat(C.values, n_vis)
 
 
