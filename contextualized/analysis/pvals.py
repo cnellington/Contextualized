@@ -4,6 +4,7 @@ Analysis tools for generating pvalues from bootstrap replicates.
 """
 
 import numpy as np
+import pandas as pd
 
 from contextualized.analysis.effects import (
     get_homogeneous_context_effects,
@@ -165,3 +166,61 @@ def calc_heterogeneous_predictor_effects_pvals(model, C, **kwargs):
         ]
     )
     return pvals
+
+
+def test_sequential_contexts(model_constructor, C, X, Y, **kwargs):
+    """
+    Sequentially test each feature in C using calc_homogeneous_context_effects_pvals.
+
+    Parameters
+    ----------
+    model_constructor : contextualized.models.Model constructor
+        The model to be tested.
+    C : pandas DataFrame
+        The context data with multiple features.
+    X : pandas DataFrame
+        The input training data.
+    Y : pandas DataFrame
+        The output training data.
+    **kwargs : 
+        Additional arguments for the model constructor.
+
+    Returns
+    -------
+    a pandas dataframe
+        A list of p-values for each feature.
+    """
+
+
+    default_fit_params = {
+        'encoder_type': 'mlp',
+        'max_epochs': 3,
+        'learning_rate': 1e-2
+    }
+    fit_params = {**default_fit_params, **kwargs}
+    pvals_dict = {}
+
+    for context in C.columns:
+        context_col = C[[context]].values
+
+        for predictor in X.columns:
+            predictor_col = X[[predictor]].values
+
+            model = model_constructor(**fit_params)
+            model.fit(context_col, predictor_col, Y.values)
+
+            pvals = calc_homogeneous_context_effects_pvals(model, context_col)[0]
+
+            for count, target in enumerate(Y.columns):
+                pvals_dict["Context"] = pvals_dict.get("Context", [])
+                pvals_dict["Predictor"] = pvals_dict.get("Predictor", [])
+                pvals_dict["Target"] = pvals_dict.get("Target", [])
+                pvals_dict["Pvals"] = pvals_dict.get("Pvals", [])
+
+                pvals_dict["Context"].append(context)
+                pvals_dict["Predictor"].append(predictor)
+                pvals_dict["Target"].append(target)
+                pvals_dict["Pvals"].append(pvals[count])
+
+    return pd.DataFrame.from_dict(pvals_dict)
+
