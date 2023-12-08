@@ -187,8 +187,13 @@ def test_sequential_contexts(model_constructor, C, X, Y, **kwargs):
 
     Returns
     -------
-    a pandas dataframe
-        A list of p-values for each feature.
+    pandas.DataFrame
+        A DataFrame containing p-values for each combination of context, predictor, and target.
+        Columns:
+        - 'Context': The context feature being tested.
+        - 'Predictor': The predictor feature being tested.
+        - 'Target': The target variable for which the effects are analyzed.
+        - 'Pvals': The corresponding p-value for the analyzed effect.
     """
 
 

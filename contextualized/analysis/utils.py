@@ -3,7 +3,6 @@ Miscellaneous utility functions.
 """
 
 import numpy as np
-import pandas as pd
 
 
 def convert_to_one_hot(col):
