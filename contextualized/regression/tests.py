@@ -59,17 +59,21 @@ class TestRegression(unittest.TestCase):
         print(f"\n{type(model)} quicktest")
         if correlation:
             dataloader = model.dataloader(self.C, self.X, batch_size=self.batch_size)
-            trainer = CorrelationTrainer(max_epochs=self.epochs)
+            trainer = CorrelationTrainer(
+                max_epochs=self.epochs, enable_progress_bar=False
+            )
             y_true = np.tile(self.X[:, :, np.newaxis], (1, 1, self.X.shape[-1]))
         elif markov:
             dataloader = model.dataloader(self.C, self.X, batch_size=self.batch_size)
-            trainer = MarkovTrainer(max_epochs=self.epochs)
+            trainer = MarkovTrainer(max_epochs=self.epochs, enable_progress_bar=False)
             y_true = self.X
         else:
             dataloader = model.dataloader(
                 self.C, self.X, self.Y, batch_size=self.batch_size
             )
-            trainer = RegressionTrainer(max_epochs=self.epochs)
+            trainer = RegressionTrainer(
+                max_epochs=self.epochs, enable_progress_bar=False
+            )
             if univariate:
                 y_true = np.tile(self.Y[:, :, np.newaxis], (1, 1, self.X.shape[-1]))
             else:
@@ -317,6 +321,73 @@ class TestRegression(unittest.TestCase):
             base_y_predictor=ybase,
         )
         self._quicktest(model, markov=True)
+
+    def test_neighborhood_subtype(self):
+        """
+        Test Neighborhood Selection.
+        """
+        parambase = DummyParamPredictor((self.x_dim, self.x_dim), (self.x_dim, 1))
+        ybase = DummyYPredictor((self.x_dim, 1))
+        model = ContextualizedNeighborhoodSelection(
+            self.c_dim,
+            self.x_dim,
+            base_param_predictor=parambase,
+            base_y_predictor=ybase,
+        )
+        self._quicktest(model, markov=True)
+
+    def test_metamodel_switch(self):
+        """
+        Test switching between meta-models.
+        """
+        parambase = DummyParamPredictor((self.y_dim, self.x_dim), (self.y_dim, 1))
+        ybase = DummyYPredictor((self.y_dim, 1))
+        model = ContextualizedRegression(
+            self.c_dim,
+            self.x_dim,
+            self.y_dim,
+            metamodel_type="naive",
+            base_param_predictor=parambase,
+            base_y_predictor=ybase,
+        )
+        self._quicktest(model)
+
+        parambase = DummyParamPredictor((self.y_dim, self.x_dim), (self.y_dim, 1))
+        ybase = DummyYPredictor((self.y_dim, 1))
+        model = ContextualizedRegression(
+            self.c_dim,
+            self.x_dim,
+            self.y_dim,
+            metamodel_type="subtype",
+            base_param_predictor=parambase,
+            base_y_predictor=ybase,
+        )
+        self._quicktest(model)
+
+    def test_fit_intercept(self):
+        """
+        Test switching between meta-models.
+        """
+        parambase = DummyParamPredictor((self.y_dim, self.x_dim), (self.y_dim, 1))
+        ybase = DummyYPredictor((self.y_dim, 1))
+        model = ContextualizedRegression(
+            self.c_dim,
+            self.x_dim,
+            self.y_dim,
+            metamodel_type="naive",
+            fit_intercept=False,
+            base_param_predictor=parambase,
+            base_y_predictor=ybase,
+        )
+        dataloader = model.dataloader(
+            self.C, self.X, self.Y, batch_size=self.batch_size
+        )
+        trainer = RegressionTrainer(enable_progress_bar=False)
+        beta_preds, mu_preds = trainer.predict_params(model, dataloader)
+        assert (mu_preds == 0).all()
+        self._quicktest(model)
+        beta_preds, mu_preds = trainer.predict_params(model, dataloader)
+        assert (mu_preds == 0).all()
 
 
 if __name__ == "__main__":

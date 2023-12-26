@@ -263,3 +263,14 @@ class TasksplitMetamodel(nn.Module):
         beta = W[:, :-1]
         mu = W[:, -1:]
         return beta, mu
+
+
+SINGLE_TASK_METAMODELS = {
+    "naive": NaiveMetamodel,
+    "subtype": SubtypeMetamodel,
+}
+
+MULTITASK_METAMODELS = {
+    "multitask": MultitaskMetamodel,
+    "tasksplit": TasksplitMetamodel,
+}

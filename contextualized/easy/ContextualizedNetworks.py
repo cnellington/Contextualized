@@ -10,8 +10,9 @@ from contextualized.regression.lightning_modules import (
     # TasksplitContextualizedCorrelation, # TODO: Incorporate Tasksplit
     ContextualizedMarkovGraph,
 )
-from contextualized.dags.lightning_modules import NOTMAD
+from contextualized.dags.lightning_modules import NOTMAD, DEFAULT_DAG_LOSS_TYPE, DEFAULT_DAG_LOSS_PARAMS
 from contextualized.dags.trainers import GraphTrainer
+from contextualized.dags.graph_utils import dag_pred_np
 
 
 class ContextualizedNetworks(SKLearnWrapper):
@@ -39,7 +40,7 @@ class ContextualizedNetworks(SKLearnWrapper):
 
 
 class ContextualizedCorrelationNetworks(ContextualizedNetworks):
-    """ "
+    """
     Easy interface to Contextualized Correlation Networks.
     """
 
@@ -82,7 +83,7 @@ class ContextualizedCorrelationNetworks(ContextualizedNetworks):
             for j in range(X.shape[-1]):
                 tiled_xi = np.array([X[:, i] for _ in range(len(betas))])
                 tiled_xj = np.array([X[:, j] for _ in range(len(betas))])
-                residuals = tiled_xi - betas[:, :, i, j] * tiled_xj + mus[:, :, i, j]
+                residuals = tiled_xi - betas[:, :, i, j] * tiled_xj - mus[:, :, i, j]
                 mses += residuals**2 / (X.shape[-1] ** 2)
         if not individual_preds:
             mses = np.mean(mses, axis=0)
@@ -90,7 +91,7 @@ class ContextualizedCorrelationNetworks(ContextualizedNetworks):
 
 
 class ContextualizedMarkovNetworks(ContextualizedNetworks):
-    """ "
+    """
     Easy interface to Contextualized Markov Networks.
     """
 
@@ -141,9 +142,115 @@ class ContextualizedBayesianNetworks(ContextualizedNetworks):
     """
     Easy interface to Contextualized Bayesian Networks.
     Uses NOTMAD model.
-    See this paper: https://arxiv.org/abs/2111.01104
+    See this paper:
+    https://arxiv.org/abs/2111.01104
     for more details.
     """
+
+    def _parse_private_init_kwargs(self, **kwargs):
+        """
+            Parses private init kwargs.
+        """
+
+        # Encoder Parameters
+        self._init_kwargs["model"]["encoder_kwargs"] = {
+            "type": kwargs.pop(
+                "encoder_type", self._init_kwargs["model"]["encoder_type"]
+            ),
+            "params": {
+                "width": self.constructor_kwargs["encoder_kwargs"]["width"],
+                "layers": self.constructor_kwargs["encoder_kwargs"]["layers"],
+                "link_fn": self.constructor_kwargs["encoder_kwargs"]["link_fn"],
+            },
+        }
+        
+        # Archetype-specific parameters
+        archetype_dag_loss_type = kwargs.pop("archetype_dag_loss_type", DEFAULT_DAG_LOSS_TYPE)
+        self._init_kwargs["model"]["archetype_loss_params"] = {
+            "l1": kwargs.get("archetype_l1", 0.0),
+            "dag": kwargs.get(
+                "archetype_dag_params",
+                {
+                    "loss_type": archetype_dag_loss_type,
+                    "params": kwargs.get(
+                        "archetype_dag_loss_params",
+                        DEFAULT_DAG_LOSS_PARAMS[archetype_dag_loss_type].copy(),
+                    ),
+                },
+            ),
+            "init_mat": kwargs.pop("init_mat", None),
+            "num_factors": kwargs.pop("num_factors", 0),
+            "factor_mat_l1": kwargs.pop("factor_mat_l1", 0),
+            "num_archetypes": kwargs.pop("num_archetypes", 16),
+        }
+
+        if self._init_kwargs["model"]["archetype_loss_params"]["num_archetypes"] <= 0:
+            print("WARNING: num_archetypes is 0. NOTMAD requires archetypes. Setting num_archetypes to 16.")
+            self._init_kwargs["model"]["archetype_loss_params"]["num_archetypes"] = 16
+        
+        # Possibly update values with convenience parameters
+        for param, value in self._init_kwargs["model"]["archetype_loss_params"]["dag"][
+            "params"
+        ].items():
+            self._init_kwargs["model"]["archetype_loss_params"]["dag"]["params"][
+                param
+            ] = kwargs.pop(f"archetype_{param}", value)
+        sample_specific_dag_loss_type = kwargs.pop(
+            "sample_specific_dag_loss_type", DEFAULT_DAG_LOSS_TYPE
+        )
+
+        # Sample-specific parameters
+        self._init_kwargs["model"]["sample_specific_loss_params"] = {
+            "l1": kwargs.pop("sample_specific_l1", 0.0),
+            "dag": kwargs.pop(
+                "sample_specific_loss_params",
+                {
+                    "loss_type": sample_specific_dag_loss_type,
+                    "params": kwargs.pop(
+                        "sample_specific_dag_loss_params",
+                        DEFAULT_DAG_LOSS_PARAMS[sample_specific_dag_loss_type].copy(),
+                    ),
+                },
+            ),
+        }
+        
+        # Possibly update values with convenience parameters
+        for param, value in self._init_kwargs["model"]["sample_specific_loss_params"]["dag"][
+            "params"
+        ].items():
+            self._init_kwargs["model"]["sample_specific_loss_params"]["dag"]["params"][
+                param
+            ] = kwargs.pop(f"sample_specific_{param}", value)
+
+        # Optimization parameters
+        self._init_kwargs["model"]["opt_params"] = {
+            "learning_rate": kwargs.pop("learning_rate", 1e-3),
+            "step": kwargs.pop("step", 50),
+        }
+        
+        return [
+            "archetype_dag_loss_type",
+            "archetype_l1",
+            "archetype_dag_params",
+            "archetype_dag_loss_params",
+            "archetype_dag_loss_type",
+            "archetype_alpha",
+            "archetype_rho",
+            "archetype_s",
+            "archetype_tol",
+            "archetype_loss_params",
+            "archetype_use_dynamic_alpha_rho",
+            "init_mat",
+            "num_factors",
+            "factor_mat_l1",
+            "sample_specific_dag_loss_type",
+            "sample_specific_alpha",
+            "sample_specific_rho",
+            "sample_specific_s",
+            "sample_specific_tol",
+            "sample_specific_loss_params",
+            "sample_specific_use_dynamic_alpha_rho",
+        ]
 
     def __init__(self, **kwargs):
         super().__init__(
@@ -151,7 +258,7 @@ class ContextualizedBayesianNetworks(ContextualizedNetworks):
             extra_model_kwargs=[
                 "sample_specific_loss_params",
                 "archetype_loss_params",
-                "init_mat",
+                "opt_params",
             ],
             extra_data_kwargs=[],
             trainer_constructor=GraphTrainer,
@@ -174,22 +281,22 @@ class ContextualizedBayesianNetworks(ContextualizedNetworks):
         # Returns betas
         # TODO: No mus for NOTMAD at present.
         return super().predict_params(
-            C,
-            individual_preds=kwargs.get("individual_preds", False),
-            model_includes_mus=False,
-            uses_y=False,
-            project_to_dag=kwargs.get("project_to_dag", True),
+            C, model_includes_mus=False, **kwargs
         )
 
-    def predict_networks(self, C, with_offsets=False, project_to_dag=True, **kwargs):
+    def predict_networks(self, C, **kwargs):
         """
         Predicts context-specific networks.
         """
+        if kwargs.pop("with_offsets", False):
+            print("No offsets can be returned by NOTMAD.")
         betas = self.predict_params(
-            C, uses_y=False, project_to_dag=project_to_dag, **kwargs
+            C,
+            uses_y=False,
+            project_to_dag=kwargs.pop("project_to_dag", True),
+            **kwargs
         )
-        if with_offsets:
-            print("No offsets returned by NOTMAD.")
+
         return betas
 
     def measure_mses(self, C, X, individual_preds=False):
@@ -199,17 +306,8 @@ class ContextualizedBayesianNetworks(ContextualizedNetworks):
         betas = self.predict_networks(C, individual_preds=True)
         mses = np.zeros((len(betas), len(C)))  # n_bootstraps x n_samples
         for bootstrap in range(len(betas)):
-            for i in range(X.shape[-1]):
-                # betas are n_boostraps x n_samples x n_features x n_features
-                # preds[bootstrap, sample, i] = X[sample, :].dot(betas[bootstrap, sample, i, :])
-                preds = np.array(
-                    [
-                        X[j].dot(betas[bootstrap, j, i, :])  # + mus[bootstrap, j, i]
-                        for j in range(len(X))
-                    ]
-                )
-                residuals = X[:, i] - preds
-                mses[bootstrap, :] += residuals**2 / (X.shape[-1])
+            X_pred = dag_pred_np(X, betas[bootstrap])
+            mses[bootstrap, :] = np.mean((X - X_pred) ** 2, axis=1)
         if not individual_preds:
             mses = np.mean(mses, axis=0)
         return mses

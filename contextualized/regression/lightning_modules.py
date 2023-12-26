@@ -27,6 +27,8 @@ from contextualized.regression.metamodels import (
     SubtypeMetamodel,
     MultitaskMetamodel,
     TasksplitMetamodel,
+    SINGLE_TASK_METAMODELS,
+    MULTITASK_METAMODELS,
 )
 from contextualized.regression.datasets import (
     DataIterable,
@@ -46,6 +48,8 @@ class ContextualizedRegressionBase(pl.LightningModule):
         self,
         *args,
         learning_rate=1e-3,
+        metamodel_type="subtype",
+        fit_intercept=True,
         link_fn=LINK_FUNCTIONS["identity"],
         loss_fn=MSE,
         model_regularizer=REGULARIZERS["none"],
@@ -55,6 +59,8 @@ class ContextualizedRegressionBase(pl.LightningModule):
     ):
         super().__init__()
         self.learning_rate = learning_rate
+        self.metamodel_type = metamodel_type
+        self.fit_intercept = fit_intercept
         self.link_fn = link_fn
         self.loss_fn = loss_fn
         self.model_regularizer = model_regularizer
@@ -71,6 +77,8 @@ class ContextualizedRegressionBase(pl.LightningModule):
 
         """
         # builds the metamodel
+        kwargs["univariate"] = False
+        self.metamodel = SINGLE_TASK_METAMODELS[self.metamodel_type](*args, **kwargs)
 
     @abstractmethod
     def dataloader(self, C, X, Y, batch_size=32):
@@ -133,10 +141,12 @@ class ContextualizedRegressionBase(pl.LightningModule):
 
         """
         beta, mu = self.metamodel(*args)
+        if not self.fit_intercept:
+            mu = torch.zeros_like(mu)
         if self.base_param_predictor is not None:
             base_beta, base_mu = self.base_param_predictor.predict_params(*args)
-            beta = beta + base_beta
-            mu = mu + base_mu
+            beta = beta + base_beta.to(beta.device)
+            mu = mu + base_mu.to(mu.device)
         return beta, mu
 
     def configure_optimizers(self):
@@ -200,7 +210,8 @@ class ContextualizedRegressionBase(pl.LightningModule):
         """
         Y = self._predict_from_models(X, beta_hat, mu_hat)
         if self.base_y_predictor is not None:
-            Y = Y + self.base_y_predictor.predict_y(C, X)
+            Y_base = self.base_y_predictor.predict_y(C, X)
+            Y = Y + Y_base.to(Y.device)
         return Y
 
     def _dataloader(self, C, X, Y, dataset_constructor, **kwargs):
@@ -298,7 +309,7 @@ class NaiveContextualizedRegression(ContextualizedRegressionBase):
 
 
 class ContextualizedRegression(ContextualizedRegressionBase):
-    """See SubtypeMetamodel"""
+    """Supports SubtypeMetamodel and NaiveMetamodel, see selected metamodel for docs"""
 
     def _build_metamodel(self, *args, **kwargs):
         """
@@ -308,7 +319,7 @@ class ContextualizedRegression(ContextualizedRegressionBase):
 
         """
         kwargs["univariate"] = False
-        self.metamodel = SubtypeMetamodel(*args, **kwargs)
+        self.metamodel = SINGLE_TASK_METAMODELS[self.metamodel_type](*args, **kwargs)
 
     def _batch_loss(self, batch, batch_idx):
         """
@@ -540,7 +551,7 @@ class TasksplitContextualizedRegression(ContextualizedRegressionBase):
 
 
 class ContextualizedUnivariateRegression(ContextualizedRegression):
-    """See SubtypeMetamodel"""
+    """Supports SubtypeMetamodel and NaiveMetamodel, see selected metamodel for docs"""
 
     def _build_metamodel(self, *args, **kwargs):
         """
@@ -550,7 +561,7 @@ class ContextualizedUnivariateRegression(ContextualizedRegression):
 
         """
         kwargs["univariate"] = True
-        self.metamodel = SubtypeMetamodel(*args, **kwargs)
+        self.metamodel = SINGLE_TASK_METAMODELS[self.metamodel_type](*args, **kwargs)
 
     def _params_reshape(self, preds, dataloader):
         """
@@ -727,6 +738,57 @@ class TasksplitContextualizedCorrelation(TasksplitContextualizedUnivariateRegres
         if Y is not None:
             print(
                 "Passed a Y, but this is self-correlation between X featuers. Ignoring Y."
+            )
+        return super().dataloader(C, X, X, **kwargs)
+
+
+class ContextualizedNeighborhoodSelection(ContextualizedRegression):
+    """Using singletask multivariate contextualized regression to do edge-regression for
+    estimating conditional dependencies
+    See SubtypeMetamodel for assumptions and full docstring
+
+
+    """
+
+    def __init__(
+        self,
+        context_dim,
+        x_dim,
+        model_regularizer=REGULARIZERS["l1"](1e-3, mu_ratio=0),
+        **kwargs,
+    ):
+        if "y_dim" in kwargs:
+            del kwargs["y_dim"]
+        super().__init__(
+            context_dim, x_dim, x_dim, model_regularizer=model_regularizer, **kwargs
+        )
+        self.register_buffer("diag_mask", torch.ones(x_dim, x_dim) - torch.eye(x_dim))
+
+    def predict_step(self, batch, batch_idx):
+        """
+
+        :param batch:
+        :param batch_idx:
+
+        """
+        C, _, _, _ = batch
+        beta_hat, mu_hat = self(C)
+        beta_hat = beta_hat * self.diag_mask.expand(beta_hat.shape[0], -1, -1)
+        return beta_hat, mu_hat
+
+    def dataloader(self, C, X, Y=None, **kwargs):
+        """
+
+        :param C:
+        :param X:
+        :param Y:
+        :param **kwargs:
+
+        """
+
+        if Y is not None:
+            print(
+                "Passed a Y, but this is a Markov Graph between X featuers. Ignoring Y."
             )
         return super().dataloader(C, X, X, **kwargs)
 

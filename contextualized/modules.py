@@ -138,9 +138,30 @@ class NGAM(nn.Module):
         return self.link_fn(ret)
 
 
+class Linear(nn.Module):
+    """
+    Linear encoder
+    """
+
+    def __init__(
+        self,
+        input_dim,
+        output_dim
+    ):
+        super().__init__()
+        self.linear = MLP(
+            input_dim, output_dim, width=output_dim, layers=0, activation=None
+        )
+
+    def forward(self, X):
+        """Torch Forward pass."""
+        return self.linear(X)
+
+
 ENCODERS = {
     "mlp": MLP,
     "ngam": NGAM,
+    "linear": Linear
 }
 
 
@@ -187,3 +208,8 @@ if __name__ == "__main__":
     assert (explainer.archetypes != precycle_vals).any()
     explainer.set_archetypes(postcycle_vals)
     assert (explainer.archetypes == precycle_vals).all()
+
+    linear_encoder = Linear(X_DIM, Y_DIM)
+    linear_output = linear_encoder(X_data)
+
+    assert linear_output.shape == (N_SAMPLES, Y_DIM)
