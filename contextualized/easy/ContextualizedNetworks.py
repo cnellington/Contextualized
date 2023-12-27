@@ -21,11 +21,23 @@ class ContextualizedNetworks(SKLearnWrapper):
     """
 
     def _split_train_data(self, C, X, **kwargs):
+        """
+        Splits data into train and test sets.
+
+        :meta private:
+        """
         return super()._split_train_data(C, X, Y_required=False, **kwargs)
 
     def predict_networks(self, C, with_offsets=False, **kwargs):
         """
-        Predicts context-specific networks.
+        Predicts context-specific networks given contextual features.
+
+        :param C: array-like, shape (n_samples, n_context_features)
+            Contextual features for each sample.
+        :param with_offsets: bool, default False
+            If True, returns both the network parameters and offsets.
+        :return: array-like
+            The predicted network parameters (and offsets if with_offsets is True).
         """
         betas, mus = self.predict_params(C, uses_y=False, **kwargs)
         if with_offsets:
@@ -34,7 +46,14 @@ class ContextualizedNetworks(SKLearnWrapper):
 
     def predict_X(self, C, X, **kwargs):
         """
-        Predicts X based on context-specific networks.
+        Predicts X by reconstructing observed X using the context-specific networks.
+
+        :param C: array-like, shape (n_samples, n_context_features)
+            Contextual features for each sample.
+        :param X: array-like, shape (n_samples, n_features)
+            The data matrix.
+        :return: array-like
+            The predicted values.
         """
         return self.predict(C, X, **kwargs)
 
