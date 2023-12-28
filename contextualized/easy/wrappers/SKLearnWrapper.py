@@ -3,6 +3,8 @@ An sklearn-like wrapper for Contextualized models.
 """
 import copy
 import os
+from typing import *
+
 import numpy as np
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import ModelCheckpoint
@@ -28,6 +30,19 @@ DEFAULT_ENCODER_LINK_FN = LINK_FUNCTIONS["identity"]
 class SKLearnWrapper:
     """
     An sklearn-like wrapper for Contextualized models.
+    
+    Args:
+        base_constructor (class): The base class to construct the model.
+        extra_model_kwargs (dict): Extra kwargs to pass to the model constructor.
+        extra_data_kwargs (dict): Extra kwargs to pass to the dataloader constructor.
+        trainer_constructor (class): The trainer class to use.
+        n_bootstraps (int, optional): Number of bootstraps to use. Defaults to 1.
+        encoder_type (str, optional): Type of encoder to use ("mlp", "ngam", "linear"). Defaults to "mlp".
+        loss_fn (torch.nn.Module, optional): Loss function. Defaults to LOSSES["mse"].
+        link_fn (torch.nn.Module, optional): Link function. Defaults to LINK_FUNCTIONS["identity"].
+        alpha (float, optional): Regularization strength. Defaults to 0.0.
+        mu_ratio (float, optional): Float in range (0.0, 1.0), governs how much the regularization applies to context-specific parameters or context-specific offsets.
+        l1_ratio (float, optional): Float in range (0.0, 1.0), governs how much the regularization penalizes l1 vs l2 parameter norms.
     """
 
     def _set_defaults(self):
@@ -367,11 +382,16 @@ class SKLearnWrapper:
 
         return train_dataloader, val_dataloader
 
-    def predict(self, C, X, individual_preds=False, **kwargs):
-        """
-        :param C:
-        :param X:
-        :param individual_preds:  (Default value = False)
+    def predict(self, C: np.ndarray, X: np.ndarray, individual_preds: bool = False, **kwargs) -> Union[np.ndarray, List[np.ndarray]]:
+        """Predict outcomes from context C and predictors X.
+
+        Args:
+            C (np.ndarray): Context array of shape (n_samples, n_context_features)
+            X (np.ndarray): Predictor array of shape (N, n_features)
+            individual_preds (bool, optional): Whether to return individual predictions for each model. Defaults to False.
+        
+        Returns:
+            Union[np.ndarray, List[np.ndarray]]: The outcomes predicted by the context-specific models (n_samples, y_dim). Returned as lists of individual bootstraps if individual_preds is True.
         """
         if not hasattr(self, "models") or self.models is None:
             raise ValueError(
@@ -392,11 +412,24 @@ class SKLearnWrapper:
         return np.mean(predictions, axis=0)
 
     def predict_params(
-            self, C, individual_preds=False, model_includes_mus=True, **kwargs
-    ):
+            self, C: np.ndarray, individual_preds: bool = False, model_includes_mus: bool = True, **kwargs
+    ) -> Union[np.ndarray, List[np.ndarray], Tuple[np.ndarray, np.ndarray], Tuple[List[np.ndarray], List[np.ndarray]]]:
         """
-        :param C:
-        :param individual_preds:  (Default value = False)
+        Predict context-specific model parameters from context C.
+        
+        Args:
+            C (np.ndarray): Context array of shape (n_samples, n_context_features)
+            individual_preds (bool, optional): Whether to return individual model predictions for each bootstrap. Defaults to False, averaging across bootstraps.
+            model_includes_mus (bool, optional): Whether the model includes context-specific offsets (mu). Defaults to True.
+            
+        Returns:
+            Union[np.ndarray, List[np.ndarray], Tuple[np.ndarray, np.ndarray], Tuple[List[np.ndarray], List[np.ndarray]]: The parameters of the predicted context-specific models. 
+            Returned as lists of individual bootstraps if individual_preds is True, otherwise averages the bootstraps for a better estimate.
+            If model_includes_mus is True, returns both coefficients and offsets as a tuple of (betas, mus). Otherwise, returns coefficients (betas) only. 
+            For model_includes_mus=True, ([betas], [mus]) if individual_preds is True, otherwise (betas, mus).
+            For model_includes_mus=False, [betas] if individual_preds is True, otherwise betas.
+            betas is shape (n_samples, x_dim, y_dim) or (n_samples, x_dim) if y_dim = 1.
+            mus is shape (n_samples, y_dim) or (n_samples,) if y_dim = 1.
         """
         # Returns betas, mus
         if kwargs.pop("uses_y", True):
@@ -423,13 +456,25 @@ class SKLearnWrapper:
             return np.mean(betas, axis=0)
         return betas
 
-    def fit(self, *args, **kwargs):
+    def fit(self, *args, **kwargs) -> None:
         """
-        Fit model to data.
-        Requires numpy arrays C, X, with optional Y.
-        If target Y is not given, then X is assumed to be the target.
-        :param *args: C, X, Y (optional)
-        :param **kwargs:
+        Fit contextualized model to data.
+        
+        Args:
+            C (np.ndarray): Context array of shape (n_samples, n_context_features)
+            X (np.ndarray): Predictor array of shape (N, n_features)
+            Y (np.ndarray, optional): Target array of shape (N, n_targets). Defaults to None, where X will be used as targets such as in Contextualized Networks.
+            max_epochs (int, optional): Maximum number of epochs to train for. Defaults to 1.
+            learning_rate (float, optional): Learning rate for optimizer. Defaults to 1e-3.
+            val_split (float, optional): Proportion of data to use for validation and early stopping. Defaults to 0.2.
+            n_bootstraps (int, optional): Number of bootstraps to use. Defaults to 1.
+            train_batch_size (int, optional): Batch size for training. Defaults to 1.
+            val_batch_size (int, optional): Batch size for validation. Defaults to 16.
+            test_batch_size (int, optional): Batch size for testing. Defaults to 16.
+            es_patience (int, optional): Number of epochs to wait before early stopping. Defaults to 1.
+            es_monitor (str, optional): Metric to monitor for early stopping. Defaults to "val_loss".
+            es_mode (str, optional): Mode for early stopping. Defaults to "min".
+            es_verbose (bool, optional): Whether to print early stopping updates. Defaults to False. 
         """
         self.models = []
         self.trainers = []

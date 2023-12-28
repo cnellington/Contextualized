@@ -67,8 +67,16 @@ class ContextualizedNetworks(SKLearnWrapper):
 
 class ContextualizedCorrelationNetworks(ContextualizedNetworks):
     """
-    Contextualized Correlation Networks.
+    Contextualized Correlation Networks reveal context-varying feature correlations, interaction strengths, dependencies in feature groups.
     Uses the Contextualized Networks model, see the `paper <https://doi.org/10.1101/2023.12.01.569658>`__ for detailed estimation procedures.
+
+    Args:
+        n_bootstraps (int, optional): Number of bootstraps to use. Defaults to 1.
+        num_archetypes (int, optional): Number of archetypes to use. Defaults to 10. Always uses archetypes in the ContextualizedMetaModel.
+        encoder_type (str, optional): Type of encoder to use ("mlp", "ngam", "linear"). Defaults to "mlp".
+        alpha (float, optional): Regularization strength. Defaults to 0.0.
+        mu_ratio (float, optional): Float in range (0.0, 1.0), governs how much the regularization applies to context-specific parameters or context-specific offsets. Defaults to 0.0.
+        l1_ratio (float, optional): Float in range (0.0, 1.0), governs how much the regularization penalizes l1 vs l2 parameter norms. Defaults to 0.0.
     """
 
     def __init__(self, **kwargs):
@@ -133,8 +141,17 @@ class ContextualizedCorrelationNetworks(ContextualizedNetworks):
 
 class ContextualizedMarkovNetworks(ContextualizedNetworks):
     """
-    Contextualized Markov Networks, inferred as Gaussian precision matrices.
+    Contextualized Markov Networks reveal context-varying feature dependencies, cliques, and modules.
+    Implemented as Contextualized Gaussian Precision Matrices, directly interpretable as Markov Networks.
     Uses the Contextualized Networks model, see the `paper <https://doi.org/10.1101/2023.12.01.569658>`__ for detailed estimation procedures.
+        
+    Args:
+        n_bootstraps (int, optional): Number of bootstraps to use. Defaults to 1.
+        num_archetypes (int, optional): Number of archetypes to use. Defaults to 10. Always uses archetypes in the ContextualizedMetaModel.
+        encoder_type (str, optional): Type of encoder to use ("mlp", "ngam", "linear"). Defaults to "mlp".
+        alpha (float, optional): Regularization strength. Defaults to 0.0.
+        mu_ratio (float, optional): Float in range (0.0, 1.0), governs how much the regularization applies to context-specific parameters or context-specific offsets. Defaults to 0.0.
+        l1_ratio (float, optional): Float in range (0.0, 1.0), governs how much the regularization penalizes l1 vs l2 parameter norms. Defaults to 0.0.
     """
 
     def __init__(self, **kwargs):
@@ -197,8 +214,31 @@ class ContextualizedMarkovNetworks(ContextualizedNetworks):
 
 class ContextualizedBayesianNetworks(ContextualizedNetworks):
     """
-    Contextualized Bayesian Networks and Directed Acyclic Graphs (DAGs).
+    Contextualized Bayesian Networks and Directed Acyclic Graphs (DAGs) reveal context-dependent causal relationships, effect sizes, and variable ordering.
     Uses the NOTMAD model, see the `paper <https://doi.org/10.48550/arXiv.2111.01104>`__ for detailed estimation procedures.
+
+    Args:
+        n_bootstraps (int, optional): Number of bootstraps to use. Defaults to 1.
+        num_archetypes (int, optional): Number of archetypes to use. Defaults to 16. Always uses archetypes in the ContextualizedMetaModel.
+        encoder_type (str, optional): Type of encoder to use ("mlp", "ngam", "linear"). Defaults to "mlp".
+        archetype_dag_loss_type (str, optional): The type of loss to use for the archetype loss. Defaults to "l1".
+        archetype_l1 (float, optional): The strength of the l1 regularization for the archetype loss. Defaults to 0.0.
+        archetype_dag_params (dict, optional): Parameters for the archetype loss. Defaults to {"loss_type": "l1", "params": {"alpha": 0.0, "rho": 0.0, "s": 0.0, "tol": 1e-4}}.
+        archetype_dag_loss_params (dict, optional): Parameters for the archetype loss. Defaults to {"alpha": 0.0, "rho": 0.0, "s": 0.0, "tol": 1e-4}.
+        archetype_alpha (float, optional): The strength of the alpha regularization for the archetype loss. Defaults to 0.0.
+        archetype_rho (float, optional): The strength of the rho regularization for the archetype loss. Defaults to 0.0.
+        archetype_s (float, optional): The strength of the s regularization for the archetype loss. Defaults to 0.0.
+        archetype_tol (float, optional): The tolerance for the archetype loss. Defaults to 1e-4.
+        archetype_use_dynamic_alpha_rho (bool, optional): Whether to use dynamic alpha and rho for the archetype loss. Defaults to False.
+        init_mat (np.ndarray, optional): The initial adjacency matrix for the archetype loss. Defaults to None.
+        num_factors (int, optional): The number of factors for the archetype loss. Defaults to 0.
+        factor_mat_l1 (float, optional): The strength of the l1 regularization for the factor matrix for the archetype loss. Defaults to 0.
+        sample_specific_dag_loss_type (str, optional): The type of loss to use for the sample-specific loss. Defaults to "l1".
+        sample_specific_alpha (float, optional): The strength of the alpha regularization for the sample-specific loss. Defaults to 0.0.
+        sample_specific_rho (float, optional): The strength of the rho regularization for the sample-specific loss. Defaults to 0.0.
+        sample_specific_s (float, optional): The strength of the s regularization for the sample-specific loss. Defaults to 0.0.
+        sample_specific_tol (float, optional): The tolerance for the sample-specific loss. Defaults to 1e-4.
+        sample_specific_use_dynamic_alpha_rho (bool, optional): Whether to use dynamic alpha and rho for the sample-specific loss. Defaults to False.
     """
 
     def _parse_private_init_kwargs(self, **kwargs):
