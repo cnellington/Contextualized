@@ -7,12 +7,24 @@ h1 {
   font-family: Arial, sans-serif;
   font-style: normal;
   font-weight: bold;
-  font-size: 52px;
+  font-size: 42px;
   line-height: 45px;
   color: #FFFFFF;
   letter-spacing: 0.02em;
   -moz-osx-font-smoothing: grayscale;
   -webkit-font-smoothing: antialiased;
+}
+@media (min-width: 768px) {
+  h1 {
+    font-size: 52px;
+    line-height: 68px;
+  }
+}
+@media (max-width: 400px) {
+  h1 {
+    font-size: 28px;
+    line-height: 30px;
+  }
 }
 h2 {
   font-family: Arial, sans-serif;
@@ -25,6 +37,12 @@ h2 {
   -moz-osx-font-smoothing: grayscale;
   -webkit-font-smoothing: antialiased;
 }
+@media (max-width: 400px) {
+  h2 {
+    font-size: 30px;
+    line-height: 36px;
+  }
+}
 h3 {
   font-family: Arial, sans-serif;
   font-style: normal;
@@ -35,6 +53,12 @@ h3 {
   letter-spacing: 0.02em;
   -moz-osx-font-smoothing: grayscale;
   -webkit-font-smoothing: antialiased;
+}
+@media (max-width: 400px) {
+  h2 {
+    font-size: 22px;
+    line-height: 24px;
+  }
 }
 h4 {
   font-family: Arial, sans-serif;
