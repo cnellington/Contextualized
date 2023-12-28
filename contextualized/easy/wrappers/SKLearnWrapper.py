@@ -30,7 +30,7 @@ DEFAULT_ENCODER_LINK_FN = LINK_FUNCTIONS["identity"]
 class SKLearnWrapper:
     """
     An sklearn-like wrapper for Contextualized models.
-    
+
     Args:
         base_constructor (class): The base class to construct the model.
         extra_model_kwargs (dict): Extra kwargs to pass to the model constructor.
@@ -59,12 +59,12 @@ class SKLearnWrapper:
         self.default_encoder_type = DEFAULT_ENCODER_TYPE
 
     def __init__(
-            self,
-            base_constructor,
-            extra_model_kwargs,
-            extra_data_kwargs,
-            trainer_constructor,
-            **kwargs,
+        self,
+        base_constructor,
+        extra_model_kwargs,
+        extra_data_kwargs,
+        trainer_constructor,
+        **kwargs,
     ):
         self._set_defaults()
         self.base_constructor = base_constructor
@@ -84,7 +84,7 @@ class SKLearnWrapper:
                 "test_batch_size",
                 "C_val",
                 "X_val",
-                "val_split"
+                "val_split",
             ],
             "model": [
                 "loss_fn",
@@ -152,14 +152,18 @@ class SKLearnWrapper:
             if k not in self.constructor_kwargs and k not in self.convenience_kwargs
         }
         # Some args will not be ignored by wrapper because sub-class will handle them.
-        #self.private_kwargs = kwargs.pop("private_kwargs", [])
-        #self.private_kwargs.append("private_kwargs")
+        # self.private_kwargs = kwargs.pop("private_kwargs", [])
+        # self.private_kwargs.append("private_kwargs")
         # Add Predictor-Specific kwargs for parsing.
-        self._init_kwargs, unrecognized_general_kwargs = self._organize_kwargs(**self.not_constructor_kwargs)
+        self._init_kwargs, unrecognized_general_kwargs = self._organize_kwargs(
+            **self.not_constructor_kwargs
+        )
         for key, value in self.constructor_kwargs.items():
             self._init_kwargs["model"][key] = value
         recognized_private_init_kwargs = self._parse_private_init_kwargs(**kwargs)
-        for kwarg in set(unrecognized_general_kwargs) - set(recognized_private_init_kwargs):
+        for kwarg in set(unrecognized_general_kwargs) - set(
+            recognized_private_init_kwargs
+        ):
             print(f"Received unknown keyword argument {kwarg}, probably ignoring.")
 
     def _organize_and_expand_fit_kwargs(self, **kwargs):
@@ -190,8 +194,8 @@ class SKLearnWrapper:
         maybe_add_kwarg("model", "x_dim", self.x_dim)
         maybe_add_kwarg("model", "y_dim", self.y_dim)
         if (
-                "num_archetypes" in organized_kwargs["model"]
-                and organized_kwargs["model"]["num_archetypes"] == 0
+            "num_archetypes" in organized_kwargs["model"]
+            and organized_kwargs["model"]["num_archetypes"] == 0
         ):
             del organized_kwargs["model"]["num_archetypes"]
 
@@ -227,7 +231,6 @@ class SKLearnWrapper:
         maybe_add_kwarg("trainer", "accelerator", self.accelerator)
         return organized_kwargs
 
-
     def _parse_private_fit_kwargs(self, **kwargs):
         """
         Parse private (model-specific) kwargs passed to fit function.
@@ -249,8 +252,9 @@ class SKLearnWrapper:
         If acceptable=False, the new kwargs will be removed from the list of acceptable kwargs.
         """
         if acceptable:
-            self.acceptable_kwargs[category] = list(set(
-                self.acceptable_kwargs[category]).union(set(new_kwargs)))
+            self.acceptable_kwargs[category] = list(
+                set(self.acceptable_kwargs[category]).union(set(new_kwargs))
+            )
         else:
             self.acceptable_kwargs[category] = list(
                 set(self.acceptable_kwargs[category]) - set(new_kwargs)
@@ -267,7 +271,7 @@ class SKLearnWrapper:
         organized_kwargs = {category: {} for category in self.acceptable_kwargs}
         unrecognized_kwargs = []
         for kwarg, value in kwargs.items():
-            #if kwarg in self.private_kwargs:
+            # if kwarg in self.private_kwargs:
             #    continue
             not_found = True
             for category, category_kwargs in self.acceptable_kwargs.items():
@@ -382,14 +386,16 @@ class SKLearnWrapper:
 
         return train_dataloader, val_dataloader
 
-    def predict(self, C: np.ndarray, X: np.ndarray, individual_preds: bool = False, **kwargs) -> Union[np.ndarray, List[np.ndarray]]:
+    def predict(
+        self, C: np.ndarray, X: np.ndarray, individual_preds: bool = False, **kwargs
+    ) -> Union[np.ndarray, List[np.ndarray]]:
         """Predict outcomes from context C and predictors X.
 
         Args:
             C (np.ndarray): Context array of shape (n_samples, n_context_features)
             X (np.ndarray): Predictor array of shape (N, n_features)
             individual_preds (bool, optional): Whether to return individual predictions for each model. Defaults to False.
-        
+
         Returns:
             Union[np.ndarray, List[np.ndarray]]: The outcomes predicted by the context-specific models (n_samples, y_dim). Returned as lists of individual bootstraps if individual_preds is True.
         """
@@ -412,20 +418,29 @@ class SKLearnWrapper:
         return np.mean(predictions, axis=0)
 
     def predict_params(
-            self, C: np.ndarray, individual_preds: bool = False, model_includes_mus: bool = True, **kwargs
-    ) -> Union[np.ndarray, List[np.ndarray], Tuple[np.ndarray, np.ndarray], Tuple[List[np.ndarray], List[np.ndarray]]]:
+        self,
+        C: np.ndarray,
+        individual_preds: bool = False,
+        model_includes_mus: bool = True,
+        **kwargs,
+    ) -> Union[
+        np.ndarray,
+        List[np.ndarray],
+        Tuple[np.ndarray, np.ndarray],
+        Tuple[List[np.ndarray], List[np.ndarray]],
+    ]:
         """
         Predict context-specific model parameters from context C.
-        
+
         Args:
             C (np.ndarray): Context array of shape (n_samples, n_context_features)
             individual_preds (bool, optional): Whether to return individual model predictions for each bootstrap. Defaults to False, averaging across bootstraps.
             model_includes_mus (bool, optional): Whether the model includes context-specific offsets (mu). Defaults to True.
-            
+
         Returns:
-            Union[np.ndarray, List[np.ndarray], Tuple[np.ndarray, np.ndarray], Tuple[List[np.ndarray], List[np.ndarray]]: The parameters of the predicted context-specific models. 
+            Union[np.ndarray, List[np.ndarray], Tuple[np.ndarray, np.ndarray], Tuple[List[np.ndarray], List[np.ndarray]]: The parameters of the predicted context-specific models.
             Returned as lists of individual bootstraps if individual_preds is True, otherwise averages the bootstraps for a better estimate.
-            If model_includes_mus is True, returns both coefficients and offsets as a tuple of (betas, mus). Otherwise, returns coefficients (betas) only. 
+            If model_includes_mus is True, returns both coefficients and offsets as a tuple of (betas, mus). Otherwise, returns coefficients (betas) only.
             For model_includes_mus=True, ([betas], [mus]) if individual_preds is True, otherwise (betas, mus).
             For model_includes_mus=False, [betas] if individual_preds is True, otherwise betas.
             betas is shape (n_samples, x_dim, y_dim) or (n_samples, x_dim) if y_dim = 1.
@@ -459,7 +474,7 @@ class SKLearnWrapper:
     def fit(self, *args, **kwargs) -> None:
         """
         Fit contextualized model to data.
-        
+
         Args:
             C (np.ndarray): Context array of shape (n_samples, n_context_features)
             X (np.ndarray): Predictor array of shape (N, n_features)
@@ -474,7 +489,7 @@ class SKLearnWrapper:
             es_patience (int, optional): Number of epochs to wait before early stopping. Defaults to 1.
             es_monitor (str, optional): Metric to monitor for early stopping. Defaults to "val_loss".
             es_mode (str, optional): Mode for early stopping. Defaults to "min".
-            es_verbose (bool, optional): Whether to print early stopping updates. Defaults to False. 
+            es_verbose (bool, optional): Whether to print early stopping updates. Defaults to False.
         """
         self.models = []
         self.trainers = []
@@ -514,7 +529,9 @@ class SKLearnWrapper:
                 for f in organized_kwargs["trainer"]["callback_constructors"]
             ]
             del my_trainer_kwargs["callback_constructors"]
-            trainer = self.trainer_constructor(**my_trainer_kwargs, enable_progress_bar=False)
+            trainer = self.trainer_constructor(
+                **my_trainer_kwargs, enable_progress_bar=False
+            )
             checkpoint_callback = my_trainer_kwargs["callbacks"][1]
             os.makedirs(checkpoint_callback.dirpath, exist_ok=True)
             try:

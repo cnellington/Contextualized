@@ -35,7 +35,7 @@ class ContextualizedClassifier(ContextualizedRegressor):
             C (np.ndarray): Context array of shape (n_samples, n_context_features)
             X (np.ndarray): Predictor array of shape (N, n_features)
             individual_preds (bool, optional): Whether to return individual predictions for each model. Defaults to False.
-        
+
         Returns:
             Union[np.ndarray, List[np.ndarray]]: The binary outcomes predicted by the context-specific models (n_samples, y_dim). Returned as lists of individual bootstraps if individual_preds is True.
         """
@@ -49,7 +49,7 @@ class ContextualizedClassifier(ContextualizedRegressor):
             C (np.ndarray): Context array of shape (n_samples, n_context_features)
             X (np.ndarray): Predictor array of shape (N, n_features)
             individual_preds (bool, optional): Whether to return individual predictions for each model. Defaults to False.
-        
+
         Returns:
             Union[np.ndarray, List[np.ndarray]]: The outcome probabilities predicted by the context-specific models (n_samples, y_dim). Returned as lists of individual bootstraps if individual_preds is True.
         """

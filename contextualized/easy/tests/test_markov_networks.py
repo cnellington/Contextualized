@@ -30,7 +30,9 @@ class TestContextualizedMarkovNetworks(TestEasyNetworks):
         """Test Case for ContextualizedMarkovNetworks."""
         model = ContextualizedMarkovNetworks()
         self._quicktest(model, self.C, self.X, max_epochs=10, learning_rate=1e-3)
-        self._quicktest(model, self.C, self.X, max_epochs=10, learning_rate=1e-3, val_split=0.5)
+        self._quicktest(
+            model, self.C, self.X, max_epochs=10, learning_rate=1e-3, val_split=0.5
+        )
 
         model = ContextualizedMarkovNetworks(num_archetypes=16)
         self._quicktest(model, self.C, self.X, max_epochs=10, learning_rate=1e-3)

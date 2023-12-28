@@ -143,11 +143,7 @@ class Linear(nn.Module):
     Linear encoder
     """
 
-    def __init__(
-        self,
-        input_dim,
-        output_dim
-    ):
+    def __init__(self, input_dim, output_dim):
         super().__init__()
         self.linear = MLP(
             input_dim, output_dim, width=output_dim, layers=0, activation=None
@@ -158,11 +154,7 @@ class Linear(nn.Module):
         return self.linear(X)
 
 
-ENCODERS = {
-    "mlp": MLP,
-    "ngam": NGAM,
-    "linear": Linear
-}
+ENCODERS = {"mlp": MLP, "ngam": NGAM, "linear": Linear}
 
 
 if __name__ == "__main__":

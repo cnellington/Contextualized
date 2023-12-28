@@ -1,5 +1,6 @@
 # Utility functions for bootstraps
 
+
 def select_good_bootstraps(sklearn_wrapper, train_errs, tol=2, **kwargs):
     """
     Select bootstraps that are good for a given model.
@@ -19,5 +20,6 @@ def select_good_bootstraps(sklearn_wrapper, train_errs, tol=2, **kwargs):
 
     train_errs_by_bootstrap = np.mean(train_errs, axis=(1, 2))
     sklearn_wrapper.models = sklearn_wrapper.models[
-         train_errs_by_bootstrap < tol*np.min(train_errs_by_bootstrap)]
+        train_errs_by_bootstrap < tol * np.min(train_errs_by_bootstrap)
+    ]
     return sklearn_wrapper

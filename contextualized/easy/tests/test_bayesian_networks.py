@@ -28,13 +28,17 @@ class TestContextualizedBayesianNetworks(TestEasyNetworks):
 
     def test_bayesian_factors(self):
         """Test case for ContextualizedBayesianNetworks."""
-        model = ContextualizedBayesianNetworks(encoder_type="ngam", num_archetypes=16, num_factors=2)
+        model = ContextualizedBayesianNetworks(
+            encoder_type="ngam", num_archetypes=16, num_factors=2
+        )
         model.fit(self.C, self.X, max_epochs=10)
         networks = model.predict_networks(self.C, individual_preds=False)
         assert np.shape(networks) == (self.n_samples, self.x_dim, self.x_dim)
         networks = model.predict_networks(self.C, factors=True)
         assert np.shape(networks) == (self.n_samples, 2, 2)
-        model = ContextualizedBayesianNetworks(encoder_type="ngam", num_archetypes=16, num_factors=2)
+        model = ContextualizedBayesianNetworks(
+            encoder_type="ngam", num_archetypes=16, num_factors=2
+        )
         self._quicktest(model, self.C, self.X, max_epochs=10, learning_rate=1e-3)
 
     def test_bayesian_default(self):
@@ -43,7 +47,9 @@ class TestContextualizedBayesianNetworks(TestEasyNetworks):
 
     def test_bayesian_val_split(self):
         model = ContextualizedBayesianNetworks()
-        self._quicktest(model, self.C, self.X, max_epochs=10, learning_rate=1e-3, val_split=0.5)
+        self._quicktest(
+            model, self.C, self.X, max_epochs=10, learning_rate=1e-3, val_split=0.5
+        )
 
     def test_bayesian_archetypes(self):
         model = ContextualizedBayesianNetworks(num_archetypes=16)
@@ -61,12 +67,16 @@ class TestContextualizedBayesianNetworks(TestEasyNetworks):
         assert np.shape(networks) == (self.n_samples, self.x_dim, self.x_dim)
 
     def test_bayesian_acyclicity(self):
-        model = ContextualizedBayesianNetworks(archetype_dag_loss_type="DAGMA", num_archetypes=16)
+        model = ContextualizedBayesianNetworks(
+            archetype_dag_loss_type="DAGMA", num_archetypes=16
+        )
         self._quicktest(model, self.C, self.X, max_epochs=10, learning_rate=1e-3)
         networks = model.predict_networks(self.C, individual_preds=False)
         assert np.shape(networks) == (self.n_samples, self.x_dim, self.x_dim)
 
-        model = ContextualizedBayesianNetworks(archetype_dag_loss_type="poly", num_archetypes=16)
+        model = ContextualizedBayesianNetworks(
+            archetype_dag_loss_type="poly", num_archetypes=16
+        )
         self._quicktest(model, self.C, self.X, max_epochs=10, learning_rate=1e-3)
         networks = model.predict_networks(self.C, individual_preds=False)
         assert np.shape(networks) == (self.n_samples, self.x_dim, self.x_dim)
