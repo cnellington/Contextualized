@@ -1,0 +1,21 @@
+# This file specifies extra dependencies for the development of Contextualized ML
+
+# Style
+black==23.12.1
+pylint==3.0.3
+
+# Documentation
+jupyter-book==0.15.1
+myst-parser==0.18.1
+Sphinx==5.0.2
+sphinx-book-theme==1.0.1
+sphinx-jupyterbook-latex==0.5.2
+sphinx-rtd-theme==2.0.0
+sphinx_external_toc==0.3.1
+
+# Testing
+pytest==7.4.3
+
+# Packaging
+toml==0.10.2
+tomli==2.0.1
