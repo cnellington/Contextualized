@@ -14,8 +14,8 @@ If you would like to implement a new feature or a bug, please make sure you (or 
 4. Make your code changes locally.
 5. Automatically format your code and check for style issues by running `format_style.sh`. We are working on linting the entire repo, but please make sure your code is cleared by pylint.
 6. Automatically update our documentation by running `update_docs.sh`.
-4. (Optional) Include your name in alphabetical order in [ACKNOWLEDGEMENTS.md](https://github.com/cnellington/Contextualized/blob/main/ACKNOWLEDGEMENTS.md).
-5. Issue a PR to merge your changes into the `main` branch.
+7. (Optional) Include your name in alphabetical order in [ACKNOWLEDGEMENTS.md](https://github.com/cnellington/Contextualized/blob/main/ACKNOWLEDGEMENTS.md).
+8. Issue a PR to merge your changes into the `main` branch.
 
 
 ## Issues
