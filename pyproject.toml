@@ -25,18 +25,21 @@ keywords = [
     "multitask learning",
 ]
 dependencies = [
-    'pytorch-lightning>=2.0.0',
-    'torch',
-    'torchvision',
-    'numpy',
-    'scikit-learn',
-    'igraph',
-    'dill',
-    'matplotlib',
+    'lightning>=2.0.0',
+    'torch>=2.1.0',
+    'torchvision>=0.8.0',
+    'numpy>=1.19.0',
+    'scikit-learn>=1.0.0',
+    'igraph>=0.11.0',
+    'dill>=0.3.3',
+    'matplotlib>=3.3.0',
 ]
 
 [tool.setuptools.packages]
 find = {}  # Scanning implicit namespaces is active by default
+
+[tool.hatch.build.targets.wheel]
+packages = ["contextualized"]
 
 [project.urls]
 "Homepage" = "https://contextualized.ml/"
