@@ -3,13 +3,15 @@
 # If you wish to continue using _config.yml, make edits to that file and
 # re-generate this one.
 ###############################################################################
+add_module_names = False
 author = 'Contextualized.ML Team'
+autosummary_generate = True
 bibtex_bibfiles = ['references.bib']
 comments_config = {'hypothesis': False, 'utterances': False}
 copyright = '2023'
 exclude_patterns = ['**.ipynb_checkpoints', '.DS_Store', 'Thumbs.db', '_build']
-extensions = ['sphinx_togglebutton', 'sphinx_copybutton', 'myst_nb', 'jupyter_book', 'sphinx_thebe', 'sphinx_comments', 'sphinx_external_toc', 'sphinx.ext.intersphinx', 'sphinx_design', 'sphinx_book_theme', 'sphinx.ext.autodoc', 'sphinxcontrib.bibtex', 'sphinx_jupyterbook_latex']
-external_toc_exclude_missing = True
+extensions = ['sphinx_togglebutton', 'sphinx_copybutton', 'myst_nb', 'jupyter_book', 'sphinx_thebe', 'sphinx_comments', 'sphinx_external_toc', 'sphinx.ext.intersphinx', 'sphinx_design', 'sphinx_book_theme', 'sphinx.ext.autodoc', 'sphinx.ext.napoleon', 'sphinx.ext.viewcode', 'sphinx.ext.autosummary', 'sphinxcontrib.bibtex', 'sphinx_jupyterbook_latex']
+external_toc_exclude_missing = False
 external_toc_path = '_toc.yml'
 html_baseurl = ''
 html_favicon = ''

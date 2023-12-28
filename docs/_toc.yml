@@ -29,5 +29,5 @@ parts:
     - file: demos/benefits
   - caption: API Reference
     chapters:
-    - file: api
-
+    - file: source/easy
+    - file: source/analysis

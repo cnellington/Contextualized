@@ -1,13 +1,14 @@
 """
 sklearn-like interface to Contextualized Networks.
 """
+from typing import *
+
 import numpy as np
 
 from contextualized.easy.wrappers import SKLearnWrapper
 from contextualized.regression.trainers import CorrelationTrainer, MarkovTrainer
 from contextualized.regression.lightning_modules import (
     ContextualizedCorrelation,
-    # TasksplitContextualizedCorrelation, # TODO: Incorporate Tasksplit
     ContextualizedMarkovGraph,
 )
 from contextualized.dags.lightning_modules import NOTMAD, DEFAULT_DAG_LOSS_TYPE, DEFAULT_DAG_LOSS_PARAMS
@@ -20,47 +21,54 @@ class ContextualizedNetworks(SKLearnWrapper):
     sklearn-like interface to Contextualized Networks.
     """
 
-    def _split_train_data(self, C, X, **kwargs):
-        """
-        Splits data into train and test sets.
+    def _split_train_data(self, C: np.ndarray, X: np.ndarray, **kwargs) -> Tuple[List[np.ndarray], List[np.ndarray]]: 
+        """Splits data into train and test sets.
 
-        :meta private:
+        Args:
+            C (np.ndarray): Contextual features for each sample.
+            X (np.ndarray): The data matrix.
+
+        Returns:
+            Tuple[List[np.ndarray], List[np.ndarray]]: The train and test sets for C and X as ([C_train, X_train], [C_test, X_test]).
         """
         return super()._split_train_data(C, X, Y_required=False, **kwargs)
 
-    def predict_networks(self, C, with_offsets=False, **kwargs):
-        """
-        Predicts context-specific networks given contextual features.
+    def predict_networks(self, C: np.ndarray, with_offsets: bool,  individual_preds: bool = False, **kwargs) -> Union[np.ndarray, List[np.ndarray], Tuple[np.ndarray, np.ndarray], Tuple[List[np.ndarray], List[np.ndarray]]]:
+        """Predicts context-specific networks given contextual features.
 
-        :param C: array-like, shape (n_samples, n_context_features)
-            Contextual features for each sample.
-        :param with_offsets: bool, default False
-            If True, returns both the network parameters and offsets.
-        :return: array-like
-            The predicted network parameters (and offsets if with_offsets is True).
+        Args:
+            C (np.ndarray): Contextual features for each sample (n_samples, n_context_features)
+            with_offsets (bool, optional): If True, returns both the network parameters and offsets. Defaults to False.
+            individual_preds (bool, optional): If True, returns the predictions for each bootstrap. Defaults to False.
+
+        Returns:
+            Union[np.ndarray, List[np.ndarray], Tuple[np.ndarray, np.ndarray], Tuple[List[np.ndarray], List[np.ndarray]]]: The predicted network parameters (and offsets if with_offsets is True). Returned as lists of individual bootstraps if individual_preds is True.
         """
         betas, mus = self.predict_params(C, uses_y=False, **kwargs)
         if with_offsets:
             return betas, mus
         return betas
 
-    def predict_X(self, C, X, **kwargs):
+    def predict_X(self, C: np.ndarray, X: np.ndarray, individual_preds: bool = False, **kwargs) -> Union[np.ndarray, List[np.ndarray]]:
+        """Reconstructs the data matrix based on predicted contextualized networks and the true data matrix. 
+        Useful for measuring reconstruction error or for imputation.
+        
+        Args:
+            C (np.ndarray): Contextual features for each sample (n_samples, n_context_features)
+            X (np.ndarray): The data matrix (n_samples, n_features)
+            individual_preds (bool, optional): If True, returns the predictions for each bootstrap. Defaults to False.
+            **kwargs: Keyword arguments for the Lightning trainer's predict_y method.
+            
+        Returns:
+            Union[np.ndarray, List[np.ndarray]]: The predicted data matrix, or matrices for each bootstrap if individual_preds is True (n_samples, n_features).
         """
-        Predicts X by reconstructing observed X using the context-specific networks.
-
-        :param C: array-like, shape (n_samples, n_context_features)
-            Contextual features for each sample.
-        :param X: array-like, shape (n_samples, n_features)
-            The data matrix.
-        :return: array-like
-            The predicted values.
-        """
-        return self.predict(C, X, **kwargs)
+        return self.predict(C, X, individual_preds = individual_preds, **kwargs)
 
 
 class ContextualizedCorrelationNetworks(ContextualizedNetworks):
     """
-    Easy interface to Contextualized Correlation Networks.
+    Contextualized Correlation Networks.
+    Uses the Contextualized Networks model, see the `paper <https://doi.org/10.1101/2023.12.01.569658>`__ for detailed estimation procedures.
     """
 
     def __init__(self, **kwargs):
@@ -68,9 +76,16 @@ class ContextualizedCorrelationNetworks(ContextualizedNetworks):
             ContextualizedCorrelation, [], [], CorrelationTrainer, **kwargs
         )
 
-    def predict_correlation(self, C, individual_preds=True, squared=True, **kwargs):
-        """
-        Predict correlation matrices.
+    def predict_correlation(self, C: np.ndarray, individual_preds: bool = True, squared: bool = True) -> Union[np.ndarray, List[np.ndarray]]: 
+        """Predicts context-specific correlations between features.
+
+        Args:
+            C (Numpy ndarray): Contextual features for each sample (n_samples, n_context_features)
+            individual_preds (bool, optional): If True, returns the predictions for each bootstrap. Defaults to True.
+            squared (bool, optional): If True, returns the squared correlations. Defaults to True.
+        
+        Returns:
+            Union[np.ndarray, List[np.ndarray]]: The predicted context-specific correlation matrices, or matrices for each bootstrap if individual_preds is True (n_samples, n_features, n_features).
         """
         get_dataloader = lambda i: self.models[i].dataloader(
             C, np.zeros((len(C), self.x_dim))
@@ -78,7 +93,7 @@ class ContextualizedCorrelationNetworks(ContextualizedNetworks):
         rhos = np.array(
             [
                 self.trainers[i].predict_params(
-                    self.models[i], get_dataloader(i), **kwargs
+                    self.models[i], get_dataloader(i)
                 )[0]
                 for i in range(len(self.models))
             ]
@@ -92,9 +107,16 @@ class ContextualizedCorrelationNetworks(ContextualizedNetworks):
                 return np.square(np.mean(rhos, axis=0))
             return np.mean(rhos)
 
-    def measure_mses(self, C, X, individual_preds=False):
-        """
-        Measure mean-squared errors.
+    def measure_mses(self, C: np.ndarray, X: np.ndarray, individual_preds: bool = False) -> Union[np.ndarray, List[np.ndarray]]:
+        """Measures mean-squared errors.
+
+        Args:
+            C (np.ndarray): Contextual features for each sample (n_samples, n_context_features)
+            X (np.ndarray): The data matrix (n_samples, n_features)
+            individual_preds (bool, optional): If True, returns the predictions for each bootstrap. Defaults to False.
+        
+        Returns:
+            Union[np.ndarray, List[np.ndarray]]: The mean-squared errors for each sample, or for each bootstrap if individual_preds is True (n_samples).
         """
         betas, mus = self.predict_networks(C, individual_preds=True, with_offsets=True)
         mses = np.zeros((len(betas), len(C)))  # n_bootstraps x n_samples
@@ -111,15 +133,24 @@ class ContextualizedCorrelationNetworks(ContextualizedNetworks):
 
 class ContextualizedMarkovNetworks(ContextualizedNetworks):
     """
-    Easy interface to Contextualized Markov Networks.
+    Contextualized Markov Networks, inferred as Gaussian precision matrices.
+    Uses the Contextualized Networks model, see the `paper <https://doi.org/10.1101/2023.12.01.569658>`__ for detailed estimation procedures.
     """
 
     def __init__(self, **kwargs):
         super().__init__(ContextualizedMarkovGraph, [], [], MarkovTrainer, **kwargs)
 
-    def predict_precisions(self, C, individual_preds=True):
-        """
-        Predict precision matrices.
+    def predict_precisions(self, C: np.ndarray, individual_preds: bool = True) -> Union[np.ndarray, List[np.ndarray]]:
+        """Predicts context-specific precision matrices. 
+        Can be converted to context-specific Markov networks by binarizing the networks and setting all non-zero entries to 1. 
+        Can be converted to context-specific covariance matrices by taking the inverse.
+
+        Args:
+            C (np.ndarray): Contextual features for each sample (n_samples, n_context_features)
+            individual_preds (bool, optional): If True, returns the predictions for each bootstrap. Defaults to True.
+        
+        Returns:
+            Union[np.ndarray, List[np.ndarray]]: The predicted context-specific Markov networks as precision matrices, or matrices for each bootstrap if individual_preds is True (n_samples, n_features, n_features).
         """
         get_dataloader = lambda i: self.models[i].dataloader(
             C, np.zeros((len(C), self.x_dim))
@@ -134,9 +165,16 @@ class ContextualizedMarkovNetworks(ContextualizedNetworks):
             return precisions
         return np.mean(precisions, axis=0)
 
-    def measure_mses(self, C, X, individual_preds=False):
-        """
-        Measure mean-squared errors.
+    def measure_mses(self, C: np.ndarray, X: np.ndarray, individual_preds: bool = False) -> Union[np.ndarray, List[np.ndarray]]:
+        """Measures mean-squared errors.
+
+        Args:
+            C (np.ndarray): Contextual features for each sample (n_samples, n_context_features)
+            X (np.ndarray): The data matrix (n_samples, n_features)
+            individual_preds (bool, optional): If True, returns the predictions for each bootstrap. Defaults to False.
+
+        Returns:
+            Union[np.ndarray, List[np.ndarray]]: The mean-squared errors for each sample, or for each bootstrap if individual_preds is True (n_samples).
         """
         betas, mus = self.predict_networks(C, individual_preds=True, with_offsets=True)
         mses = np.zeros((len(betas), len(C)))  # n_bootstraps x n_samples
@@ -159,18 +197,17 @@ class ContextualizedMarkovNetworks(ContextualizedNetworks):
 
 class ContextualizedBayesianNetworks(ContextualizedNetworks):
     """
-    Easy interface to Contextualized Bayesian Networks.
-    Uses NOTMAD model.
-    See this paper:
-    https://arxiv.org/abs/2111.01104
-    for more details.
+    Contextualized Bayesian Networks and Directed Acyclic Graphs (DAGs).
+    Uses the NOTMAD model, see the `paper <https://doi.org/10.48550/arXiv.2111.01104>`__ for detailed estimation procedures.
     """
 
     def _parse_private_init_kwargs(self, **kwargs):
         """
-            Parses private init kwargs.
-        """
+        Parses the kwargs for the NOTMAD model.
 
+        Args:
+            **kwargs: Keyword arguments for the NOTMAD model, including the encoder, archetype loss, sample-specific loss, and optimization parameters.
+        """
         # Encoder Parameters
         self._init_kwargs["model"]["encoder_kwargs"] = {
             "type": kwargs.pop(
@@ -290,39 +327,55 @@ class ContextualizedBayesianNetworks(ContextualizedNetworks):
             **kwargs,
         )
 
-    def predict_params(self, C, **kwargs):
-        """
+    def predict_params(self, C: np.ndarray, **kwargs) -> Union[np.ndarray, List[np.ndarray]]:
+        """Predicts context-specific Bayesian network parameters as linear coefficients in a linear structural equation model (SEM).
 
-        :param C:
-        :param individual_preds:  (Default value = False)
+        Args:
+            C (np.ndarray): Contextual features for each sample (n_samples, n_context_features)
+            **kwargs: Keyword arguments for the contextualized.dags.GraphTrainer's predict_params method.
 
+        Returns:
+            Union[np.ndarray, List[np.ndarray]]: The linear coefficients of the predicted context-specific Bayesian network parameters (n_samples, n_features, n_features). Returned as lists of individual bootstraps if individual_preds is True.
         """
-        # Returns betas
-        # TODO: No mus for NOTMAD at present.
+        # No mus for NOTMAD at present.
         return super().predict_params(
             C, model_includes_mus=False, **kwargs
         )
 
-    def predict_networks(self, C, **kwargs):
-        """
-        Predicts context-specific networks.
+    def predict_networks(self, C: np.ndarray, project_to_dag: bool = True, **kwargs) -> Union[np.ndarray, List[np.ndarray]]:
+        """Predicts context-specific Bayesian networks.
+        
+        Args:
+            C (np.ndarray): Contextual features for each sample (n_samples, n_context_features)
+            project_to_dag (bool, optional): If True, guarantees returned graphs are DAGs by trimming edges until acyclicity is satisified. Defaults to True.
+            **kwargs: Keyword arguments for the contextualized.dags.GraphTrainer's predict_params method.
+
+        Returns:
+            Union[np.ndarray, List[np.ndarray]]: The linear coefficients of the predicted context-specific Bayesian network parameters (n_samples, n_features, n_features). Returned as lists of individual bootstraps if individual_preds is True.
         """
         if kwargs.pop("with_offsets", False):
             print("No offsets can be returned by NOTMAD.")
         betas = self.predict_params(
             C,
             uses_y=False,
-            project_to_dag=kwargs.pop("project_to_dag", True),
+            project_to_dag = project_to_dag,
             **kwargs
         )
-
         return betas
 
-    def measure_mses(self, C, X, individual_preds=False):
+    def measure_mses(self, C: np.ndarray, X: np.ndarray, individual_preds: bool = False, **kwargs) -> Union[np.ndarray, List[np.ndarray]]:
+        """Measures mean-squared errors.
+        
+        Args:
+            C (np.ndarray): Contextual features for each sample (n_samples, n_context_features)
+            X (np.ndarray): The data matrix (n_samples, n_features)
+            individual_preds (bool, optional): If True, returns the predictions for each bootstrap. Defaults to False.
+            **kwargs: Keyword arguments for the contextualized.dags.GraphTrainer's predict_params method.
+
+        Returns:
+            Union[np.ndarray, List[np.ndarray]]: The mean-squared errors for each sample, or for each bootstrap if individual_preds is True (n_samples).
         """
-        Measure mean-squared errors.
-        """
-        betas = self.predict_networks(C, individual_preds=True)
+        betas = self.predict_networks(C, individual_preds=True, **kwargs)
         mses = np.zeros((len(betas), len(C)))  # n_bootstraps x n_samples
         for bootstrap in range(len(betas)):
             X_pred = dag_pred_np(X, betas[bootstrap])

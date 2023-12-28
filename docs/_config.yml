@@ -16,7 +16,7 @@ execute:
   # execute_notebooks: force
   # timeout: 300
 
-only_build_toc_files: true
+only_build_toc_files: false
 
 # Define the name of the latex output file for PDF builds
 latex:
@@ -43,9 +43,14 @@ html:
 sphinx:
   extra_extensions:
   - 'sphinx.ext.autodoc'
-  # - 'sphinx.ext.autosummary'
-  # config:
-  #   autosummary_generate: True
+  - 'sphinx.ext.napoleon'
+  - 'sphinx.ext.viewcode'
+  - 'sphinx.ext.autosummary'
+  config:
+    add_module_names: False
+    autosummary_generate: True
+    html_theme: sphinx_book_theme
+    # templates_path: ['_templates']
       # - sphinx.ext.duration
 #       - sphinx.ext.doctest
 #       - sphinx.ext.intersphinx

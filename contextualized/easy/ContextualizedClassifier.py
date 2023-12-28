@@ -11,7 +11,7 @@ from contextualized.regression import LOSSES
 
 class ContextualizedClassifier(ContextualizedRegressor):
     """
-    sklearn-like interface to Contextualized Classifiers.
+    Contextualized Logistic Regression.
     """
 
     def __init__(self, **kwargs):

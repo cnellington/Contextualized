@@ -14,7 +14,7 @@ from contextualized.regression import RegressionTrainer
 
 class ContextualizedRegressor(SKLearnWrapper):
     """
-    sklearn-like interface to Contextualized Regression.
+    Contextualized Linear Regression.
     """
 
     def __init__(self, **kwargs):
