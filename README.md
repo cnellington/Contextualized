@@ -1,4 +1,4 @@
-![Preview](contextualized_logo.png)
+![Preview](docs/logo.png)
 #
 
 ![License](https://img.shields.io/github/license/cnellington/contextualized.svg?style=flat-square)
