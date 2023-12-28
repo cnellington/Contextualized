@@ -1,9 +1,10 @@
 """
 Utilities for plotting embeddings of fitted Contextualized models.
 """
-
+from typing import *
 
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 
@@ -11,16 +12,26 @@ from contextualized.analysis import utils
 
 
 def plot_embedding_for_all_covars(
-    reps, covars_df, covars_stds=None, covars_means=None, covars_encoders=None, **kwargs
-):
+    reps: np.ndarray,
+    covars_df: pd.DataFrame,
+    covars_stds: np.ndarray = None,
+    covars_means: np.ndarray = None,
+    covars_encoders: List[Callable] = None,
+    **kwargs,
+) -> None:
     """
     Plot embeddings of representations for all covariates in a Pandas dataframe.
-    :param reps:
-    :param covars_df:
-    :param covars_stds: Used to project back to readable values. (Default value = None)
-    :param covars_means: Used to project back to readable values. (Default value = None)
-    :param covars_encoders: Used to project back to readable values. (Default value = None)
-    :param kwargs: Keyword arguments for plotting.
+
+    Args:
+        reps (np.ndarray): Embeddings of shape (n_samples, n_dims).
+        covars_df (pd.DataFrame): DataFrame of covariates.
+        covars_stds (np.ndarray, optional): Standard deviations of covariates. Defaults to None.
+        covars_means (np.ndarray, optional): Means of covariates. Defaults to None.
+        covars_encoders (List[LabelEncoder], optional): Encoders for covariates. Defaults to None.
+        kwargs: Keyword arguments for plotting.
+
+    Returns:
+        None
     """
     for i, covar in enumerate(covars_df.columns):
         my_labels = covars_df.iloc[:, i].values
@@ -49,17 +60,20 @@ def plot_embedding_for_all_covars(
 
 
 def plot_lowdim_rep(
-    low_dim,
-    labels,
+    low_dim: np.ndarray,
+    labels: np.ndarray,
     **kwargs,
 ):
     """
+    Plot a low-dimensional representation of a dataset.
 
-    :param low_dim:
-    :param labels:
-    :param kwargs:
-        Keyword arguments.
+    Args:
+        low_dim (np.ndarray): Low-dimensional representation of shape (n_samples, 2).
+        labels (np.ndarray): Labels of shape (n_samples,).
+        kwargs: Keyword arguments for plotting.
 
+    Returns:
+        None
     """
 
     if len(set(labels)) < kwargs.get("max_classes_for_discrete", 10):  # discrete labels
