@@ -15,8 +15,8 @@ All functions can be loaded directly from the module, e.g. ``from contextualized
     effects.plot_homogeneous_context_effects
     effects.plot_homogeneous_predictor_effects
     effects.plot_heterogeneous_predictor_effects
-    pvals.calc_homogeneous_context_effects_pval
-    pvals.calc_homogeneous_predictor_effects_pval
+    pvals.calc_homogeneous_context_effects_pvals
+    pvals.calc_homogeneous_predictor_effects_pvals
     pvals.calc_heterogeneous_predictor_effects_pvals
 
 .. autofunction:: contextualized.analysis.accuracy_split.print_acc_by_covars
@@ -25,6 +25,6 @@ All functions can be loaded directly from the module, e.g. ``from contextualized
 .. autofunction:: contextualized.analysis.effects.plot_homogeneous_context_effects
 .. autofunction:: contextualized.analysis.effects.plot_homogeneous_predictor_effects
 .. autofunction:: contextualized.analysis.effects.plot_heterogeneous_predictor_effects
-.. autofunction:: contextualized.analysis.pvals.calc_homogeneous_context_effects_pval
-.. autofunction:: contextualized.analysis.pvals.calc_homogeneous_predictor_effects_pval
+.. autofunction:: contextualized.analysis.pvals.calc_homogeneous_context_effects_pvals
+.. autofunction:: contextualized.analysis.pvals.calc_homogeneous_predictor_effects_pvals
 .. autofunction:: contextualized.analysis.pvals.calc_heterogeneous_predictor_effects_pvals
