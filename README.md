@@ -25,7 +25,7 @@ Context-specific parameters:
 pip install contextualized-ml
 ```
 
-Take a look at the [easy demo](docs/demos/easy_regression.ipynb) for a quickstart with sklearn-style wrappers.
+Take a look at the [easy demo](docs/models/easy_regression.ipynb) for a quickstart with sklearn-style wrappers.
 
 ### Build a Contextualized Model
 ```
