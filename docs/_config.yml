@@ -12,10 +12,11 @@ url: "https://contextualized.ml"
 # Force re-execution of notebooks on each build.
 # See https://jupyterbook.org/content/execute.html
 execute:
-  execute_notebooks: force
-  timeout: 300
+  execute_notebooks: 'off'
+  # execute_notebooks: force
+  # timeout: 300
 
-only_build_toc_files: true
+only_build_toc_files: false
 
 # Define the name of the latex output file for PDF builds
 latex:
@@ -37,3 +38,27 @@ repository:
 html:
   use_issues_button: true
   use_repository_button: true
+
+# https://jupyterbook.org/en/stable/advanced/developers.html
+sphinx:
+  extra_extensions:
+  - 'sphinx.ext.autodoc'
+  - 'sphinx.ext.napoleon'
+  - 'sphinx.ext.viewcode'
+  - 'sphinx.ext.autosummary'
+  config:
+    add_module_names: False
+    autosummary_generate: True
+    html_theme: sphinx_book_theme
+    # templates_path: ['_templates']
+      # - sphinx.ext.duration
+#       - sphinx.ext.doctest
+#       - sphinx.ext.intersphinx
+#       - nbsphinx
+#       - myst_parser
+    # 'sphinx.ext.doctest',
+    # 'sphinx.ext.autodoc',
+    # 'sphinx.ext.autosummary',
+    # 'sphinx.ext.intersphinx',
+    # 'nbsphinx',
+    # 'myst_parser',

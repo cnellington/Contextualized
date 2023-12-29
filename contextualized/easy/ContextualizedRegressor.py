@@ -14,7 +14,17 @@ from contextualized.regression import RegressionTrainer
 
 class ContextualizedRegressor(SKLearnWrapper):
     """
-    sklearn-like interface to Contextualized Regression.
+    Contextualized Linear Regression quantifies context-varying linear relationships.
+
+    Args:
+        n_bootstraps (int, optional): Number of bootstraps to use. Defaults to 1.
+        num_archetypes (int, optional): Number of archetypes to use. Defaults to 0, which used the NaiveMetaModel. If > 0, uses archetypes in the ContextualizedMetaModel.
+        encoder_type (str, optional): Type of encoder to use ("mlp", "ngam", "linear"). Defaults to "mlp".
+        loss_fn (torch.nn.Module, optional): Loss function. Defaults to LOSSES["mse"].
+        link_fn (torch.nn.Module, optional): Link function. Defaults to LINK_FUNCTIONS["identity"].
+        alpha (float, optional): Regularization strength. Defaults to 0.0.
+        mu_ratio (float, optional): Float in range (0.0, 1.0), governs how much the regularization applies to context-specific parameters or context-specific offsets. Defaults to 0.0.
+        l1_ratio (float, optional): Float in range (0.0, 1.0), governs how much the regularization penalizes l1 vs l2 parameter norms. Defaults to 0.0.
     """
 
     def __init__(self, **kwargs):

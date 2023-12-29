@@ -2,6 +2,7 @@
 Analysis tools for generating pvalues from bootstrap replicates.
 
 """
+from typing import *
 
 import numpy as np
 
@@ -10,6 +11,7 @@ from contextualized.analysis.effects import (
     get_homogeneous_predictor_effects,
     get_heterogeneous_predictor_effects,
 )
+from contextualized.easy.wrappers import SKLearnWrapper
 
 
 def calc_pval_bootstraps_one_sided(estimates, thresh=0, laplace_smoothing=1):
@@ -48,19 +50,19 @@ def calc_pval_bootstraps_one_sided_mean(estimates, laplace_smoothing=1):
     )
 
 
-def calc_homogeneous_context_effects_pvals(model, C, **kwargs):
+def calc_homogeneous_context_effects_pvals(
+    model: SKLearnWrapper, C: np.ndarray, **kwargs
+) -> np.ndarray:
     """
     Calculate p-values for the effects of context.
 
-    Parameters
-    ----------
-    model : contextualized.models.Model
-    C : np.ndarray
+    Args:
+        model (SKLearnWrapper): Model to analyze.
+        C (np.ndarray): Contexts to analyze.
 
-    Returns
-    -------
-    pvals : np.ndarray of shape (n_contexts, n_outcomes) testing whether the
-        sign is consistent across bootstraps
+    Returns:
+        np.ndarray: P-values of shape (n_contexts, n_outcomes) testing whether the
+            sign of the direct effect of context on outcomes is consistent across bootstraps.
     """
     _, effects = get_homogeneous_context_effects(model, C, **kwargs)
     # effects.shape: (n_contexts, n_bootstraps, n_context_vals, n_outcomes)
@@ -86,19 +88,19 @@ def calc_homogeneous_context_effects_pvals(model, C, **kwargs):
     return pvals
 
 
-def calc_homogeneous_predictor_effects_pvals(model, C, **kwargs):
+def calc_homogeneous_predictor_effects_pvals(
+    model: SKLearnWrapper, C: np.ndarray, **kwargs
+) -> np.ndarray:
     """
-    Calculate p-values for the effects of predictors.
+    Calculate p-values for the context-invariant effects of predictors.
 
-    Parameters
-    ----------
-    model : contextualized.models.Model
-    C : np.ndarray
+    Args:
+        model (SKLearnWrapper): Model to analyze.
+        C (np.ndarray): Contexts to analyze.
 
-    Returns
-    -------
-    pvals : np.ndarray of shape (n_predictors, n_outcomes) testing whether the
-        sign is consistent across bootstraps
+    Returns:
+        np.ndarray: P-values of shape (n_predictors, n_outcomes) testing whether the
+            sign of the context-invariant predictor effects are consistent across bootstraps.
     """
     _, effects = get_homogeneous_predictor_effects(model, C, **kwargs)
     # effects.shape: (n_predictors, n_bootstraps, n_outcomes)
@@ -126,15 +128,13 @@ def calc_heterogeneous_predictor_effects_pvals(model, C, **kwargs):
     """
     Calculate p-values for the heterogeneous effects of predictors.
 
-    Parameters
-    ----------
-    model : contextualized.models.Model
-    C : np.ndarray
+    Args:
+        model (SKLearnWrapper): Model to analyze.
+        C (np.ndarray): Contexts to analyze.
 
-    Returns
-    -------
-    pvals : np.ndarray of shape (n_contexts, n_predictors, n_outcomes) testing
-        whether the sign of the change wrt context is consistent across bootstraps
+    Returns:
+        np.ndarray: P-values of shape (n_contexts, n_predictors, n_outcomes) testing whether the
+            context-varying parameter range is consistent across bootstraps.
     """
     _, effects = get_heterogeneous_predictor_effects(model, C, **kwargs)
     # effects.shape is (n_contexts, n_predictors, n_bootstraps, n_context_vals, n_outcomes)

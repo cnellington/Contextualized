@@ -90,7 +90,7 @@ class TestEasyRegression(unittest.TestCase):
             learning_rate=1e-3,
             es_patience=float("inf"),
         )
-        
+
         # Check smaller Y.
         model = ContextualizedRegressor(
             num_archetypes=4, alpha=1e-1, l1_ratio=0.5, mu_ratio=0.1
