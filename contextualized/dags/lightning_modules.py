@@ -28,7 +28,12 @@ DAG_LOSSES = {
 }
 DEFAULT_DAG_LOSS_TYPE = "NOTEARS"
 DEFAULT_DAG_LOSS_PARAMS = {
-    "NOTEARS": {"alpha": 1e-1, "rho": 1e-2, "tol": 0.25, "use_dynamic_alpha_rho": False},
+    "NOTEARS": {
+        "alpha": 1e-1,
+        "rho": 1e-2,
+        "tol": 0.25,
+        "use_dynamic_alpha_rho": False,
+    },
     "DAGMA": {"s": 1, "alpha": 1e0},
     "poly": {},
 }
@@ -119,8 +124,9 @@ class NOTMAD(pl.LightningModule):
         # dataset params
         self.context_dim = context_dim
         self.x_dim = x_dim
-        self.num_archetypes = archetype_loss_params.get("num_archetypes",
-                                                   DEFAULT_ARCH_PARAMS["num_archetypes"])
+        self.num_archetypes = archetype_loss_params.get(
+            "num_archetypes", DEFAULT_ARCH_PARAMS["num_archetypes"]
+        )
         num_factors = archetype_loss_params.pop("num_factors", 0)
         if 0 < num_factors < self.x_dim:
             self.latent_dim = num_factors
@@ -142,13 +148,14 @@ class NOTMAD(pl.LightningModule):
         # DAG regularizers
         self.ss_dag_params = sample_specific_loss_params["dag"].get(
             "params",
-            DEFAULT_DAG_LOSS_PARAMS[sample_specific_loss_params["dag"]["loss_type"]].copy(),
+            DEFAULT_DAG_LOSS_PARAMS[
+                sample_specific_loss_params["dag"]["loss_type"]
+            ].copy(),
         )
-        
 
         self.arch_dag_params = archetype_loss_params["dag"].get(
-            "params", 
-            DEFAULT_DAG_LOSS_PARAMS[archetype_loss_params["dag"]["loss_type"]].copy()
+            "params",
+            DEFAULT_DAG_LOSS_PARAMS[archetype_loss_params["dag"]["loss_type"]].copy(),
         )
 
         self.val_dag_loss_params = {"alpha": 1e0, "rho": 1e0}
@@ -185,15 +192,15 @@ class NOTMAD(pl.LightningModule):
             self._mask(self.explainer.get_archetypes())
         )  # intialize archetypes with 0 diagonal
         if self.latent_dim != self.x_dim:
-            factor_mat_init = (
-                torch.rand([self.latent_dim, self.x_dim]) * 2e-2 - 1e-2
-            )
+            factor_mat_init = torch.rand([self.latent_dim, self.x_dim]) * 2e-2 - 1e-2
             self.factor_mat_raw = nn.parameter.Parameter(
                 factor_mat_init, requires_grad=True
             )
             self.factor_softmax = nn.Softmax(
                 dim=0
             )  # Sums to one along the latent factor axis, so each feature should only be projected to a single factor.
+
+        self.training_step_outputs = []
 
     def forward(self, context):
         subtype = self.encoder(context)
@@ -254,7 +261,7 @@ class NOTMAD(pl.LightningModule):
                 dag_term.detach(),
                 arch_l1_term.detach(),
                 arch_dag_term.detach(),
-                0.0
+                0.0,
             )
 
     def training_step(self, batch, batch_idx):
@@ -285,6 +292,7 @@ class NOTMAD(pl.LightningModule):
                 "train_batch_idx": batch_idx,
             }
         )
+        self.training_step_outputs.append(ret)
         return ret
 
     def test_step(self, batch, batch_idx):
@@ -322,9 +330,7 @@ class NOTMAD(pl.LightningModule):
         # ignore archetype loss, use constant alpha/rho upper bound for validation
         dag_term = self.ss_dag_loss(w_pred, **self.val_dag_loss_params).mean()
         if self.latent_dim < self.x_dim:
-            factor_mat_term = l1_loss(
-                self.factor_mat_raw, self.factor_mat_l1
-            )
+            factor_mat_term = l1_loss(self.factor_mat_raw, self.factor_mat_l1)
             loss = mse_term + l1_term + dag_term + factor_mat_term
             ret = {
                 "val_loss": loss,
@@ -340,7 +346,7 @@ class NOTMAD(pl.LightningModule):
                 "val_mse_loss": mse_term,
                 "val_l1_loss": l1_term,
                 "val_dag_loss": dag_term,
-                "val_factor_l1_loss": 0.,
+                "val_factor_l1_loss": 0.0,
             }
         self.log_dict(ret)
         return ret
@@ -357,8 +363,9 @@ class NOTMAD(pl.LightningModule):
         """
         P_sums = self._factor_mat().sum(axis=1)
         w_preds = np.tensordot(
-            w_preds, (self._factor_mat().T.detach().numpy() / P_sums.detach().numpy()).T,
-            axes=1
+            w_preds,
+            (self._factor_mat().T.detach().numpy() / P_sums.detach().numpy()).T,
+            axes=1,
         )  # n x latent x x_dims
         w_preds = np.swapaxes(w_preds, 1, 2)  # n x x_dims x latent
         w_preds = np.tensordot(
@@ -385,7 +392,8 @@ class NOTMAD(pl.LightningModule):
                 print("Error, couldn't project to dag. Returning normal predictions.")
         return trim_params(w_preds, thresh=kwargs.get("threshold", 0.0))
 
-    def training_epoch_end(self, training_step_outputs, logs=None):
+    def on_train_epoch_end(self, logs=None):
+        training_step_outputs = self.training_step_outputs
         # update alpha/rho based on average end-of-epoch dag loss
         epoch_samples = sum(
             [len(ret["train_batch"][0]) for ret in training_step_outputs]
@@ -405,14 +413,16 @@ class NOTMAD(pl.LightningModule):
         self.arch_dag_params = self._maybe_update_alpha_rho(
             epoch_dag_loss, self.arch_dag_params
         )
+        self.training_step_outputs.clear()  # free memory
 
     def _maybe_update_alpha_rho(self, epoch_dag_loss, dag_params):
         """
-            Update alpha/rho use_dynamic_alpha_rho is True.
+        Update alpha/rho use_dynamic_alpha_rho is True.
         """
         if (
             dag_params.get("use_dynamic_alpha_rho", False)
-            and epoch_dag_loss > dag_params.get("tol", .25) * dag_params.get("h_old", 0)
+            and epoch_dag_loss
+            > dag_params.get("tol", 0.25) * dag_params.get("h_old", 0)
             and dag_params["alpha"] < 1e12
             and dag_params["rho"] < 1e12
         ):

@@ -4,14 +4,14 @@ build-backend = "hatchling.build"
 
 [project]
 name = "contextualized-ml"
-version = "0.2.6"
+version = "0.2.7"
 authors = [
   { name="Caleb Ellington", email="cellingt@cs.cmu.edu" },
   { name="Ben Lengerich", email="blengeri@mit.edu" },
 ]
 description = "A statistical machine learning toolbox for estimating models, distributions, and functions with sample-specific parameters."
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
@@ -25,18 +25,22 @@ keywords = [
     "multitask learning",
 ]
 dependencies = [
-    'pytorch-lightning<=1.9.4',
-    'torch<=1.13.1',
-    'torchvision',
-    'numpy',
-    'scikit-learn',
-    'igraph',
-    'dill',
-    'matplotlib',
+    'lightning>=2.0.0',
+    'torch>=2.1.0',
+    'torchvision>=0.8.0',
+    'numpy>=1.19.0',
+    'pandas>=2.0.0',
+    'scikit-learn>=1.0.0',
+    'igraph>=0.11.0',
+    'dill>=0.3.3',
+    'matplotlib>=3.3.0',
 ]
 
 [tool.setuptools.packages]
 find = {}  # Scanning implicit namespaces is active by default
+
+[tool.hatch.build.targets.wheel]
+packages = ["contextualized"]
 
 [project.urls]
 "Homepage" = "https://contextualized.ml/"

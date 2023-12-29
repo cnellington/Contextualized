@@ -5,6 +5,7 @@ import unittest
 import numpy as np
 import igraph as ig
 from pytorch_lightning import seed_everything
+from pytorch_lightning.callbacks import LearningRateFinder
 
 
 from contextualized.dags.lightning_modules import NOTMAD
@@ -49,8 +50,8 @@ class TestNOTMAD(unittest.TestCase):
         C = np.linspace(1, 2, n).reshape((n, 1))
         W = np.zeros((4, 4, n, 1))
         W[0, 1] = C - 2
-        W[2, 1] = C**2
-        W[3, 1] = C**3
+        W[2, 1] = 2 * C
+        W[3, 1] = C**2
         W[3, 2] = C
         W = np.squeeze(W)
 
@@ -121,26 +122,38 @@ class TestNOTMAD(unittest.TestCase):
         val_dataloader = model.dataloader(
             self.C_val, self.X_val, batch_size=10, num_workers=1
         )
-        trainer = GraphTrainer(max_epochs=n_epochs, callbacks=[], deterministic=True, enable_progress_bar=False)
-        preds_train = trainer.predict_params(
+        trainer = GraphTrainer(
+            max_epochs=n_epochs, deterministic=True, enable_progress_bar=False
+        )
+        predict_trainer = GraphTrainer(
+            deterministic=True, enable_progress_bar=False, devices=1
+        )
+        preds_train = predict_trainer.predict_params(
             model, train_dataloader, project_to_dag=True
         )
-        preds_test = trainer.predict_params(model, test_dataloader, project_to_dag=True)
-        preds_val = trainer.predict_params(model, val_dataloader, project_to_dag=True)
+        preds_test = predict_trainer.predict_params(
+            model, test_dataloader, project_to_dag=True
+        )
+        preds_val = predict_trainer.predict_params(
+            model, val_dataloader, project_to_dag=True
+        )
         init_train_l2, init_test_l2, init_val_l2, init_train_mse, _, _ = self._evaluate(
             preds_train, preds_test, preds_val
         )
-        trainer.tune(model)
         trainer.fit(model, train_dataloader)
         trainer.validate(model, val_dataloader)
         trainer.test(model, test_dataloader)
 
         # Evaluate results
-        preds_train = trainer.predict_params(
+        preds_train = predict_trainer.predict_params(
             model, train_dataloader, project_to_dag=True
         )
-        preds_test = trainer.predict_params(model, test_dataloader, project_to_dag=True)
-        preds_val = trainer.predict_params(model, val_dataloader, project_to_dag=True)
+        preds_test = predict_trainer.predict_params(
+            model, test_dataloader, project_to_dag=True
+        )
+        preds_val = predict_trainer.predict_params(
+            model, val_dataloader, project_to_dag=True
+        )
 
         return (
             preds_train,

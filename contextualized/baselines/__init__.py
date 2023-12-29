@@ -6,5 +6,5 @@ from contextualized.baselines.networks import (
     CorrelationNetwork,
     MarkovNetwork,
     BayesianNetwork,
-    GroupedNetworks
+    GroupedNetworks,
 )

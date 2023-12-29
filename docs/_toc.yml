@@ -14,13 +14,19 @@ parts:
     - file: faq
   - caption: Models
     chapters:
-    - file: demos/easy_regression
-    - file: demos/easy_classification
-    - file: demos/easy_networks
+    - file: models/easy_regression
+    - file: models/easy_classification
+    - file: models/easy_networks
       sections:
-        - file: demos/easy_correlation_networks
-        - file: demos/easy_markov_networks
-        - file: demos/easy_bayesian_networks
-        - file: demos/easy_bayesian_networks_factors
+        - file: models/easy_correlation_networks
+        - file: models/easy_markov_networks
+        - file: models/easy_bayesian_networks
+        - file: models/easy_bayesian_networks_factors
+  - caption: Demos
+    chapters:
     - file: demos/custom_models
-
+    - file: demos/benefits
+  - caption: API Reference
+    chapters:
+    - file: source/easy
+    - file: source/analysis
