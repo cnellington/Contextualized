@@ -20,3 +20,5 @@ pytest==7.4.3
 # Packaging
 toml==0.10.2
 tomli==2.0.1
+build==1.0.3
+twine==4.0.2
