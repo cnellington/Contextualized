@@ -212,7 +212,7 @@ def test_sequential_contexts(model_constructor, C, X, Y, **kwargs):
             predictor_col = X[[predictor]].values
 
             model = model_constructor(**fit_params)
-            model.fit(context_col, predictor_col, Y.values)
+            model.fit(context_col, predictor_col, Y.values, **fit_params)
 
             pvals = calc_homogeneous_context_effects_pvals(model, context_col)[0]
 
