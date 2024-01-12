@@ -25,6 +25,8 @@ parts:
   - caption: Demos
     chapters:
     - file: demos/custom_models
-    - file: demos/robust-outliers
     - file: demos/benefits
-
+  - caption: API Reference
+    chapters:
+    - file: source/easy
+    - file: source/analysis

@@ -1,8 +1,8 @@
-![Preview](contextualized_logo.png)
+![Preview](docs/logo.png)
 #
 
 ![License](https://img.shields.io/github/license/cnellington/contextualized.svg?style=flat-square)
-![python](https://img.shields.io/badge/python-3.7%20|%203.8%20|%203.9%20|%203.10-blue)
+![python](https://img.shields.io/badge/python-3.8%20|%203.9%20|%203.10%20|%203.11-blue)
 [![PyPI version](https://badge.fury.io/py/contextualized-ml.svg)](https://badge.fury.io/py/contextualized-ml)
 ![Maintenance](https://img.shields.io/maintenance/yes/2023?style=flat-square)
 [![Downloads](https://pepy.tech/badge/contextualized-ml)](https://pepy.tech/project/contextualized-ml)
@@ -10,7 +10,7 @@
 <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
 
 
-A statistical machine learning toolbox for estimating models, distributions, and functions with context-specific parameters.
+An easy-to-use machine learning toolbox for estimating models, distributions, and functions with context-specific parameters.
 
 Context-specific parameters:
 - Find hidden heterogeneity in data -- are all samples the same?
@@ -25,7 +25,7 @@ Context-specific parameters:
 pip install contextualized-ml
 ```
 
-Take a look at the [easy demo](docs/demos/easy_regression.ipynb) for a quickstart with sklearn-style wrappers.
+Take a look at the [easy demo](docs/models/easy_regression.ipynb) for a quickstart with sklearn-style wrappers.
 
 ### Build a Contextualized Model
 ```
@@ -66,13 +66,16 @@ Feel free to add your own page(s) by sending a PR or request an improvement by c
   <img src="https://contributors-img.web.app/image?repo=cnellington/contextualized" />
 </a>
 
-ContextualizedML was originally implemented by [Caleb Ellington](https://calebellington.com/) (CMU) and [Ben Lengerich](http://web.mit.edu/~blengeri/www) (MIT).
+Contextualized ML was originally implemented by [Caleb Ellington](https://calebellington.com/) (CMU) and [Ben Lengerich](http://web.mit.edu/~blengeri/www) (MIT).
 
 Many people have helped. Check out [ACKNOWLEDGEMENTS.md](https://github.com/cnellington/Contextualized/blob/main/ACKNOWLEDGEMENTS.md)!
 
 
 
 ## Related Publications and Pre-prints
+- [Contextualized Machine Learning](https://arxiv.org/abs/2310.11340)
+- [Contextualized Networks Reveal Heterogeneous Transcriptomic Regulation in Tumors at Sample-Specific Resolution](https://www.biorxiv.org/content/10.1101/2023.12.01.569658v1)
+- [Contextualized Policy Recovery: Modeling and Interpreting Medical Decisions with Adaptive Imitation Learning](https://arxiv.org/abs/2310.07918)
 - [Automated Interpretable Discovery of Heterogeneous Treatment Effectiveness: A COVID-19 Case Study](https://www.sciencedirect.com/science/article/pii/S1532046422001022)
 - [NOTMAD: Estimating Bayesian Networks with Sample-Specific Structures and Parameters](http://arxiv.org/abs/2111.01104)
 - [Discriminative Subtyping of Lung Cancers from Histopathology Images via Contextual Deep Learning](https://www.medrxiv.org/content/10.1101/2020.06.25.20140053v1.abstract)

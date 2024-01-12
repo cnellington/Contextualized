@@ -1,21 +1,29 @@
 """
 Utilities for plotting effects learned by Contextualized models.
 """
-
+from typing import *
 
 import numpy as np
 import matplotlib.pyplot as plt
 
+from contextualized.easy.wrappers import SKLearnWrapper
+
 
 def simple_plot(
-    x_vals,
-    y_vals,
+    x_vals: List[Union[float, int]],
+    y_vals: List[Union[float, int]],
     **kwargs,
-):
+) -> None:
     """
-    Simple plotting of xs and ys with kwargs passed to mpl helpers.
-    :param x_vals:
-    :param y_vals:
+    Simple plotting of y vs x with kwargs passed to matplotlib helpers.
+
+    Args:
+        x_vals: x values to plot
+        y_vals: y values to plot
+        **kwargs: kwargs passed to matplotlib helpers (fill_alpha, fill_color, y_lowers, y_uppers, x_label, y_label, x_ticks, x_ticklabels, y_ticks, y_ticklabels)
+
+    Returns:
+        None
     """
     plt.figure(figsize=kwargs.get("figsize", (8, 8)))
     if "y_lowers" in kwargs and "y_uppers" in kwargs:
@@ -84,16 +92,25 @@ def plot_effect(x_vals, y_means, y_lowers=None, y_uppers=None, **kwargs):
         )
 
 
-def get_homogeneous_context_effects(model, C, **kwargs):
+def get_homogeneous_context_effects(
+    model: SKLearnWrapper, C: np.ndarray, **kwargs
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     Get the homogeneous (context-invariant) effects of context.
-    :param model:
-    :param C:
 
-    returns:
-        c_vis: the context values that were used to estimate the effects
-        effects: np array of effects, one for each context. Each homogeneous effect is a matrix of shape:
-            (n_bootstraps, n_context_vals, n_outcomes).
+    Args:
+        model (SKLearnWrapper): a fitted ``contextualized.easy`` model
+        C: the context values to use to estimate the effects
+        verbose (bool, optional): print progess. Default True.
+        individual_preds (bool, optional): whether to use plot each bootstrap. Default True.
+        C_vis (np.ndarray, optional): Context bins used to visualize context (n_vis, n_contexts). Default None to construct anew.
+        n_vis (int, optional): Number of bins to use to visualize context. Default 1000.
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]:
+            c_vis: the context values that were used to estimate the effects
+            effects: array of effects, one for each context. Each homogeneous effect is a matrix of shape:
+                (n_bootstraps, n_context_vals, n_outcomes).
     """
     if kwargs.get("verbose", True):
         print("Estimating Homogeneous Contextual Effects.")
@@ -233,14 +250,32 @@ def plot_boolean_vars(names, y_mean, y_err, **kwargs):
 
 
 def plot_homogeneous_context_effects(
-    model,
-    C,
+    model: SKLearnWrapper,
+    C: np.ndarray,
     **kwargs,
-):
+) -> None:
     """
-    Plot the homogeneous (context-invariant) effects of context.
-    :param model:
-    :param C:
+    Plot the direct effect of context on outcomes, disregarding other features.
+    This context effect is homogeneous in that it is a static function of context (context-invariant).
+
+    Args:
+        model (SKLearnWrapper): a fitted ``contextualized.easy`` model
+        C: the context values to use to estimate the effects
+        verbose (bool, optional): print progess. Default True.
+        individual_preds (bool, optional): whether to use plot each bootstrap. Default True.
+        C_vis (np.ndarray, optional): Context bins used to visualize context (n_vis, n_contexts). Default None to construct anew.
+        n_vis (int, optional): Number of bins to use to visualize context. Default 1000.
+        lower_pct (int, optional): Lower percentile for bootstraps. Default 2.5.
+        upper_pct (int, optional): Upper percentile for bootstraps. Default 97.5.
+        classification (bool, optional): Whether to exponentiate the effects. Default True.
+        C_encoders (List[sklearn.preprocessing.LabelEncoder], optional): encoders for each context. Default None.
+        C_means (np.ndarray, optional): means for each context. Default None.
+        C_stds (np.ndarray, optional): standard deviations for each context. Default None.
+        xlabel_prefix (str, optional): prefix for x label. Default "".
+        figname (str, optional): name of figure to save. Default None.
+
+    Returns:
+        None
     """
     c_vis, effects = get_homogeneous_context_effects(model, C, **kwargs)
     # effects.shape is (n_context, n_bootstraps, n_context_vals, n_outcomes)
@@ -283,16 +318,34 @@ def plot_homogeneous_context_effects(
 
 
 def plot_homogeneous_predictor_effects(
-    model,
-    C,
-    X,
+    model: SKLearnWrapper,
+    C: np.ndarray,
+    X: np.ndarray,
     **kwargs,
-):
+) -> None:
     """
-    Plot the homogeneous (context-invariant) effects of predictors.
-    :param model:
-    :param C:
-    :param X:
+    Plot the effect of predictors on outcomes that do not change with context (homogeneous).
+
+    Args:
+        model (SKLearnWrapper): a fitted ``contextualized.easy`` model
+        C: the context values to use to estimate the effects
+        X: the predictor values to use to estimate the effects
+        max_classes_for_discrete (int, optional): maximum number of classes to treat as discrete. Default 10.
+        min_effect_size (float, optional): minimum effect size to plot. Default 0.003.
+        ylabel (str, optional): y label for plot. Default "Influence of ".
+        xlabel_prefix (str, optional): prefix for x label. Default "".
+        X_names (List[str], optional): names of predictors. Default None.
+        X_encoders (List[sklearn.preprocessing.LabelEncoder], optional): encoders for each predictor. Default None.
+        X_means (np.ndarray, optional): means for each predictor. Default None.
+        X_stds (np.ndarray, optional): standard deviations for each predictor. Default None.
+        verbose (bool, optional): print progess. Default True.
+        lower_pct (int, optional): Lower percentile for bootstraps. Default 2.5.
+        upper_pct (int, optional): Upper percentile for bootstraps. Default 97.5.
+        classification (bool, optional): Whether to exponentiate the effects. Default True.
+        figname (str, optional): name of figure to save. Default None.
+
+    Returns:
+        None
     """
     c_vis = np.zeros_like(C.values)
     x_vis = make_grid_mat(X.values, 1000)
@@ -355,19 +408,31 @@ def plot_homogeneous_predictor_effects(
 
 def plot_heterogeneous_predictor_effects(model, C, X, **kwargs):
     """
-    Plot the heterogeneous (context-dependent) effects of context.
-    :param model:
-    :param C:
-    :param X:
-    :param encoders:
-    :param C_means:
-    :param C_stds:
-    :param X_names:
-    :param ylabel:  (Default value = "Influence of ")
-    :param min_effect_size:  (Default value = 0.003)
-    :param n_vis:  (Default value = 1000)
-    :param max_classes_for_discrete:  (Default value = 10)
+    Plot how the effect of predictors on outcomes changes with context (heterogeneous).
 
+    Args:
+        model (SKLearnWrapper): a fitted ``contextualized.easy`` model
+        C: the context values to use to estimate the effects
+        X: the predictor values to use to estimate the effects
+        max_classes_for_discrete (int, optional): maximum number of classes to treat as discrete. Default 10.
+        min_effect_size (float, optional): minimum effect size to plot. Default 0.003.
+        y_prefix (str, optional): y prefix for plot. Default "Influence of ".
+        X_names (List[str], optional): names of predictors. Default None.
+        verbose (bool, optional): print progess. Default True.
+        individual_preds (bool, optional): whether to use plot each bootstrap. Default True.
+        C_vis (np.ndarray, optional): Context bins used to visualize context (n_vis, n_contexts). Default None to construct anew.
+        n_vis (int, optional): Number of bins to use to visualize context. Default 1000.
+        lower_pct (int, optional): Lower percentile for bootstraps. Default 2.5.
+        upper_pct (int, optional): Upper percentile for bootstraps. Default 97.5.
+        classification (bool, optional): Whether to exponentiate the effects. Default True.
+        C_encoders (List[sklearn.preprocessing.LabelEncoder], optional): encoders for each context. Default None.
+        C_means (np.ndarray, optional): means for each context. Default None.
+        C_stds (np.ndarray, optional): standard deviations for each context. Default None.
+        xlabel_prefix (str, optional): prefix for x label. Default "".
+        figname (str, optional): name of figure to save. Default None.
+
+    Returns:
+        None
     """
     c_vis = maybe_make_c_vis(C, **kwargs)
     n_vis = c_vis.shape[0]

@@ -28,7 +28,12 @@ DAG_LOSSES = {
 }
 DEFAULT_DAG_LOSS_TYPE = "NOTEARS"
 DEFAULT_DAG_LOSS_PARAMS = {
-    "NOTEARS": {"alpha": 1e-1, "rho": 1e-2, "tol": 0.25, "use_dynamic_alpha_rho": False},
+    "NOTEARS": {
+        "alpha": 1e-1,
+        "rho": 1e-2,
+        "tol": 0.25,
+        "use_dynamic_alpha_rho": False,
+    },
     "DAGMA": {"s": 1, "alpha": 1e0},
     "poly": {},
 }
@@ -143,13 +148,14 @@ class NOTMAD(pl.LightningModule):
         # DAG regularizers
         self.ss_dag_params = sample_specific_loss_params["dag"].get(
             "params",
-            DEFAULT_DAG_LOSS_PARAMS[sample_specific_loss_params["dag"]["loss_type"]].copy(),
+            DEFAULT_DAG_LOSS_PARAMS[
+                sample_specific_loss_params["dag"]["loss_type"]
+            ].copy(),
         )
-        
 
         self.arch_dag_params = archetype_loss_params["dag"].get(
-            "params", 
-            DEFAULT_DAG_LOSS_PARAMS[archetype_loss_params["dag"]["loss_type"]].copy()
+            "params",
+            DEFAULT_DAG_LOSS_PARAMS[archetype_loss_params["dag"]["loss_type"]].copy(),
         )
 
         self.val_dag_loss_params = {"alpha": 1e0, "rho": 1e0}
@@ -415,7 +421,8 @@ class NOTMAD(pl.LightningModule):
         """
         if (
             dag_params.get("use_dynamic_alpha_rho", False)
-            and epoch_dag_loss > dag_params.get("tol", .25) * dag_params.get("h_old", 0)
+            and epoch_dag_loss
+            > dag_params.get("tol", 0.25) * dag_params.get("h_old", 0)
             and dag_params["alpha"] < 1e12
             and dag_params["rho"] < 1e12
         ):

@@ -1,8 +1,10 @@
 """
 Utilities for post-hoc analysis of trained Contextualized models.
 """
+from typing import *
 
 import numpy as np
+import pandas as pd
 from sklearn.metrics import roc_auc_score as roc
 
 
@@ -14,11 +16,25 @@ def get_roc(Y_true, Y_pred):
         return np.nan
 
 
-def print_acc_by_covars(Y_true, Y_pred, covar_df, **kwargs):
+def print_acc_by_covars(
+    Y_true: np.ndarray, Y_pred: np.ndarray, covar_df: pd.DataFrame, **kwargs
+) -> None:
     """
     Prints Accuracy for different data splits with covariates.
-    Assume Y_true and Y_pred are np arrays.
-    Allows train_idx and test_idx as Boolean locators.
+
+    Args:
+        Y_true (np.ndarray): True labels.
+        Y_pred (np.ndarray): Predicted labels.
+        covar_df (pd.DataFrame): DataFrame of covariates.
+        max_classes (int, optional): Maximum number of classes to print. Defaults to 20.
+        covar_stds (np.ndarray, optional): Standard deviations of covariates. Defaults to None.
+        covar_means (np.ndarray, optional): Means of covariates. Defaults to None.
+        covar_encoders (List[LabelEncoder], optional): Encoders for covariates. Defaults to None.
+        train_idx (np.ndarray, optional): Boolean array indicating training data. Defaults to None.
+        test_idx (np.ndarray, optional): Boolean array indicating testing data. Defaults to None.
+
+    Returns:
+        None
     """
     Y_true = np.squeeze(Y_true)
     Y_pred = np.squeeze(Y_pred)
