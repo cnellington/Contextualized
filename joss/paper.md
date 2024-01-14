@@ -52,10 +52,10 @@ Statistical tools are inaccurate for heterogeneous data, being too inflexible to
 To address this, we present [`Contextualized ML`](https://contextualized.ml/), an easy-to-use SKLearn-style machine learning toolbox for estimating and analyzing context-dependent models at per-sample resolution.
 `Contextualized ML` uses a synergy of deep learning and statistical modeling to infer sample-specific models using sample contexts or metadata, providing individualized model-based insights for each sample, and representing heterogeneity in data through variation in sample-specific model parameters.
 We do this by introducing two reusable concepts: *a context encoder* which translates sample context or metadata into model parameters, and *sample-specific model* which is defined by the context-specific parameters.
-Our formulation unifies a wide variety of popular modeling approaches, including simple population modeling, sub-population modeling, (latent) mixture modeling, cluster modeling, time-varying models, and varying-coefficient models, and conveniently defaults to the most appropriate type of traditional model when complex heterogeneity is not present.
+Our formulation unifies a wide variety of popular modeling approaches, including simple population modeling, sub-population modeling, (latent) mixture modeling, cluster modeling, time-varying models, and varying-coefficient models [@hastie1993varying], and conveniently defaults to the most appropriate type of traditional model when complex heterogeneity is not present.
 Notably, `Contextualized ML` also permits context-specific modeling even when the number of contexts vastly exceeds the number of observed samples, superceding previous frameworks by enabling even sample-specific modeling with no loss of statistical power.
 
-`Contextualized ML` is a lean utility-oriented implementation of the broader Contextualized Machine Learning paradigm [@lengerich_contextualized_2023], focusing on the most important, novel, and popular use cases from recent works using contextualized models [@ellington_contextualized_2023, @deuschel_contextualized_2023, @lengerich_notmad_2021, @al-shedivat_contextual_2020, @lengerich_automated_2022, @lengerich_discriminative_2020, @al-shedivat_personalized_2018].
+`Contextualized ML` is a lean, utility-oriented implementation of the broader Contextualized Machine Learning paradigm [@lengerich_contextualized_2023], focusing on the most important, novel, and popular use cases from recent works developing contextualized models [@ellington_contextualized_2023, @deuschel_contextualized_2023, @lengerich_notmad_2021, @al-shedivat_contextual_2020, @lengerich_automated_2022, @lengerich_discriminative_2020, @al-shedivat_personalized_2018].
 We provide `Contextualized ML` as a Python package written in native PyTorch with a simple SKLearn-style interface.
 
 **Contextualized ML serves three primary purposes:**
@@ -66,7 +66,7 @@ We provide `Contextualized ML` as a Python package written in native PyTorch wit
 
 ![](figs/contextualized_logo.png){width=90%}
 
-# Main Use Cases
+# Popular Use Cases
 Traditionally, contextual factors might be controlled for by splitting data into many context-specific groups, but this quickly limits statistical power and model accuracy as the number of contexts increases, and in real data the number of possible contexts can vastly exceed the amount of data available.
 For example, there are 11,500,000 known single-nucleotide polymorphisms in humans, implying $2^{11,500,000}$ genetic contexts, but only about $2^{37}$ people have ever existed.
 
@@ -88,35 +88,6 @@ Both components are highly adaptable; the context encoder can be replaced with a
 
 This framework exhibits desirable properties, such as its ability to infer sample-specific models without losing power by splitting data into many subgroups, incorporate multiple data modalities via context encoding, explicitly test for heterogeneity in real data, while automatically defaulting to the most appropriate type of traditional model when complex heterogeneity is not present.
 
-# Projects Using Contextualized Models
-
-Contextualized Networks [ellington_contextualized_2023], Contextualized Policy Recovery [deuschel_contextualized_2023].
-
-# Acknowledgements
-
-We are grateful for early user input from Juwayni Lucman, Alyssa Lee, and Jannik Deuschel.
-
-# To remove...
-
-## Contextualized Machine Learning
-
-TODO: Cite Contextualized Machine Learning Arxiv paper
-
-Contextualized learning seeks to estimate heterogeneous effects by estimating distributions that adapt to context:
-    $$Y|X \sim \mathbb{P}_{f(C)}$$
-
-That is, contextual data $C$ is transformed into a distribution of conditional distributions by a learnable function $f$.
-In standard machine learning terms, estimators of model parameters $\hat{\theta}$ are replaced by estimators of functions $\hat{\theta}(C)$.
-For example, in a regression model, contextualized machine learning can be as simple as a linear varying-coefficient model [@hastie1993varying]: $Y|X = \text{N}(X\beta C^T, \sigma^2)$, in which $\beta \in \mathbb{R}^{p \times k}$ transforms context $C^T \in \mathbb{R}^{k \times 1}$ into sample-specific $\theta \in \mathbb{R}^{1 \times p}$.
-In this example, $f(C) = \beta C^T$, and $\mathbb{P}_{\theta} = \delta(\text{N}(X\theta, \sigma^2))$.
-Thus, the learnable parameters are $\beta$ and $\sigma^2$, and these can be estimated directly by either analytical solutions (since this is a linear model) or backpropagation.
-
-Contextualized machine learning advances this paradigm with deep context encoders.
-The meta-models can be learned by simple end-to-end backpropagation and are composed of simple building blocks that enable extensibility.
-`ContextualizedML` simplifies this paradigm into a `PyTorch` package with a straightforward `sklearn`-style interface.
-
-### Benefits of Contextualized Machine Learning
-
 Contextualized machine learning has several advantages over partition-based analyses:
 
 - By sharing information between all contexts, contextualized learning is able to estimate heterogeneity at fine-grained resolution.
@@ -125,82 +96,8 @@ Contextualized machine learning has several advantages over partition-based anal
 
 Detailed documentation is available at [contextualized.ml/docs](https://contextualized.ml/docs).
 
-## Model Classes
+# Acknowledgements
 
-### Contextualized Generalized Linear Models (GLMs)
-Contextualized GLMs of the form:
-\begin{align}
-    \mathbb{E}[Y|X, C] = f\left(X\beta(C)\right),
-\end{align}
-where $\beta(C)$ is a deep context encoder, are implemented in `Contextualized.ML` with easy interfaces.
-For example, contextualized linear regression:
-\begin{align}
-    \mathbb{E}[Y|X,C] = X\beta(C),
-\end{align}
-is available by the `contextualized.easy.ContextualizedRegressor` class.
-Similarly, contextualized logistic regression:
-\begin{align}
-    \mathbb{E}[\text{Pr}(Y=1)|X,C] = \sigma(X\beta(C))
-\end{align}
-is available by the `contextualized.easy.ContextualizedClassifier` class:
-
-### Contextualized Networks
-`ContextualizedML` also provides easy interfaces to contextualized networks:
-
-- `contextualized.easy.ContextualizedCorrelationNetworks`
-- `contextualized.easy.ContextualizedMarkovNetworks`
-- `contextualized.easy.ContextualizedBayesianNetworks`
-
-These network classes follow the same `sklearn`-style interface as the GLMs.
-
-### Encoder Models
-Several forms of context encoder $f$ are available in `ContextualizedML` (\autoref{fig:encoder_types}).
-These are all deep learning models but provide different advantages in parameter count and interpretability.
-For example, the `Naive` encoder directly generates sample-specific model parameters $\theta$ while the `Subtype` encoder uses a latent space to bottleneck the axes of variability in model parameters.
-Finally, the `Multi-Task` and `Task-Split` encoders provide mechanisms to split the influence of contextual and task covariates.
-
-![Encoder Types.\label{fig:encoder_types}](figs/encoder_types.pdf){width=100%}
-
-
-## Analyses of Contextualized Models
-
-As with all `sklearn`-style models, `ContextualizedML` models make predictions with the `predict` function; however, there are a number of analyses available for `ContextualizedML` models that are unique to heterogeneous models.
-
-Firstly, we can predict context-specific model parameters:
-```
-    betas, mus = model.predict_params(C)
-```
-We can visualize embeddings (e.g. from `UMAP`) of these model parameters to understand the distribution of heterogeneous effects.
-
-We can also visualize the model parameters as a function of context in three different ways:
-
-- `contextualized.analysis.effects.plot_homogeneous_context_effects`: $\mathbb{E}[Y|C]$
-- `contextualized.analysis.effects.plot_homogeneous_predictor_effects`: $\mathbb{E}[Y|X]$
-- `contextualized.analysis.effects.plot_heterogeneous_predictor_effects`: $\mathbb{E}[\beta(C)|C]$
-
-Finally, `ContextualizedML` uses internal bootstrapping, which provides measures of statistical robustness for each estimated effect.
-Convenience functions for measuring and reporting p-values from these bootstrap samples are available in `contextualized.analysis.pvals`.
-
-# Projects Using `ContextualizedML`
-Contextualized ML has been deployed for different biological and medical data analyses, where latent processes or population clusterings affect the performance of classical ML methods. These populations are frequently heterogeneus and, therefore, allowing for varying coefficients in ML models results in better predictions on the general population, and allows for integrating data from different states, individuals, or cells.
-## Discriminative Subtyping of Lung Cancers from Histopathology Images via Contextual Deep Learning
-
-When developing personalized treatment plans for cancer patients, clinicians face the challenge of integrating diverse data modalities into a concise representation of the patient's unique disease. In this project, a novel approach that considers patient's descriptions as latent discriminative subtypes has been designed. These subtypes serve as learned representations, enabling the contextualization of predictions. Specifically, contextual deep learning techniques have been employed to learn patient-specific discriminative subtypes using histopathology imagery of lung cancer. These subtypes are then used to construct sample-specific transcriptomic models that accurately classify samples, outperforming previous multimodal methods. 
-
-## Personalized Survival Prediction with Contextual Explanation Networks
-
-In this study, the aim was to enhance patient care and treatment practices by developing a model that can accurately predict the survival times of individual cancer patients while providing transparent explanations for its predictions based on patient attributes like clinical tests or assessments. The final model is designed to be flexible and utilizes a recurrent network, enabling it to handle different types of data, including temporal measurements. 
-
-## NOTMAD: Estimating Bayesian Networks with Sample-Specific Structures and Parameters
-
-Context-specific Bayesian networks, represented as directed acyclic graphs (DAGs), establish relationships between variables that depend on the context. However, the non-convexity resulting from the acyclicity requirement poses a challenge in sharing information among context-specific estimators. To address this issue, NOTMAD models context-specific Bayesian networks by generating them as the output of a function that combines archetypal networks based on the observed context. The archetypal networks are estimated simultaneously with the context-specific networks and do not rely on any prior knowledge. NOTMAD facilitates the sharing of information between context-specific DAGs, enabling the estimation of both the structure and parameters of Bayesian networks, even at the resolution of a single sample. NOTMAD has been employed in inferring patient-specific gene expression networks, which correspond to variations in cancer morphology.
-
-## Contextualized Differential Gene Expression Analysis
-### Don't know if this is going to be ready in time.
-
-Gene expression indicates which proteins are being produced in a cell at a given state, which in turn indicates the active and inactive cellular pathways. The analysis of gene expression is, therefore, a proper indicator of how different states (e.g. healthy or with a disease) affect the transcriptome of the cells. To perform differential expression analysis in multi-subject single-cell data, negative binomial mixed models are commonly employed. These models effectively address both subject-level and cell-level overdispersions. However, they can be computationally intensive. Using a large-sample approximation, analytically solving high-dimensional integrals, resolves this problem. 
-The project expands the concept by considering possible heterogeneities in the data, allowing the model to vary the coefficients considering contextualizing features, such as genotype, age or sex.
-
-## Jannik's article?
+We are grateful for early user input from Juwayni Lucman, Alyssa Lee, and Jannik Deuschel.
 
 # References
