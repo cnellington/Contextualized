@@ -53,6 +53,7 @@ To address this, we present [`Contextualized ML`](https://contextualized.ml/), a
 `Contextualized ML` further supercedes these frameworks, permitting even sample-specific modeling without losing statistical power.
 We provide a `Python` package written in native `PyTorch` with an `SKLearn`-style interface for working with contextualized models.
 This package serves three primary purposes:
+
 1. To provide a simple plug-and-play interface for users to infer contextualized versions of most popular model classes (e.g. linear regression, classifiers, graphical models, and Gaussians),
 2. To provide intuitive analysis tools to understand, quantify, test, and visualize data with heterogeneous or context-dependent behavior, and 
 3. To provide a highly extensible framework for researchers to develop new contextualized models.
@@ -76,6 +77,10 @@ In contrast, *contextualized* models adapt to the context of each sample (\autor
 By embracing heterogeneity and context-dependence, contextualized learning provides representational capacity while retaining the glass-box nature of statistical modeling.
 
 ![Contextualized Machine Learning paradigm.\label{fig:paradigm}](figs/context_encoders_sideways.pdf){width=100%}
+
+# Conceptual Framework
+
+Contextualized Machine Learning \cite{ellington_contextualized_2023}.
 
 # Projects Using Contextualized Models
 

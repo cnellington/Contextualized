@@ -8,3 +8,50 @@
   year={1993},
   publisher={Wiley Online Library}
 }
+
+@misc{deuschel_contextualized_2023,
+	title = {Contextualized {Policy} {Recovery}: {Modeling} and {Interpreting} {Medical} {Decisions} with {Adaptive} {Imitation} {Learning}},
+	shorttitle = {Contextualized {Policy} {Recovery}},
+	url = {http://arxiv.org/abs/2310.07918},
+	doi = {10.48550/arXiv.2310.07918},
+	abstract = {Interpretable policy learning seeks to estimate intelligible decision policies from observed actions; however, existing models fall short by forcing a tradeoff between accuracy and interpretability. This tradeoff limits data-driven interpretations of human decision-making process. e.g. to audit medical decisions for biases and suboptimal practices, we require models of decision processes which provide concise descriptions of complex behaviors. Fundamentally, existing approaches are burdened by this tradeoff because they represent the underlying decision process as a universal policy, when in fact human decisions are dynamic and can change drastically with contextual information. Thus, we propose Contextualized Policy Recovery (CPR), which re-frames the problem of modeling complex decision processes as a multi-task learning problem in which complex decision policies are comprised of context-specific policies. CPR models each context-specific policy as a linear observation-to-action mapping, and generates new decision models \${\textbackslash}textit\{on-demand\}\$ as contexts are updated with new observations. CPR is compatible with fully offline and partially observable decision environments, and can be tailored to incorporate any recurrent black-box model or interpretable decision model. We assess CPR through studies on simulated and real data, achieving state-of-the-art performance on the canonical tasks of predicting antibiotic prescription in intensive care units (\$+22{\textbackslash}\%\$ AUROC vs. previous SOTA) and predicting MRI prescription for Alzheimer's patients (\$+7.7{\textbackslash}\%\$ AUROC vs. previous SOTA). With this improvement in predictive performance, CPR closes the accuracy gap between interpretable and black-box methods for policy learning, allowing high-resolution exploration and analysis of context-specific decision models.},
+	urldate = {2023-11-02},
+	publisher = {arXiv},
+	author = {Deuschel, Jannik and Ellington, Caleb N. and Lengerich, Benjamin J. and Luo, Yingtao and Friederich, Pascal and Xing, Eric P.},
+	month = oct,
+	year = {2023},
+	note = {arXiv:2310.07918 [cs, stat]},
+	keywords = {Computer Science - Artificial Intelligence, Computer Science - Machine Learning, Statistics - Machine Learning},
+	file = {arXiv Fulltext PDF:/Users/calebellington/Zotero/storage/AJ8XNWW6/Deuschel et al. - 2023 - Contextualized Policy Recovery Modeling and Inter.pdf:application/pdf},
+}
+
+@misc{lengerich_contextualized_2023,
+	title = {Contextualized {Machine} {Learning}},
+	url = {http://arxiv.org/abs/2310.11340},
+	doi = {10.48550/arXiv.2310.11340},
+	abstract = {We examine Contextualized Machine Learning (ML), a paradigm for learning heterogeneous and context-dependent effects. Contextualized ML estimates heterogeneous functions by applying deep learning to the meta-relationship between contextual information and context-specific parametric models. This is a form of varying-coefficient modeling that unifies existing frameworks including cluster analysis and cohort modeling by introducing two reusable concepts: a context encoder which translates sample context into model parameters, and sample-specific model which operates on sample predictors. We review the process of developing contextualized models, nonparametric inference from contextualized models, and identifiability conditions of contextualized models. Finally, we present the open-source PyTorch package ContextualizedML.},
+	urldate = {2023-11-02},
+	publisher = {arXiv},
+	author = {Lengerich, Benjamin and Ellington, Caleb N. and Rubbi, Andrea and Kellis, Manolis and Xing, Eric P.},
+	month = oct,
+	year = {2023},
+	note = {arXiv:2310.11340 [cs, stat]},
+	keywords = {Computer Science - Machine Learning, Statistics - Machine Learning},
+}
+
+@misc{ellington_contextualized_2023,
+	title = {Contextualized {Networks} {Reveal} {Heterogeneous} {Transcriptomic} {Regulation} in {Tumors} at {Sample}-{Specific} {Resolution}},
+	copyright = {© 2023, Posted by Cold Spring Harbor Laboratory. This pre-print is available under a Creative Commons License (Attribution 4.0 International), CC BY 4.0, as described at http://creativecommons.org/licenses/by/4.0/},
+	url = {https://www.biorxiv.org/content/10.1101/2023.12.01.569658v1},
+	doi = {10.1101/2023.12.01.569658},
+	abstract = {Cancers are shaped by somatic mutations, microenvironment, and patient background, each altering gene expression and regulation in complex ways, resulting in heterogeneous cellular states and dynamics. Inferring gene regulatory network (GRN) models from expression data can help characterize this regulation-driven heterogeneity, but network inference requires many statistical samples, traditionally limiting GRNs to cluster-level analyses that ignore intra-cluster heterogeneity. We propose to move beyond cluster-based analyses by using contextualized learning, a multi-task learning paradigm which allows us to infer sample-specific models using phenotypic, molecular, and environmental information pertinent to the model, encoded as the model's "context" to be conditioned on. We unify three network model classes (Correlation, Markov, Neighborhood) and estimate context-specific GRNs for 7997 tumors across 25 tumor types, with each network contextualized by copy number and driver mutation profiles, tumor microenvironment, and patient demographics. Contextualized GRNs provide a structured view of expression dynamics at sample-specific resolution, which reveal co-expression modules in correlation networks (CNs), as well as cliques and independent regulatory elements in Markov Networks (MNs) and Neighborhood Regression Networks (NNs). Our generative modeling approach allows us to predict GRNs for unseen tumor types based on a pan-cancer model of how somatic mutations affect gene regulation. Finally, contextualized networks enable GRN-based precision oncology, explaining known biomarkers in terms of network-mediated effects, and leading to novel subtypings for thyroid, brain, and gastrointestinal tumors that improve survival prognosis.},
+	language = {en},
+	urldate = {2023-12-06},
+	publisher = {bioRxiv},
+	author = {Ellington, Caleb N. and Lengerich, Benjamin J. and Watkins, Thomas BK and Yang, Jiekun and Xiao, Hanxi and Kellis, Manolis and Xing, Eric P.},
+	month = dec,
+	year = {2023},
+	note = {Pages: 2023.12.01.569658
+Section: New Results},
+	file = {Full Text PDF:/Users/calebellington/Zotero/storage/TBK7SS4L/Ellington et al. - 2023 - Contextualized Networks Reveal Heterogeneous Trans.pdf:application/pdf},
+}
