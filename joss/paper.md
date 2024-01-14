@@ -49,17 +49,17 @@ bibliography: paper.bib
 # Summary
 
 Complex, heterogeneous, and context-dependent systems are a defining characteristic of biology, medicine, finance, and the social sciences, and more generally any field that focuses on understanding real-world systems from observational data.
-Distilling data into accurate and interpretable models of these systems provides fundamental insights about these systems' behavior, allowing us to predict and manipulate them for human benefit.
-Research has traditionally focused on distilling data via statistical tools or deep learning methods, but both are inappropriate for modeling heterogeneous and context-dependent systems.
+Distilling data into accurate and interpretable models provides fundamental insights about these systems' behavior, allowing us to predict and manipulate them for human benefit.
+Research has traditionally focused on distilling data via statistical tools or deep learning methods, but both are insufficient in this regime.
 Statistical tools are inaccurate for heterogeneous data, being too inflexible to capture nuanced and context-dependent effects, while deep learning frameworks are flexible but inherently uninterpretable, precluding actionable model-based insights.
 
 To address this, we present [`Contextualized ML`](https://contextualized.ml/), an easy-to-use SKLearn-style machine learning toolbox for estimating and analyzing context-dependent models at per-sample resolution.
-`Contextualized ML` uses a synergy of deep learning and statistical modeling to infer sample-specific models using sample contexts or metadata, providing individualized model-based insights for each sample, and representing heterogeneity in data through variation in sample-specific model parameters.
-We do this by introducing two reusable concepts: *a context encoder* which translates sample context or metadata into model parameters, and *sample-specific model* which is defined by the context-specific parameters.
+`Contextualized ML` uses a synergy of deep learning and statistical modeling to infer sample-specific models using sample contexts and metadata, providing individualized model-based insights for each sample, and representing heterogeneity in data through variation in sample-specific model parameters.
+We do this by introducing two reusable concepts: *a context encoder* which translates sample context or metadata into model parameters, and *sample-specific model* which is defined by the context-specific parameters (\autoref{fig:paradigm}).
 Our formulation unifies a wide variety of popular modeling approaches, including simple population modeling, sub-population modeling, (latent) mixture modeling, cluster modeling, time-varying models, and varying-coefficient models [@hastie1993varying], and conveniently defaults to the most appropriate type of traditional model when complex heterogeneity is not present.
-Notably, `Contextualized ML` also permits context-specific modeling even when the number of contexts vastly exceeds the number of observed samples, superceding previous frameworks by enabling even sample-specific modeling with no loss of statistical power.
+Notably, `Contextualized ML` also permits context-specific modeling even when the number of contexts vastly exceeds the number of observed samples, superceding previous frameworks by enabling even sample-specific modeling without losing statistical power.
 
-`Contextualized ML` is a lean, utility-oriented implementation of the broader Contextualized Machine Learning paradigm [@lengerich_contextualized_2023], focusing on the most novel and popular use cases from recent works developing contextualized models [@ellington_contextualized_2023; @deuschel_contextualized_2023; @lengerich_notmad_2021; @al-shedivat_contextual_2020; @lengerich_automated_2022; @lengerich_discriminative_2020; @al-shedivat_personalized_2018].
+`Contextualized ML` is a lean, utility-oriented implementation of the broader Contextualized Machine Learning paradigm [@lengerich_contextualized_2023], focusing on novel and popular use cases from recent works developing contextualized models [@ellington_contextualized_2023; @deuschel_contextualized_2023; @lengerich_notmad_2021; @al-shedivat_contextual_2020; @lengerich_automated_2022; @lengerich_discriminative_2020; @al-shedivat_personalized_2018; @stoica_contextual_2020].
 We provide `Contextualized ML` as a Python package written in native PyTorch with a simple SKLearn-style interface.
 
 **Contextualized ML serves three primary purposes:**
@@ -74,8 +74,8 @@ Documentation, tutorials, API reference, installation instructions, and open-sou
 ![Contextualized Machine Learning paradigm.\label{fig:paradigm}](figs/context_encoders_sideways.pdf){width=100%}
 
 
-# Benefits of Contextualized ML
-This framework exhibits desirable properties, such as its ability to infer sample-specific models without losing power by splitting data into many subgroups, incorporate multiple data modalities via context encoding, explicitly test for heterogeneity in real data, while automatically defaulting to the most appropriate type of traditional model when complex heterogeneity is not present.
+# Benefits and Use Cases of Contextualized ML
+This framework's main use cases are derived from the desirable properties it exhibits, such as its ability to infer personalized models without losing power by splitting data into many subgroups, incorporate multiple data modalities via context encoding, explicitly test for heterogeneity in real data, and automatically default to the most appropriate type of traditional model when complex heterogeneity is not present.
 
 ## High-resolution Heterogeneity
 Previous cluster or cohort-based methods infer a single statistical model that is shared amongst all the samples in a (sub)population, implicitly assuming that intra-cluster or intra-cohort samples are homogeneous and identically distributed.
