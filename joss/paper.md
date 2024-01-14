@@ -45,18 +45,20 @@ bibliography: paper.bib
 # Summary
 
 <!-- Digitization of biomedical, financial, and governmental systems has produced massive amounts of data covering the  -->
-Biology, medicine, finance, and the social sciences are defined by complex, heterogeneous, and context-dependent systems that are difficult to model.
-Traditional statistical tools are often insufficient to capture these nuanced effects in heterogeneous populations, while deep learning frameworks fit the data but rarely provide succinct and intelligible insights.
+The fields of biology, medicine, finance, and the social sciences are characterized by complex, heterogeneous, and context-dependent systems.
+A primary goal in these fields is to distill accurate and interpretable models of these systems from data, often using statistical modeling or deep learning.
+Unfortunately, traditional statistical tools are often inaccurate in this regime, being too inflexible to capture nuanced effects in heterogeneous populations, while deep learning frameworks are flexible but inherently uninterpretable.
 To address this, we present [`Contextualized ML`](https://contextualized.ml/), an easy-to-use `SKLearn`-style machine learning toolbox for estimating and analyzing context-dependent models at per-sample resolution.
 <!-- Fundamentally, heterogeneity is driven by variability in the latent systems that define data generation and observation, and modeling heterogeneous data requires an approach that can  -->
-`Contextualized ML` unifies and supercedes a wide variety of popular modeling approaches, including simple population modeling, sub-population modeling, (latent) mixture modeling, cluster modeling, time-varying models, and varying-coefficient models.
-`Contextualized ML` further supercedes these frameworks, permitting even sample-specific modeling without losing statistical power.
+`Contextualized ML` combines both deep learning and statistical modeling, learning to personalize models based on individual sample contexts and metadata, providing both a simple model-based representation of each context-specific system and learning how these systems vary over context to produce heterogeneity and complexity in the observed data.
 We provide a `Python` package written in native `PyTorch` with an `SKLearn`-style interface for working with contextualized models.
-This package serves three primary purposes:
 
-1. To provide a simple plug-and-play interface for users to infer contextualized versions of most popular model classes (e.g. linear regression, classifiers, graphical models, and Gaussians),
-2. To provide intuitive analysis tools to understand, quantify, test, and visualize data with heterogeneous or context-dependent behavior, and 
-3. To provide a highly extensible framework for researchers to develop new contextualized models.
+
+**Contextualized ML serves three primary purposes:**
+
+1. To provide a simple plug-and-play interface to infer contextualized versions of most popular model classes (e.g. linear regression, classifiers, graphical models, Gaussians).
+2. To enable immediate results via intuitive analysis tools to understand, quantify, test, and visualize data with heterogeneous or context-dependent behavior.
+3. To create a blueprint for researchers to develop new contextualized models in a highly extensible framework.
 
 ![](figs/contextualized_logo.png){width=90%}
 
@@ -68,6 +70,12 @@ Both components are highly adaptable; the context encoder can be replaced with a
 This framework exhibits desirable properties, such as its ability to infer sample-specific models without losing power by splitting data into many subgroups, incorporate multiple data modalities via context encoding, explicitly test for heterogeneity in real data, while automatically defaulting to the most appropriate type of traditional model when complex heterogeneity is not present.
 
 # Statement of Need
+Traditionally, contextual factors might be controlled for by splitting data into many context-specific groups, but this quickly limits statistical power and model accuracy as the number of contexts increases, and in real data the number of possible contexts can vastly exceed the amount of data available.
+For example, there are 11,500,000 known single-nucleotide polymorphisms in humans, implying $2^{11,500,000}$ genetic contexts, but only about $2^{37}$ people have ever existed.
+
+# Use Cases
+`Contextualized ML` unifies and supercedes a wide variety of popular modeling approaches, including simple population modeling, sub-population modeling, (latent) mixture modeling, cluster modeling, time-varying models, and varying-coefficient models.
+`Contextualized ML` further supercedes these frameworks, permitting even sample-specific modeling without losing statistical power.
 
 Previous cluster or cohort-based methods infer a single statistical model that is shared amongst all the samples in a (sub)population, implicitly assuming that intra-cluster or intra-cohort samples are homogeneous and identically distributed.
 This simplifies the resulting mathematical models, but ignores heterogeneity -- as a result, models which use homogeneous effects to mimic heterogeneous phenomena force users to pick *either* model flexibility or parsimony.
