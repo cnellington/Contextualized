@@ -42,8 +42,6 @@ date: 1 Jan 2024
 bibliography: paper.bib
 ---
 
-![](figs/contextualized_logo.png){width=90%}
-
 # Summary
 
 Complex, heterogeneous, and context-dependent systems are a defining characteristic of biology, medicine, finance, and the social sciences, and more generally any field that focuses on understanding real-world systems from observational data.
@@ -57,7 +55,7 @@ We do this by introducing two reusable concepts: *a context encoder* which trans
 Our formulation unifies a wide variety of popular modeling approaches, including simple population modeling, sub-population modeling, (latent) mixture modeling, cluster modeling, time-varying models, and varying-coefficient models, and conveniently defaults to the most appropriate type of traditional model when complex heterogeneity is not present.
 Notably, `Contextualized ML` also permits context-specific modeling even when the number of contexts vastly exceeds the number of observed samples, superceding previous frameworks by enabling even sample-specific modeling with no loss of statistical power.
 
-`Contextualized ML` is an implementation of the broader Contextualized Machine Learning paradigm [@lengerich_contextualized_2023], focusing on the most important, novel, and popular use cases from recent works [@ellington_contextualized_2023; @deuschel_contextualized_2023].
+`Contextualized ML` is a lean utility-oriented implementation of the broader Contextualized Machine Learning paradigm [@lengerich_contextualized_2023], focusing on the most important, novel, and popular use cases from recent works using contextualized models [@ellington_contextualized_2023, @deuschel_contextualized_2023, @lengerich_notmad_2021, @al-shedivat_contextual_2020, @lengerich_automated_2022, @lengerich_discriminative_2020, @al-shedivat_personalized_2018].
 We provide `Contextualized ML` as a Python package written in native PyTorch with a simple SKLearn-style interface.
 
 **Contextualized ML serves three primary purposes:**
@@ -65,6 +63,8 @@ We provide `Contextualized ML` as a Python package written in native PyTorch wit
 1. It provides a simple plug-and-play interface to learn contextualized versions of most popular model classes (e.g. linear regression, classifiers, graphical models, Gaussians).
 2. It enables immediate results with intuitive analysis tools to understand, quantify, test, and visualize data with heterogeneous and context-dependent behavior.
 3. It provides a highly extensible and modular framework for researchers to develop new contextualized models.
+
+![](figs/contextualized_logo.png){width=90%}
 
 # Main Use Cases
 Traditionally, contextual factors might be controlled for by splitting data into many context-specific groups, but this quickly limits statistical power and model accuracy as the number of contexts increases, and in real data the number of possible contexts can vastly exceed the amount of data available.

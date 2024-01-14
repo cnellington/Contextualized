@@ -55,3 +55,108 @@
 Section: New Results},
 	file = {Full Text PDF:/Users/calebellington/Zotero/storage/TBK7SS4L/Ellington et al. - 2023 - Contextualized Networks Reveal Heterogeneous Trans.pdf:application/pdf},
 }
+
+@article{al-shedivat_contextual_2020,
+	title = {Contextual {Explanation} {Networks}},
+	volume = {21},
+	issn = {1532-4435},
+	url = {http://jmlr.org/papers/v21/18-856.html},
+	number = {194},
+	urldate = {2022-04-26},
+	journal = {J. Mach. Learn. Res.},
+	author = {Al-Shedivat, Maruan and Dubey, Avinava and Xing, Eric},
+	year = {2020},
+	keywords = {Archive/Explainability, Contextualized models review},
+	pages = {1--44},
+}
+
+@article{lengerich_notmad_2021,
+	title = {{NOTMAD}: {Estimating} {Bayesian} {Networks} with {Sample}-{Specific} {Structures} and {Parameters}},
+	shorttitle = {{NOTMAD}},
+	url = {http://arxiv.org/abs/2111.01104},
+	abstract = {Context-specific Bayesian networks (i.e. directed acyclic graphs, DAGs) identify context-dependent relationships between variables, but the non-convexity induced by the acyclicity requirement makes it difficult to share information between context-specific estimators (e.g. with graph generator functions). For this reason, existing methods for inferring context-specific Bayesian networks have favored breaking datasets into subsamples, limiting statistical power and resolution, and preventing the use of multidimensional and latent contexts. To overcome this challenge, we propose NOTEARS-optimized Mixtures of Archetypal DAGs (NOTMAD). NOTMAD models context-specific Bayesian networks as the output of a function which learns to mix archetypal networks according to sample context. The archetypal networks are estimated jointly with the context-specific networks and do not require any prior knowledge. We encode the acyclicity constraint as a smooth regularization loss which is back-propagated to the mixing function; in this way, NOTMAD shares information between context-specific acyclic graphs, enabling the estimation of Bayesian network structures and parameters at even single-sample resolution. We demonstrate the utility of NOTMAD and sample-specific network inference through analysis and experiments, including patient-specific gene expression networks which correspond to morphological variation in cancer.},
+	urldate = {2022-05-03},
+	journal = {arXiv:2111.01104 [cs, stat]},
+	author = {Lengerich, Ben and Ellington, Caleb and Aragam, Bryon and Xing, Eric P. and Kellis, Manolis},
+	month = nov,
+	year = {2021},
+	note = {arXiv: 2111.01104},
+	keywords = {Computer Science - Artificial Intelligence, Computer Science - Machine Learning, Statistics - Machine Learning, Temp, notion},
+	file = {arXiv Fulltext PDF:/Users/calebellington/Zotero/storage/FMLSGGMW/Lengerich et al. - 2021 - NOTMAD Estimating Bayesian Networks with Sample-S.pdf:application/pdf;arXiv.org Snapshot:/Users/calebellington/Zotero/storage/C7BCCHIU/2111.html:text/html},
+}
+
+
+@article{lengerich_automated_2022,
+	title = {Automated {Interpretable} {Discovery} of {Heterogeneous} {Treatment} {Effectiveness}: {A} {COVID}-19 {Case} {Study}},
+	issn = {1532-0464},
+	url = {https://www.sciencedirect.com/science/article/pii/S1532046422001022},
+	doi = {10.1016/j.jbi.2022.104086},
+	abstract = {Testing multiple treatments for heterogeneous (varying) effectiveness with
+respect to many underlying risk factors requires many pairwise tests; we
+would like to instead automatically discover and visualize patient
+archetypes and predictors of treatment effectiveness using multitask
+machine learning. In this paper, we present a method to estimate these
+heterogeneous treatment effects with an interpretable hierarchical
+framework that uses additive models to visualize expected treatment
+benefits as a function of patient factors (identifying personalized
+treatment benefits) and concurrent treatments (identifying combinatorial
+treatment benefits). This method achieves state-of-the-art predictive
+power for COVID-19 in-hospital mortality and interpretable identification
+of heterogeneous treatment benefits. We first validate this method on the
+large public MIMIC-IV dataset of ICU patients to test recovery of
+heterogeneous treatment effects. Next we apply this method to a
+proprietary dataset of over 3000 patients hospitalized for COVID-19, and
+find evidence of heterogeneous treatment effectiveness predicted largely
+by indicators of inflammation and thrombosis risk: patients with few
+indicators of thrombosis risk benefit most from treatments against
+inflammation, while patients with few indicators of inflammation risk
+benefit most from treatments against thrombosis. This approach provides an
+automated methodology to discover heterogeneous and individualized
+effectiveness of treatments.},
+	journal = {J. Biomed. Inform.},
+	author = {Lengerich, Benjamin J and Nunnally, Mark E and Aphinyanaphongs, Yin and Ellington, Caleb and Caruana, Rich},
+	month = apr,
+	year = {2022},
+	keywords = {COVID-19, Heterogeneous Treatment Effects, Interpretable Machine Learning, Personalized Medicine, notion},
+	pages = {104086},
+}
+
+
+@article{lengerich_discriminative_2020,
+	title = {Discriminative {Subtyping} of {Lung} {Cancers} from {Histopathology} {Images} via {Contextual} {Deep} {Learning}},
+	url = {https://www.medrxiv.org/content/10.1101/2020.06.25.20140053v1.abstract},
+	abstract = {When designing individualized treatment protocols for cancer patients,
+clinicians must synthesize the information from multiple data modalities
+into a single parsimonious description of the patient9s personal disease.
+However, such a description of a patient is …},
+	journal = {medRxiv},
+	author = {Lengerich, Benjamin J and Al-Shedivat, Maruan and Alavi, Amir and Williams, Jennifer and Labbaki, Sami and Xing, Eric P},
+	year = {2020},
+	note = {Publisher: Cold Spring Harbor Laboratory Press},
+	keywords = {Archive/CMLH 2020, Archive/Nathan Wong Rotation, Archive/NIH Year-1 Funding Update: Sample-Specifc Medicine (Summer 2021), Archive/GRFP, Cancer, notion},
+}
+
+
+@unpublished{al-shedivat_personalized_2018,
+	title = {Personalized {Survival} {Prediction} with {Contextual} {Explanation} {Networks}},
+	url = {http://arxiv.org/abs/1801.09810},
+	abstract = {Accurate and transparent prediction of cancer survival times on the level
+of individual patients can inform and improve patient care and treatment
+practices. In this paper, we design a model that concurrently learns to
+accurately predict patient-specific survival distributions and to explain
+its predictions in terms of patient attributes such as clinical tests or
+assessments. Our model is flexible and based on a recurrent network, can
+handle various modalities of data including temporal measurements, and yet
+constructs and uses simple explanations in the form of patient- and
+time-specific linear regression. For analysis, we use two publicly
+available datasets and show that our networks outperform a number of
+baselines in prediction while providing a way to inspect the reasons
+behind each prediction.},
+	author = {Al-Shedivat, Maruan and Dubey, Avinava and Xing, Eric P},
+	month = jan,
+	year = {2018},
+	note = {ISBN: 1801.09810
+Publication Title: arXiv [cs.LG]},
+	keywords = {Cancer, Contextualized models review},
+}
+
