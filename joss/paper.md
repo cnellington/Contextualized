@@ -71,10 +71,10 @@ We provide `Contextualized ML` as a Python package written in native PyTorch wit
 Installation instructions, tutorials, API reference, and open-source code are available at [contextualized.ml](https://contextualized.ml).
 
 
+# Benefits and Use Cases of Contextualized ML
+
 ![Contextualized Machine Learning paradigm.\label{fig:paradigm}](figs/context_encoders_sideways.pdf){width=100%}
 
-
-# Benefits and Use Cases of Contextualized ML
 The `Contextualized ML` framework (\autoref{fig:paradigm}) exhibits desirable properties, such as its ability to infer personalized models without losing power by splitting data into many subgroups, incorporate multiple data modalities via context encoding, explicitly test for heterogeneity in real data, and automatically default to the most appropriate type of traditional model when complex heterogeneity is not present.
 
 ## One-stop Shop
