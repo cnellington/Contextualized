@@ -7,23 +7,23 @@ tags:
 authors:
   - name: Caleb Ellington
     orcid: 0000-0001-7029-8023
+    corresponding: true
     equal-contrib: true
-    affiliation: 1
+    affiliation: "1"
   - name: Ben Lengerich
     orcid: 0000-0001-8690-9554
+    corresponding: true
     equal-contrib: true
     affiliation: "2, 3"
   - name: Wesley Lo
     affiliation: "2, 4"
   - name: Aaron Alvarez
-  - name: Andrea Rubbi
     affiliation: "5"
+  - name: Andrea Rubbi
+    affiliation: "6"
   - name: Manolis Kellis
-    orcid: 0000-0000-0000-0000
-    equal-contrib: false
     affiliation: "2, 3"
   - name: Eric P. Xing
-    corresponding: true
     affiliation: "1, 6"
 affiliations:
  - name: Carnegie Mellon University, USA
@@ -34,10 +34,12 @@ affiliations:
    index: 3
  - name: Worcester Polytechnic Institute, USA
    index: 4
- - name: Cambridge University, UK
+ - name: University of Cincinnati, USA
    index: 5
- - name: Mohamed bin Zayed University of Artificial Intelligence, UAE
+ - name: Cambridge University, UK
    index: 6
+ - name: Mohamed bin Zayed University of Artificial Intelligence, UAE
+   index: 7
 date: 1 Jan 2024
 bibliography: paper.bib
 ---
@@ -48,26 +50,23 @@ bibliography: paper.bib
 
 # Summary
 
-Heterogeneous and context-dependent systems are a defining characteristic of observational data arising from real-world processes, such as in biology, medicine, finance, and the social sciences. 
-However, heterogeneous and context-dependent systems are not well-characterized by homogeneous models; as a result, existing tools have pushed users to adopt an accuracy vs interpretability trade-off. 
-Accurate models capable of flexibly adapting to context-dependent effects do not reveal these effects to users, and interpretable models are often too restricted to capture context-dependent effects.
+Heterogeneous and context-dependent systems are a defining characteristic of real-world processes, such as in biology, medicine, finance, and the social sciences. 
+However, learning accurate and interpretable models of these heterogeneous systems remains an unsolved problem. 
+Most statistical modeling approaches make strict assumptions about data homogeneity, leading to inaccurate models, while more flexible approaches are often too complex to interpret directly, precluding model-based insights.
+Fundamentally, existing tools force users to choose between accuracy and interpretability.
+Recent work on Contextualized Machine Learning [@lengerich_contextualized_2023] has introduced a new paradigm for modeling heterogeneous and context-dependent systems, which uses contextual metadata to generate sample-specific models, providing context-specific model-based insights and representing data heterogeneity with context-dependent model parameters.
 
-To overcome this tradeoff, we present [`Contextualized ML`](https://contextualized.ml/), an easy-to-use SKLearn-style toolbox for estimating and analyzing context-dependent models.
-`Contextualized ML` uses contextual metadata to generate sample-specific models, providing context-specific model-based insights and representing data heterogeneity with context-dependent model parameters.
-With the flexibility of context-dependent effects, each context-specific model can be a simple linear model without sacrificing overall model accuracy.
+Here, we present [`Contextualized ML`](https://contextualized.ml/), an easy-to-use SKLearn-style Python package for estimating and analyzing context-dependent models based on the Contextualized Machine Learning framework.
+`Contextualized ML` implements two reusable and extensible concepts: *a context encoder* which translates sample context or metadata into model parameters, and *sample-specific model* which is defined by the context-specific parameters (\autoref{fig:paradigm}).
+With the flexibility of context-dependent parameters, each context-specific model be a much simpler model class, such as linear or Gaussian models, providing direct model-based interpretability without sacrificing overall accuracy.
+`Contextualized ML` provides four primary resources:
 
-`Contextualized ML` introduces two reusable concepts: *a context encoder* which translates sample context or metadata into model parameters, and *sample-specific model* which is defined by the context-specific parameters (\autoref{fig:paradigm}).
-Our formulation unifies a wide variety of popular modeling approaches, including population modeling, sub-population modeling, (latent) mixture modeling, cluster modeling, time-varying models, and varying-coefficient models [@hastie1993varying], and falls back to these traditional models when complex heterogeneity is not present.
-Finally, by explicitly modeling the metadata--parameter relationships, `Contextualized ML` enables interpolation and extrapolation to unseen values of contextual metadata.
+1. A simple plug-and-play interface to learn contextualized versions of popular model classes (e.g. classifiers, linear regression, graphical models, Gaussians).
+2. A suite of context encoders to represent various types of context dependent relationships (e.g. feature independence, interaction effects) and incorporate any type of contextual information (e.g. continuous, categorical, images, text).
+3. Intuitive analysis tools to understand, quantify, test, and visualize data with heterogeneous and context-dependent behavior.
+4. An extensible and modular framework for researchers to develop new contextualized models and context encoders.
 
-`Contextualized ML` is a lean, utility-oriented implementation of the broader Contextualized Machine Learning paradigm [@lengerich_contextualized_2023], focusing on novel and popular use cases from recent works developing contextualized models [@ellington_contextualized_2023; @deuschel_contextualized_2023; @lengerich_notmad_2021; @al-shedivat_contextual_2020; @lengerich_automated_2022; @lengerich_discriminative_2020; @al-shedivat_personalized_2018; @stoica_contextual_2020].
-We provide `Contextualized ML` as a Python package written in native PyTorch with a simple SKLearn-style interface.
-
-**Contextualized ML serves three primary purposes:**
-
-1. A simple plug-and-play interface to learn contextualized versions of popular model classes (e.g. linear regression, classifiers, graphical models, Gaussians).
-2. Intuitive analysis tools to understand, quantify, test, and visualize data with heterogeneous and context-dependent behavior.
-3. An extensible and modular framework for researchers to develop new contextualized models.
+`Contextualized ML` standardizes recent works studying Contextualized Machine Learning [@ellington_contextualized_2023; @deuschel_contextualized_2023; @lengerich_notmad_2021; @al-shedivat_contextual_2020; @lengerich_automated_2022; @lengerich_discriminative_2020; @al-shedivat_personalized_2018; @stoica_contextual_2020], while also naturally unifying a wide variety of popular modeling approaches, including population modeling, sub-population modeling, (latent) mixture modeling, cluster modeling, time-varying models, and varying-coefficient models [@hastie1993varying], and conveniently falling back to these traditional models when complex heterogeneity is not present.
 
 Installation instructions, tutorials, API reference, and open-source code are available at [contextualized.ml](https://contextualized.ml).
 
@@ -76,7 +75,7 @@ Installation instructions, tutorials, API reference, and open-source code are av
 
 ![Contextualized Machine Learning paradigm.\label{fig:paradigm}](figs/context_encoders_sideways.pdf){width=100%}
 
-The `Contextualized ML` framework (\autoref{fig:paradigm}) exhibits desirable properties, such as its ability to (1) infer context-specific models without losing power by partitioning data, (2) incorporate multiple data modalities via context encoding, (3) test the strength of heterogeneity in data, and (4) automatically default to the most appropriate type of traditional model when complex heterogeneity is not present.
+Based on its four primary resources, `Contextualized ML` enjoys a wide range of benefits and desirable properties, such as its ability to (1) infer context-specific models without losing power by partitioning data, (2) incorporate multiple data modalities via context encoding, (3) test the strength of heterogeneity in data, and (4) automatically default to the most appropriate type of traditional model when complex heterogeneity is not present [@lengerich_contextualized_2023].
 
 ## One-stop Shop
 The `Contextualized ML` framework unifies many popular modeling approaches, including population modeling, sub-population modeling, (latent) mixture modeling, cluster modeling, time-varying models, and varying-coefficient models.
