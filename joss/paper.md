@@ -69,10 +69,10 @@ Not only is this convenient, but it limits the number of modeling decisions and 
 `Contextualized ML` provides tools to analyze, test, and validate contextualized models, unlocking new studies of structured heterogeneity.
 4. **Interpolating and Extrapolating to Unseen Contexts:** By using context encoders to translate between contextual information and model parameters, `Contextualized ML` learns about the meta-relationships of metadata--data. At test time, `Contextualized ML` can adapt to contexts which were never observed in the training data [@ellington_contextualized_2023].
 5. **Analyzing Latent Processes:** By associating structured models with each sample, `Contextualized ML` enables analysis of samples with latent processes.
-These latent processes can be inferred from patterns in context-specific models, and can be used to identify latent subgroups, latent trajectories, and latent features [@lengerich_automated_2022].
+These latent processes can be inferred from patterns in context-specific models, and can be used to identify latent subgroups, latent trajectories, and latent features [@lengerich_discriminative_2020].
 6. **Direct Interpretability:** `Contextualized ML` estimates and analyzes context-specific statistical models. 
 These statistical models are mathematically-constrained such that each parameter has specific meaning, permitting direct interpretation and immediate results [@lengerich_automated_2022].
-7. **Multi-modality:** Context is a general and flexible concept, and context-encoders can be used to instill any type of contextual information into contextualized models, including images, text, tabular data, and more [@lengerich_disciminative_2020; @lengerich_notmad_2021; @al-shedivat_contextual_2020; @stoica_contextual_2020].
+7. **Multi-modality:** Context is a general and flexible concept, and context-encoders can be used to instill any type of contextual information into contextualized models, including images, text, tabular data, and more [@lengerich_discriminative_2020; @lengerich_notmad_2021; @al-shedivat_contextual_2020; @stoica_contextual_2020].
 8. **Modular and Extensible:** The context encoder and sample-specific model within `Contextualized ML` are both highly adaptable; the context encoder can be replaced with any differentiable function, and any statistical model with a differentiable likelihood or log-likelihood can be contextualized and made sample-specific.
 
 `Contextualized ML` is structured through three primary resources:
