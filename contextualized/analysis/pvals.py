@@ -168,32 +168,27 @@ def calc_heterogeneous_predictor_effects_pvals(model, C, **kwargs):
     return pvals
 
 
-def test_sequential_contexts(model_constructor, C, X, Y, **kwargs):
+def test_sequential_contexts(
+    model_constructor: Type[SKLearnWrapper], C: pd.DataFrame, X: pd.DataFrame, Y:pd.DataFrame, **kwargs
+) -> pd.DataFrame:
     """
-    Sequentially test each feature in C using calc_homogeneous_context_effects_pvals.
+    Sequentially calculate pvals for homogeneous context effects.
 
-    Parameters
-    ----------
-    model_constructor : contextualized.models.Model constructor
-        The model to be tested.
-    C : pandas DataFrame
-        The context data with multiple features.
-    X : pandas DataFrame
-        The input training data.
-    Y : pandas DataFrame
-        The output training data.
-    **kwargs : 
-        Additional arguments for the model constructor.
+    Args:
+        model_constructor (Type[SKLearnWrapper]): The constructor for the model to be tested.
+        C (pandas.DataFrame): The context data with multiple features.
+        X (pandas.DataFrame): The predictor training data.
+        Y (pandas.DataFrame): The target training data.
+        **kwargs: Additional arguments for the model constructor.
 
-    Returns
-    -------
-    pandas.DataFrame
-        A DataFrame containing p-values for each combination of context, predictor, and target.
-        Columns:
-        - 'Context': The context feature being tested.
-        - 'Predictor': The predictor feature being tested.
-        - 'Target': The target variable for which the effects are analyzed.
-        - 'Pvals': The corresponding p-value for the analyzed effect.
+    Returns:
+        pandas.DataFrame: A DataFrame containing p-values for each combination of context,
+            predictor, and target.
+            Columns:
+            - 'Context': The context feature being tested.
+            - 'Predictor': The predictor feature being tested.
+            - 'Target': The target variable for which the effects are analyzed.
+            - 'Pvals': The corresponding p-value for the analyzed effect.
     """
 
 
