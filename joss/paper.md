@@ -2,15 +2,15 @@
 title: 'Contextualized ML: Heterogeneous Modeling Toolbox'
 tags:
   - Python
-  - machine learning
-  - heterogeneous effects
+  - Machine Learning
+  - Heterogeneous Effects
 authors:
-  - name: Caleb Ellington
+  - name: Caleb N. Ellington
     orcid: 0000-0001-7029-8023
     corresponding: true
     equal-contrib: true
     affiliation: "1"
-  - name: Ben Lengerich
+  - name: Benjamin J. Lengerich
     orcid: 0000-0001-8690-9554
     corresponding: true
     equal-contrib: true
@@ -24,7 +24,7 @@ authors:
   - name: Manolis Kellis
     affiliation: "2, 3"
   - name: Eric P. Xing
-    affiliation: "1, 6"
+    affiliation: "1, 7"
 affiliations:
  - name: Carnegie Mellon University, USA
    index: 1
@@ -40,7 +40,9 @@ affiliations:
    index: 6
  - name: Mohamed bin Zayed University of Artificial Intelligence, UAE
    index: 7
-date: 1 Jan 2024
+ - name: Petuum Inc., USA
+   index: 8
+date: 26 Jan 2024
 bibliography: paper.bib
 ---
 
