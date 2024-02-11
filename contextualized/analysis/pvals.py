@@ -172,26 +172,18 @@ def test_sequential_contexts(
     model_constructor: Type[SKLearnWrapper], C: pd.DataFrame, X: pd.DataFrame, Y:pd.DataFrame, **kwargs
 ) -> pd.DataFrame:
     """
-    Sequentially calculate pvals for homogeneous context effects.
+    Sequentially test each feature in C using calc_homogeneous_context_effects_pvals.
 
     Args:
-        model_constructor (Type[SKLearnWrapper]): The constructor for the model to be tested.
-        C (pandas.DataFrame): The context data with multiple features.
-        X (pandas.DataFrame): The predictor training data.
-        Y (pandas.DataFrame): The target training data.
+        model_constructor (function): The constructor of the model to be tested.
+        C (pd.DataFrame): The context data with multiple features.
+        X (pd.DataFrame): The input training data.
+        Y (pd.DataFrame): The output training data.
         **kwargs: Additional arguments for the model constructor.
 
     Returns:
-        pandas.DataFrame: A DataFrame containing p-values for each combination of context,
-            predictor, and target.
-            Columns:
-            - 'Context': The context feature being tested.
-            - 'Predictor': The predictor feature being tested.
-            - 'Target': The target variable for which the effects are analyzed.
-            - 'Pvals': The corresponding p-value for the analyzed effect.
+        pd.DataFrame: A DataFrame of p-values for each feature.
     """
-
-
     default_fit_params = {
         'encoder_type': 'mlp',
         'max_epochs': 3,
@@ -229,15 +221,11 @@ def get_pval_range(num_bootstraps: int) -> list:
     """
     Get the range of possible p-values based on the number of bootstraps.
 
-    Parameters
-    ----------
-    num_bootstraps : int
-        The number of bootstraps.
+    Args:
+        num_bootstraps (int): The number of bootstraps.
 
-    Returns
-    -------
-    list
-        The minimum and maximum possible p-values.
+    Returns:
+        list: The minimum and maximum possible p-values.
     """
     min_pval = 1 / (num_bootstraps + 1)
     max_pval = num_bootstraps / (num_bootstraps + 1)
