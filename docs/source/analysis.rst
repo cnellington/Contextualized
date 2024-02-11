@@ -19,6 +19,7 @@ All functions can be loaded directly from the module, e.g. ``from contextualized
     pvals.calc_homogeneous_predictor_effects_pvals
     pvals.calc_heterogeneous_predictor_effects_pvals
     pvals.test_sequential_contexts
+    pvals.get_pval_range
 
 .. autofunction:: contextualized.analysis.accuracy_split.print_acc_by_covars
 .. autofunction:: contextualized.analysis.embeddings.plot_lowdim_rep
@@ -30,3 +31,4 @@ All functions can be loaded directly from the module, e.g. ``from contextualized
 .. autofunction:: contextualized.analysis.pvals.calc_homogeneous_predictor_effects_pvals
 .. autofunction:: contextualized.analysis.pvals.calc_heterogeneous_predictor_effects_pvals
 .. autofunction:: contextualized.analysis.pvals.test_sequential_contexts
+.. autofunction:: contextualized.analysis.pvals.get_pval_range

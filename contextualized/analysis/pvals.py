@@ -224,3 +224,21 @@ def test_sequential_contexts(
 
     return pd.DataFrame.from_dict(pvals_dict)
 
+
+def get_pval_range(num_bootstraps: int) -> list:
+    """
+    Get the range of possible p-values based on the number of bootstraps.
+
+    Parameters
+    ----------
+    num_bootstraps : int
+        The number of bootstraps.
+
+    Returns
+    -------
+    list
+        The minimum and maximum possible p-values.
+    """
+    min_pval = 1 / (num_bootstraps + 1)
+    max_pval = num_bootstraps / (num_bootstraps + 1)
+    return [min_pval, max_pval]
