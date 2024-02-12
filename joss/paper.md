@@ -65,7 +65,7 @@ With the flexibility of context-dependent parameters, each context-specific mode
 
 # Statement of Need
 
-`Contextualized` opens up new avenues for quantitative analysis of complex and heterogeneous data. In particular, `Contextualized`:
+`Contextualized` opens up new avenues for quantitative analysis of complex and heterogeneous data, and simplifies the process of transforming this data into results. In particular, `Contextualized`:
 
 1. **Unifies Modeling Frameworks:** `Contextualized` unifies modeling approaches for both homogeneous and heterogeneous data, including population, sub-population, (latent) mixture, cluster-based, time-varying, and varying-coefficient models [@hastie1993varying]. 
 Additionally, `Contextualized` naturally falls back to more traditional modeling frameworks when complex heterogeneity is not present.
@@ -81,9 +81,9 @@ These statistical models are mathematically-constrained such that each parameter
 7. **Incorporates Multi-modal Data:** Context is a general and flexible concept, and context-encoders can be used to instill any type of contextual information into contextualized models, including images, text, tabular data, and more [@lengerich_discriminative_2020; @lengerich_notmad_2021; @al-shedivat_contextual_2020; @stoica_contextual_2020].
 8. **Enables Modular Development:** The context encoder and sample-specific model within `Contextualized` are both highly adaptable; the context encoder can be replaced with any differentiable function, and any statistical model with a differentiable likelihood or log-likelihood can be contextualized and made sample-specific, benefiting from a rich ecosystem of statistical models and deep learning methods.
 
-# Resources
+# Usage
 
-The `Contextualized` software is structured through three primary components:
+The `Contextualized` software is structured through three primary resources:
 
 1. A simple plug-and-play interface to learn contextualized versions of popular model classes (e.g. classifiers, linear regression, graphical models, Gaussians).
 2. A suite of context encoders to incorporate any modality of contextual data (e.g. continuous, categorical, images, text) and/or impose restrictions on context-dependent relationships (e.g. feature independence, interaction effects).
