@@ -3,7 +3,9 @@ title: 'Contextualized: Heterogeneous Modeling Toolbox'
 tags:
   - Python
   - Machine Learning
-  - Heterogeneous Effects
+  - Modeling
+  - Heterogeneous
+  - Context
 authors:
   - name: Caleb N. Ellington
     orcid: 0000-0001-7029-8023
