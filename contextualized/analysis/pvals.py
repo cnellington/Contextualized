@@ -169,7 +169,11 @@ def calc_heterogeneous_predictor_effects_pvals(model, C, **kwargs):
 
 
 def test_sequential_contexts(
-    model_constructor: Type[SKLearnWrapper], C: pd.DataFrame, X: pd.DataFrame, Y:pd.DataFrame, **kwargs
+    model_constructor: Type[SKLearnWrapper],
+    C: pd.DataFrame,
+    X: pd.DataFrame,
+    Y: pd.DataFrame,
+    **kwargs,
 ) -> pd.DataFrame:
     """
     Sequentially test each feature in C using calc_homogeneous_context_effects_pvals.
@@ -184,11 +188,7 @@ def test_sequential_contexts(
     Returns:
         pd.DataFrame: A DataFrame of p-values for each feature.
     """
-    default_fit_params = {
-        'encoder_type': 'mlp',
-        'max_epochs': 3,
-        'learning_rate': 1e-2
-    }
+    default_fit_params = {"encoder_type": "mlp", "max_epochs": 3, "learning_rate": 1e-2}
     fit_params = {**default_fit_params, **kwargs}
     pvals_dict = {}
 
