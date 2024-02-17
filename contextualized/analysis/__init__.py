@@ -16,4 +16,6 @@ from contextualized.analysis.pvals import (
     calc_homogeneous_context_effects_pvals,
     calc_homogeneous_predictor_effects_pvals,
     calc_heterogeneous_predictor_effects_pvals,
+    test_each_context,
+    get_pval_range,
 )

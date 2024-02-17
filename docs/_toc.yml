@@ -26,6 +26,7 @@ parts:
     chapters:
     - file: demos/custom_models
     - file: demos/benefits
+    - file: demos/sequential_testing
   - caption: API Reference
     chapters:
     - file: source/easy
