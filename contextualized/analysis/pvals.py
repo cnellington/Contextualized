@@ -15,7 +15,7 @@ from contextualized.analysis.effects import (
 from contextualized.easy.wrappers import SKLearnWrapper
 
 
-def get_pval_range(num_bootstraps: int) -> list:
+def get_possible_pvals(num_bootstraps: int) -> list:
     """
     Get the range of possible p-values based on the number of bootstraps.
 
@@ -28,6 +28,29 @@ def get_pval_range(num_bootstraps: int) -> list:
     min_pval = 1 / (num_bootstraps + 1)
     max_pval = num_bootstraps / (num_bootstraps + 1)
     return [min_pval, max_pval]
+
+
+def _validate_args(n_bootstraps: int, verbose: bool = False) -> None:
+    """
+    Check that the test has a sufficient number of bootstraps.
+
+    Args:
+        num_bootstraps (int): The number of bootstraps.
+
+    Raises:
+        ValueError: If the number of bootstraps is less than 2.
+    """
+    if n_bootstraps < 2:
+        raise ValueError(f"P-values are not well defined without multiple bootstrap samples.")
+    min_pval, max_pval = get_possible_pvals(n_bootstraps)
+    if verbose:
+        print(
+            "########################################################################################\n"
+            f"You are testing a model which contains {n_bootstraps} bootstraps.\n"
+            f"The minimum possible p-value is {min_pval}.\n"
+            f"To allow for lower p-values, increase the model's n_bootstraps.\n"
+            "########################################################################################"
+        )
 
 
 def calc_pval_bootstraps_one_sided(estimates, thresh=0, laplace_smoothing=1):
@@ -80,18 +103,11 @@ def calc_homogeneous_context_effects_pvals(
     Returns:
         np.ndarray: P-values of shape (n_contexts, n_outcomes) testing whether the
             sign of the direct effect of context on outcomes is consistent across bootstraps.
+     
+    Raises:
+        ValueError: If the model's n_bootstraps is less than 2.
     """
-    if model.n_bootstraps < 2:
-        print("P values are not well defined without multiple bootstrap samples.")
-        return None
-    if verbose:
-        print(
-            "########################################################################################\n"
-            f"This model contains {model.n_bootstraps} bootstraps.\n"
-            f"The range of possible p-values is {get_pval_range(model.n_bootstraps)}.\n"
-            f"To get lower p-values, increase the model's n_bootstraps.\n"
-            "########################################################################################"
-        )
+    _validate_args(model.n_bootstraps, verbose = verbose)
     _, effects = get_homogeneous_context_effects(model, C, **kwargs)
     # effects.shape: (n_contexts, n_bootstraps, n_context_vals, n_outcomes)
     diffs = effects[:, :, -1] - effects[:, :, 0]  # Test whether the sign is consistent
@@ -126,18 +142,11 @@ def calc_homogeneous_predictor_effects_pvals(
     Returns:
         np.ndarray: P-values of shape (n_predictors, n_outcomes) testing whether the
             sign of the context-invariant predictor effects are consistent across bootstraps.
+
+    Raises:
+        ValueError: If the model's n_bootstraps is less than 2.
     """
-    if model.n_bootstraps < 2:
-        print("P values are not well defined without multiple bootstrap samples.")
-        return None
-    if verbose:
-        print(
-            "########################################################################################\n"
-            f"This model contains {model.n_bootstraps} bootstraps.\n"
-            f"The range of possible p-values is {get_pval_range(model.n_bootstraps)}.\n"
-            f"To get lower p-values, increase the model's n_bootstraps.\n"
-            "########################################################################################"
-        )
+    _validate_args(model.n_bootstraps, verbose = verbose)
     _, effects = get_homogeneous_predictor_effects(model, C, **kwargs)
     # effects.shape: (n_predictors, n_bootstraps, n_outcomes)
     pvals = np.array(
@@ -171,18 +180,11 @@ def calc_heterogeneous_predictor_effects_pvals(
     Returns:
         np.ndarray: P-values of shape (n_contexts, n_predictors, n_outcomes) testing whether the
             context-varying parameter range is consistent across bootstraps.
+
+    Raises:
+        ValueError: If the model's n_bootstraps is less than 2.
     """
-    if model.n_bootstraps < 2:
-        print("P values are not well defined without multiple bootstrap samples.")
-        return None
-    if verbose:
-        print(
-            "########################################################################################\n"
-            f"This model contains {model.n_bootstraps} bootstraps.\n"
-            f"The range of possible p-values is {get_pval_range(model.n_bootstraps)}.\n"
-            f"To get lower p-values, increase the model's n_bootstraps.\n"
-            "########################################################################################"
-        )
+    _validate_args(model.n_bootstraps, verbose = verbose)
     _, effects = get_heterogeneous_predictor_effects(model, C, **kwargs)
     # effects.shape is (n_contexts, n_predictors, n_bootstraps, n_context_vals, n_outcomes)
     diffs = (
@@ -233,6 +235,9 @@ def test_each_context(
 
     Returns:
         pd.DataFrame: A DataFrame of p-values for each (context, predictor, outcome) combination, describing how much the predictor's effect on the outcome varies across the context.
+
+    Raises:
+        ValueError: If the model's n_bootstraps is less than 2.
     """
     default_fit_params = {
         "encoder_type": "mlp",
@@ -247,15 +252,7 @@ def test_each_context(
         "Target": [],
         "Pvals": [],
     }
-    if verbose:
-        print(
-            "########################################################################################\n"
-            f'Running a model with {fit_params["n_bootstraps"]} bootstraps for each of the {len(C.columns)} contexts.\n'
-            f'The range of possible p-values is {get_pval_range(fit_params["n_bootstraps"])}.\n'
-            f"To get lower p-values, set n_bootstraps to a higher value.\n"
-            "########################################################################################"
-        )
-
+    _validate_args(fit_params["n_bootstraps"], verbose = verbose) 
     for context in C.columns:
         context_col = C[[context]].values
         model = model_constructor(**fit_params)
