@@ -1,28 +1,55 @@
-@article{hastie1993varying,
-  title={Varying-coefficient models},
-  author={Hastie, Trevor and Tibshirani, Robert},
-  journal={Journal of the Royal Statistical Society: Series B (Methodological)},
-  volume={55},
-  number={4},
-  pages={757--779},
-  year={1993},
-  publisher={Wiley Online Library}
+
+@article{lengerich_automated_2022,
+	title = {Automated {Interpretable} {Discovery} of {Heterogeneous} {Treatment} {Effectiveness}: {A} {COVID}-19 {Case} {Study}},
+	issn = {1532-0464},
+	url = {https://www.sciencedirect.com/science/article/pii/S1532046422001022},
+	doi = {10.1016/j.jbi.2022.104086},
+	abstract = {Testing multiple treatments for heterogeneous (varying) effectiveness with
+respect to many underlying risk factors requires many pairwise tests; we
+would like to instead automatically discover and visualize patient
+archetypes and predictors of treatment effectiveness using multitask
+machine learning. In this paper, we present a method to estimate these
+heterogeneous treatment effects with an interpretable hierarchical
+framework that uses additive models to visualize expected treatment
+benefits as a function of patient factors (identifying personalized
+treatment benefits) and concurrent treatments (identifying combinatorial
+treatment benefits). This method achieves state-of-the-art predictive
+power for COVID-19 in-hospital mortality and interpretable identification
+of heterogeneous treatment benefits. We first validate this method on the
+large public MIMIC-IV dataset of ICU patients to test recovery of
+heterogeneous treatment effects. Next we apply this method to a
+proprietary dataset of over 3000 patients hospitalized for COVID-19, and
+find evidence of heterogeneous treatment effectiveness predicted largely
+by indicators of inflammation and thrombosis risk: patients with few
+indicators of thrombosis risk benefit most from treatments against
+inflammation, while patients with few indicators of inflammation risk
+benefit most from treatments against thrombosis. This approach provides an
+automated methodology to discover heterogeneous and individualized
+effectiveness of treatments.},
+	journal = {J. Biomed. Inform.},
+	author = {Lengerich, Benjamin J. and Nunnally, Mark E. and Aphinyanaphongs, Yin and Ellington, Caleb and Caruana, Rich},
+	month = apr,
+	year = {2022},
+	keywords = {COVID-19, Heterogeneous Treatment Effects, Interpretable Machine Learning, notion, Personalized Medicine},
+	pages = {104086},
 }
 
-@misc{deuschel_contextualized_2023,
-	title = {Contextualized {Policy} {Recovery}: {Modeling} and {Interpreting} {Medical} {Decisions} with {Adaptive} {Imitation} {Learning}},
-	shorttitle = {Contextualized {Policy} {Recovery}},
-	url = {http://arxiv.org/abs/2310.07918},
-	doi = {10.48550/arXiv.2310.07918},
-	abstract = {Interpretable policy learning seeks to estimate intelligible decision policies from observed actions; however, existing models fall short by forcing a tradeoff between accuracy and interpretability. This tradeoff limits data-driven interpretations of human decision-making process. e.g. to audit medical decisions for biases and suboptimal practices, we require models of decision processes which provide concise descriptions of complex behaviors. Fundamentally, existing approaches are burdened by this tradeoff because they represent the underlying decision process as a universal policy, when in fact human decisions are dynamic and can change drastically with contextual information. Thus, we propose Contextualized Policy Recovery (CPR), which re-frames the problem of modeling complex decision processes as a multi-task learning problem in which complex decision policies are comprised of context-specific policies. CPR models each context-specific policy as a linear observation-to-action mapping, and generates new decision models \${\textbackslash}textit\{on-demand\}\$ as contexts are updated with new observations. CPR is compatible with fully offline and partially observable decision environments, and can be tailored to incorporate any recurrent black-box model or interpretable decision model. We assess CPR through studies on simulated and real data, achieving state-of-the-art performance on the canonical tasks of predicting antibiotic prescription in intensive care units (\$+22{\textbackslash}\%\$ AUROC vs. previous SOTA) and predicting MRI prescription for Alzheimer's patients (\$+7.7{\textbackslash}\%\$ AUROC vs. previous SOTA). With this improvement in predictive performance, CPR closes the accuracy gap between interpretable and black-box methods for policy learning, allowing high-resolution exploration and analysis of context-specific decision models.},
-	urldate = {2023-11-02},
-	publisher = {arXiv},
-	author = {Deuschel, Jannik and Ellington, Caleb N. and Lengerich, Benjamin J. and Luo, Yingtao and Friederich, Pascal and Xing, Eric P.},
-	month = oct,
-	year = {2023},
-	note = {arXiv:2310.07918 [cs, stat]},
-	keywords = {Computer Science - Artificial Intelligence, Computer Science - Machine Learning, Statistics - Machine Learning},
-	file = {arXiv Fulltext PDF:/Users/calebellington/Zotero/storage/AJ8XNWW6/Deuschel et al. - 2023 - Contextualized Policy Recovery Modeling and Inter.pdf:application/pdf},
+@article{stoica_contextual_2020,
+	title = {Contextual {Parameter} {Generation} for {Knowledge} {Graph} {Link} {Prediction}},
+	volume = {34},
+	copyright = {Copyright (c) 2020 Association for the Advancement of Artificial Intelligence},
+	issn = {2374-3468},
+	url = {https://ojs.aaai.org/index.php/AAAI/article/view/5693},
+	doi = {10.1609/aaai.v34i03.5693},
+	abstract = {We consider the task of knowledge graph link prediction. Given a question consisting of a source entity and a relation (e.g., Shakespeare and BornIn), the objective is to predict the most likely answer entity (e.g., England). Recent approaches tackle this problem by learning entity and relation embeddings. However, they often constrain the relationship between these embeddings to be additive (i.e., the embeddings are concatenated and then processed by a sequence of linear functions and element-wise non-linearities). We show that this type of interaction significantly limits representational power. For example, such models cannot handle cases where a different projection of the source entity is used for each relation. We propose to use contextual parameter generation to address this limitation. More specifically, we treat relations as the context in which source entities are processed to produce predictions, by using relation embeddings to generate the parameters of a model operating over source entity embeddings. This allows models to represent more complex interactions between entities and relations. We apply our method on two existing link prediction methods, including the current state-of-the-art, resulting in significant performance gains and establishing a new state-of-the-art for this task. These gains are achieved while also reducing convergence time by up to 28 times.},
+	language = {en},
+	number = {03},
+	urldate = {2022-09-24},
+	journal = {Proceedings of the AAAI Conference on Artificial Intelligence},
+	author = {Stoica, George and Stretcu, Otilia and Platanios, Emmanouil Antonios and Mitchell, Tom and Póczos, Barnabás},
+	month = apr,
+	year = {2020},
+	pages = {3000--3008},
 }
 
 @misc{lengerich_contextualized_2023,
@@ -56,127 +83,102 @@ Section: New Results},
 	file = {Full Text PDF:/Users/calebellington/Zotero/storage/TBK7SS4L/Ellington et al. - 2023 - Contextualized Networks Reveal Heterogeneous Trans.pdf:application/pdf},
 }
 
-@article{al-shedivat_contextual_2020,
-	title = {Contextual {Explanation} {Networks}},
-	volume = {21},
-	issn = {1532-4435},
-	url = {http://jmlr.org/papers/v21/18-856.html},
-	number = {194},
-	urldate = {2022-04-26},
-	journal = {J. Mach. Learn. Res.},
-	author = {Al-Shedivat, Maruan and Dubey, Avinava and Xing, Eric},
-	year = {2020},
-	keywords = {Archive/Explainability, Contextualized models review},
-	pages = {1--44},
-}
-
-@article{lengerich_notmad_2021,
+@misc{lengerich_notmad_2021,
 	title = {{NOTMAD}: {Estimating} {Bayesian} {Networks} with {Sample}-{Specific} {Structures} and {Parameters}},
 	shorttitle = {{NOTMAD}},
 	url = {http://arxiv.org/abs/2111.01104},
+	doi = {10.48550/arXiv.2111.01104},
 	abstract = {Context-specific Bayesian networks (i.e. directed acyclic graphs, DAGs) identify context-dependent relationships between variables, but the non-convexity induced by the acyclicity requirement makes it difficult to share information between context-specific estimators (e.g. with graph generator functions). For this reason, existing methods for inferring context-specific Bayesian networks have favored breaking datasets into subsamples, limiting statistical power and resolution, and preventing the use of multidimensional and latent contexts. To overcome this challenge, we propose NOTEARS-optimized Mixtures of Archetypal DAGs (NOTMAD). NOTMAD models context-specific Bayesian networks as the output of a function which learns to mix archetypal networks according to sample context. The archetypal networks are estimated jointly with the context-specific networks and do not require any prior knowledge. We encode the acyclicity constraint as a smooth regularization loss which is back-propagated to the mixing function; in this way, NOTMAD shares information between context-specific acyclic graphs, enabling the estimation of Bayesian network structures and parameters at even single-sample resolution. We demonstrate the utility of NOTMAD and sample-specific network inference through analysis and experiments, including patient-specific gene expression networks which correspond to morphological variation in cancer.},
-	urldate = {2022-05-03},
-	journal = {arXiv:2111.01104 [cs, stat]},
+	urldate = {2024-03-14},
+	publisher = {arXiv},
 	author = {Lengerich, Benjamin J. and Ellington, Caleb N. and Aragam, Bryon and Xing, Eric P. and Kellis, Manolis},
 	month = nov,
 	year = {2021},
-	note = {arXiv: 2111.01104},
-	keywords = {Computer Science - Artificial Intelligence, Computer Science - Machine Learning, Statistics - Machine Learning, Temp, notion},
-	file = {arXiv Fulltext PDF:/Users/calebellington/Zotero/storage/FMLSGGMW/Lengerich et al. - 2021 - NOTMAD Estimating Bayesian Networks with Sample-S.pdf:application/pdf;arXiv.org Snapshot:/Users/calebellington/Zotero/storage/C7BCCHIU/2111.html:text/html},
+	note = {arXiv:2111.01104 [cs, stat]},
+	keywords = {Computer Science - Artificial Intelligence, Computer Science - Machine Learning, notion, Statistics - Machine Learning},
+	file = {arXiv Fulltext PDF:/Users/calebellington/Zotero/storage/LI6RW6BP/Lengerich et al. - 2021 - NOTMAD Estimating Bayesian Networks with Sample-S.pdf:application/pdf},
 }
 
-
-@article{lengerich_automated_2022,
-	title = {Automated {Interpretable} {Discovery} of {Heterogeneous} {Treatment} {Effectiveness}: {A} {COVID}-19 {Case} {Study}},
-	issn = {1532-0464},
-	url = {https://www.sciencedirect.com/science/article/pii/S1532046422001022},
-	doi = {10.1016/j.jbi.2022.104086},
-	abstract = {Testing multiple treatments for heterogeneous (varying) effectiveness with
-respect to many underlying risk factors requires many pairwise tests; we
-would like to instead automatically discover and visualize patient
-archetypes and predictors of treatment effectiveness using multitask
-machine learning. In this paper, we present a method to estimate these
-heterogeneous treatment effects with an interpretable hierarchical
-framework that uses additive models to visualize expected treatment
-benefits as a function of patient factors (identifying personalized
-treatment benefits) and concurrent treatments (identifying combinatorial
-treatment benefits). This method achieves state-of-the-art predictive
-power for COVID-19 in-hospital mortality and interpretable identification
-of heterogeneous treatment benefits. We first validate this method on the
-large public MIMIC-IV dataset of ICU patients to test recovery of
-heterogeneous treatment effects. Next we apply this method to a
-proprietary dataset of over 3000 patients hospitalized for COVID-19, and
-find evidence of heterogeneous treatment effectiveness predicted largely
-by indicators of inflammation and thrombosis risk: patients with few
-indicators of thrombosis risk benefit most from treatments against
-inflammation, while patients with few indicators of inflammation risk
-benefit most from treatments against thrombosis. This approach provides an
-automated methodology to discover heterogeneous and individualized
-effectiveness of treatments.},
-	journal = {J. Biomed. Inform.},
-	author = {Lengerich, Benjamin J. and Nunnally, Mark E. and Aphinyanaphongs, Yin and Ellington, Caleb N. and Caruana, Rich},
-	month = apr,
-	year = {2022},
-	keywords = {COVID-19, Heterogeneous Treatment Effects, Interpretable Machine Learning, Personalized Medicine, notion},
-	pages = {104086},
+@article{hastie_varying-coefficient_1993,
+	title = {Varying-{Coefficient} {Models}},
+	volume = {55},
+	copyright = {© 1993 Royal Statistical Society},
+	issn = {2517-6161},
+	url = {https://onlinelibrary.wiley.com/doi/abs/10.1111/j.2517-6161.1993.tb01939.x},
+	doi = {10.1111/j.2517-6161.1993.tb01939.x},
+	abstract = {We explore a class of regression and generalized regression models in which the coefficients are allowed to vary as smooth functions of other variables. General algorithms are presented for estimating the models flexibly and some examples are given. This class of models ties together generalized additive models and dynamic generalized linear models into one common framework. When applied to the proportional hazards model for survival data, this approach provides a new way of modelling departures from the proportional hazards assumption.},
+	language = {en},
+	number = {4},
+	urldate = {2024-03-14},
+	journal = {Journal of the Royal Statistical Society: Series B (Methodological)},
+	author = {Hastie, Trevor and Tibshirani, Robert},
+	year = {1993},
+	note = {\_eprint: https://onlinelibrary.wiley.com/doi/pdf/10.1111/j.2517-6161.1993.tb01939.x},
+	keywords = {dynamic generalized linear models, generalized additive models, generalized linear models, regression, smoothing, splines, survival analysis},
+	pages = {757--779},
 }
 
-
-@article{lengerich_discriminative_2020,
-	title = {Discriminative {Subtyping} of {Lung} {Cancers} from {Histopathology} {Images} via {Contextual} {Deep} {Learning}},
-	url = {https://www.medrxiv.org/content/10.1101/2020.06.25.20140053v1.abstract},
-	abstract = {When designing individualized treatment protocols for cancer patients,
-clinicians must synthesize the information from multiple data modalities
-into a single parsimonious description of the patient9s personal disease.
-However, such a description of a patient is …},
-	journal = {medRxiv},
-	author = {Lengerich, Benjamin J. and Al-Shedivat, Maruan and Alavi, Amir and Williams, Jennifer and Labbaki, Sami and Xing, Eric P.},
+@misc{al-shedivat_contextual_2020,
+	title = {Contextual {Explanation} {Networks}},
+	url = {http://arxiv.org/abs/1705.10301},
+	doi = {10.48550/arXiv.1705.10301},
+	abstract = {Modern learning algorithms excel at producing accurate but complex models of the data. However, deploying such models in the real-world requires extra care: we must ensure their reliability, robustness, and absence of undesired biases. This motivates the development of models that are equally accurate but can be also easily inspected and assessed beyond their predictive performance. To this end, we introduce contextual explanation networks (CEN)---a class of architectures that learn to predict by generating and utilizing intermediate, simplified probabilistic models. Specifically, CENs generate parameters for intermediate graphical models which are further used for prediction and play the role of explanations. Contrary to the existing post-hoc model-explanation tools, CENs learn to predict and to explain simultaneously. Our approach offers two major advantages: (i) for each prediction valid, instance-specific explanation is generated with no computational overhead and (ii) prediction via explanation acts as a regularizer and boosts performance in data-scarce settings. We analyze the proposed framework theoretically and experimentally. Our results on image and text classification and survival analysis tasks demonstrate that CENs are not only competitive with the state-of-the-art methods but also offer additional insights behind each prediction, that can be valuable for decision support. We also show that while post-hoc methods may produce misleading explanations in certain cases, CENs are consistent and allow to detect such cases systematically.},
+	urldate = {2024-03-14},
+	publisher = {arXiv},
+	author = {Al-Shedivat, Maruan and Dubey, Avinava and Xing, Eric P.},
+	month = sep,
 	year = {2020},
-	note = {Publisher: Cold Spring Harbor Laboratory Press},
-	keywords = {Archive/CMLH 2020, Archive/Nathan Wong Rotation, Archive/NIH Year-1 Funding Update: Sample-Specifc Medicine (Summer 2021), Archive/GRFP, Cancer, notion},
+	note = {arXiv:1705.10301 [cs, stat]},
+	keywords = {Computer Science - Artificial Intelligence, Computer Science - Machine Learning, Statistics - Machine Learning},
+	annote = {Comment: 48 pages, 18 figures, to appear in JMLR},
+	file = {arXiv Fulltext PDF:/Users/calebellington/Zotero/storage/YQ7UNNG2/Al-Shedivat et al. - 2020 - Contextual Explanation Networks.pdf:application/pdf},
 }
 
+@misc{lengerich_discriminative_2022,
+	title = {Discriminative {Subtyping} of {Lung} {Cancers} from {Histopathology} {Images} via {Contextual} {Deep} {Learning}},
+	copyright = {© 2022, Posted by Cold Spring Harbor Laboratory. This pre-print is available under a Creative Commons License (Attribution-NonCommercial-NoDerivs 4.0 International), CC BY-NC-ND 4.0, as described at http://creativecommons.org/licenses/by-nc-nd/4.0/},
+	url = {https://www.medrxiv.org/content/10.1101/2020.06.25.20140053v2},
+	doi = {10.1101/2020.06.25.20140053},
+	abstract = {Summarizing multiple data modalities into a parsimonious cancer “subtype” is difficult because the most informative representation of each patient’s disease is not observed. We propose to model these latent summaries as discriminative subtypes: sample representations which induce accurate and interpretable sample-specific models for downstream predictions. In this way, discriminative subtypes, which are shared between data modalities, can be estimated from one data modality and optimized according to the predictions induced in another modality. We apply this approach to lung cancer by training a deep neural network to predict discriminative subtypes from histopathology images, and use these predicted subtypes to generate models which classify adenocarcinoma, squamous cell carcinoma, and healthy tissue based on transcriptomic signatures. In this way, we optimize the latent discriminative subtypes through induced prediction loss, and the discriminative subtypes are interpreted with standard interpretation of transcriptomic predictive models. Our framework achieves state-of-the-art classification accuracy (F1-score of 0.97) and identifies discriminative subtypes which link histopathology images to transcriptomic explanations without requiring pre-specification of morphological patterns or transcriptomic processes.},
+	language = {en},
+	urldate = {2024-03-14},
+	publisher = {medRxiv},
+	author = {Lengerich, Benjamin J. and Al-Shedivat, Maruan and Alavi, Amir and Williams, Jennifer and Labbaki, Sami and Xing, Eric P.},
+	month = nov,
+	year = {2022},
+	note = {ISSN: 2014-0053
+Pages: 2020.06.25.20140053},
+	file = {Full Text PDF:/Users/calebellington/Zotero/storage/AT6CEHUA/Lengerich et al. - 2022 - Discriminative Subtyping of Lung Cancers from Hist.pdf:application/pdf},
+}
 
-@unpublished{al-shedivat_personalized_2018,
+@misc{al-shedivat_personalized_2018,
 	title = {Personalized {Survival} {Prediction} with {Contextual} {Explanation} {Networks}},
 	url = {http://arxiv.org/abs/1801.09810},
-	abstract = {Accurate and transparent prediction of cancer survival times on the level
-of individual patients can inform and improve patient care and treatment
-practices. In this paper, we design a model that concurrently learns to
-accurately predict patient-specific survival distributions and to explain
-its predictions in terms of patient attributes such as clinical tests or
-assessments. Our model is flexible and based on a recurrent network, can
-handle various modalities of data including temporal measurements, and yet
-constructs and uses simple explanations in the form of patient- and
-time-specific linear regression. For analysis, we use two publicly
-available datasets and show that our networks outperform a number of
-baselines in prediction while providing a way to inspect the reasons
-behind each prediction.},
+	doi = {10.48550/arXiv.1801.09810},
+	abstract = {Accurate and transparent prediction of cancer survival times on the level of individual patients can inform and improve patient care and treatment practices. In this paper, we design a model that concurrently learns to accurately predict patient-specific survival distributions and to explain its predictions in terms of patient attributes such as clinical tests or assessments. Our model is flexible and based on a recurrent network, can handle various modalities of data including temporal measurements, and yet constructs and uses simple explanations in the form of patient- and time-specific linear regression. For analysis, we use two publicly available datasets and show that our networks outperform a number of baselines in prediction while providing a way to inspect the reasons behind each prediction.},
+	urldate = {2024-03-14},
+	publisher = {arXiv},
 	author = {Al-Shedivat, Maruan and Dubey, Avinava and Xing, Eric P.},
 	month = jan,
 	year = {2018},
-	note = {ISBN: 1801.09810
-Publication Title: arXiv [cs.LG]},
-	keywords = {Cancer, Contextualized models review},
+	note = {arXiv:1801.09810 [cs]},
+	keywords = {Computer Science - Artificial Intelligence, Computer Science - Machine Learning},
+	annote = {Comment: Machine Learning for Healthcare Workshop, NIPS 2017},
+	file = {arXiv Fulltext PDF:/Users/calebellington/Zotero/storage/YBY26XEW/Al-Shedivat et al. - 2018 - Personalized Survival Prediction with Contextual E.pdf:application/pdf},
 }
 
-@article{stoica_contextual_2020,
-	title = {Contextual {Parameter} {Generation} for {Knowledge} {Graph} {Link} {Prediction}},
-	volume = {34},
-	copyright = {Copyright (c) 2020 Association for the Advancement of Artificial Intelligence},
-	issn = {2374-3468},
-	url = {https://ojs.aaai.org/index.php/AAAI/article/view/5693},
-	doi = {10.1609/aaai.v34i03.5693},
-	abstract = {We consider the task of knowledge graph link prediction. Given a question consisting of a source entity and a relation (e.g., Shakespeare and BornIn), the objective is to predict the most likely answer entity (e.g., England). Recent approaches tackle this problem by learning entity and relation embeddings. However, they often constrain the relationship between these embeddings to be additive (i.e., the embeddings are concatenated and then processed by a sequence of linear functions and element-wise non-linearities). We show that this type of interaction significantly limits representational power. For example, such models cannot handle cases where a different projection of the source entity is used for each relation. We propose to use contextual parameter generation to address this limitation. More specifically, we treat relations as the context in which source entities are processed to produce predictions, by using relation embeddings to generate the parameters of a model operating over source entity embeddings. This allows models to represent more complex interactions between entities and relations. We apply our method on two existing link prediction methods, including the current state-of-the-art, resulting in significant performance gains and establishing a new state-of-the-art for this task. These gains are achieved while also reducing convergence time by up to 28 times.},
-	language = {en},
-	number = {03},
-	urldate = {2023-06-09},
-	journal = {Proceedings of the AAAI Conference on Artificial Intelligence},
-	author = {Stoica, George and Stretcu, Otilia and Platanios, Emmanouil Antonios and Mitchell, Tom and Póczos, Barnabás},
-	month = apr,
-	year = {2020},
-	note = {Number: 03},
-	keywords = {notion},
-	pages = {3000--3008},
-	file = {Full Text PDF:/Users/calebellington/Zotero/storage/9L3UCEBI/Stoica et al. - 2020 - Contextual Parameter Generation for Knowledge Grap.pdf:application/pdf},
+@misc{deuschel_contextualized_2023,
+	title = {Contextualized {Policy} {Recovery}: {Modeling} and {Interpreting} {Medical} {Decisions} with {Adaptive} {Imitation} {Learning}},
+	shorttitle = {Contextualized {Policy} {Recovery}},
+	url = {http://arxiv.org/abs/2310.07918},
+	doi = {10.48550/arXiv.2310.07918},
+	abstract = {Interpretable policy learning seeks to estimate intelligible decision policies from observed actions; however, existing models fall short by forcing a tradeoff between accuracy and interpretability. This tradeoff limits data-driven interpretations of human decision-making process. e.g. to audit medical decisions for biases and suboptimal practices, we require models of decision processes which provide concise descriptions of complex behaviors. Fundamentally, existing approaches are burdened by this tradeoff because they represent the underlying decision process as a universal policy, when in fact human decisions are dynamic and can change drastically with contextual information. Thus, we propose Contextualized Policy Recovery (CPR), which re-frames the problem of modeling complex decision processes as a multi-task learning problem in which complex decision policies are comprised of context-specific policies. CPR models each context-specific policy as a linear observation-to-action mapping, and generates new decision models \${\textbackslash}textit\{on-demand\}\$ as contexts are updated with new observations. CPR is compatible with fully offline and partially observable decision environments, and can be tailored to incorporate any recurrent black-box model or interpretable decision model. We assess CPR through studies on simulated and real data, achieving state-of-the-art performance on the canonical tasks of predicting antibiotic prescription in intensive care units (\$+22{\textbackslash}\%\$ AUROC vs. previous SOTA) and predicting MRI prescription for Alzheimer's patients (\$+7.7{\textbackslash}\%\$ AUROC vs. previous SOTA). With this improvement in predictive performance, CPR closes the accuracy gap between interpretable and black-box methods for policy learning, allowing high-resolution exploration and analysis of context-specific decision models.},
+	urldate = {2023-11-02},
+	publisher = {arXiv},
+	author = {Deuschel, Jannik and Ellington, Caleb N. and Lengerich, Benjamin J. and Luo, Yingtao and Friederich, Pascal and Xing, Eric P.},
+	month = oct,
+	year = {2023},
+	note = {arXiv:2310.07918 [cs, stat]},
+	keywords = {Computer Science - Artificial Intelligence, Computer Science - Machine Learning, Statistics - Machine Learning},
+	file = {arXiv Fulltext PDF:/Users/calebellington/Zotero/storage/AJ8XNWW6/Deuschel et al. - 2023 - Contextualized Policy Recovery Modeling and Inter.pdf:application/pdf},
 }
