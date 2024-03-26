@@ -80,7 +80,7 @@ So long as the choice for both the context encoder and sample-specific model are
 such that $P(X \mid C)$ is maximized.
 Conveniently, $C$ can contain any multivariate or real features that are relevant to the study, such as clinical, genetic, textual, or image data, and the context encoder can be any differentiable function, such as a neural network, that maps $C_i$ to $\theta_i$.
 
-`Contextualized` implements this framework for key types of context encoders and sample-specific models, opening up new avenues for quantitative analysis of complex and heterogeeneous data, and simplifying the process of transforming this data into results with plug-and-play analysis tools. In particular, `Contextualized`:
+`Contextualized` implements this framework for key types of context encoders and sample-specific models, opening up new avenues for quantitative analysis of complex and heterogeneous data, and simplifying the process of transforming this data into results with plug-and-play analysis tools. In particular, `Contextualized`:
 
 1. **Unifies Modeling Frameworks:** `Contextualized` unifies modeling approaches for both homogeneous and heterogeneous data, including population models, varying-coefficient models [@hastie_varying-coefficient_1993; @fan_statistical_1999; @wang_bayesian_2022], and partition-based models [@kolar_sparsistent_2009; @parikh_treegl_2011; @zeileis_model-based_2008] via context encoding, learning parameter variation over both continuous contexts and discrete groups.
 Additionally, `Contextualized` naturally falls back to these classic modeling frameworks when complex heterogeneity is not present.
