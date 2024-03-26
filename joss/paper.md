@@ -72,8 +72,8 @@ However, prior methods only model variation for a few continuous covariates [@ha
 Recently, contextual explanation networks reframed the sample-specific parameter estimation problem as a more flexible and generalizable latent variable inference problem that can naturally leverage any additional contextual data pertinent to the study subjects [@al-shedivat_contextual_2020]. 
 This was then generalized to a new analytical paradigm, Contextualized Machine Learning, which provides a unified mathematical framework for inferring and estimating personalized models of heterogeneous and context-dependent systems [@lengerich_contextualized_2023].
 
-Formally, a given subject data $X = \{X_i\}_{i=1}^N$ and context data $C = \{C_i\}_{i=1}^N$ where $i$ indexes samples, we can express the likelihood of all data in the form of 
-$$P(X,C) \propto \int_{\theta} d\theta P_M (X \mid \theta) P ( \theta \mid C),$
+Formally, given subject data $X = \{X_i\}_{i=1}^N$ and context data $C = \{C_i\}_{i=1}^N$ where $i$ indexes subjects, each observed only once, we can express the likelihood of all data in the form of 
+$$P(X,C) \propto \int_{\theta} d\theta P_M (X \mid \theta) P ( \theta \mid C)\,$
 where we call $P ( \theta \mid C)$ the context encoder, and $P_M (X \mid \theta)$ the sample-specific model of model class $M$. 
 So long as the choice for both the context encoder and sample-specific model are differentiable, we can learn to estimate parameters $Θ_i$ for each subject $i$ via end-to-end backpropagation with gradient-based algorithms 
 such that $P(X \mid C)$ is maximized.
