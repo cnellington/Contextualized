@@ -75,7 +75,7 @@ This method allows learning complex non-linear relationships between contextual 
 Additionally, the relationship between linear coefficients and contextual information must be represented using tree-based methods, which struggle with high-dimensional and non-tabular data types.
 Recently, the contextual explanation network (CEN) was developed to learn this context-model relationship using a deep neural network, benefiting from a wide range of architectures targeting high-dimensional non-tabular data [@al-shedivat_contextual_2020].
 However, the CEN, like model-based partitioning, is designed only for linear model personalization.
-Contextualized Machine Learning is the generalization of the CEN method, which reframes the sample-specific parameter estimation problem as a more flexible and generalizable latent variable inference problem which provides a unified mathematical framework for inferring and estimating personalized models of heterogeneous and context-dependent systems using a wide range of model types [@lengerich_contextualized_2023].
+Contextualized Machine Learning generalizes the CEN method, reframing the sample-specific parameter estimation problem as a more flexible and generalizable latent variable inference problem which provides a unified mathematical framework for inferring and estimating personalized models of heterogeneous and context-dependent systems using a wide range of model types [@lengerich_contextualized_2023].
 
 Formally, Contexutalized Machine Learning uses subject data $X = \{X_i\}_{i=1}^N$ and context data $C = \{C_i\}_{i=1}^N$ where $i$ indexes samples, we can express the likelihood of all data in the form of 
 $$P(X,C) \propto \int_{\theta} d\theta P_M (X \mid \theta) P ( \theta \mid C)\,$$
