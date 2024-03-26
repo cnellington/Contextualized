@@ -67,21 +67,21 @@ With the flexibility of context-dependent parameters, each context-specific mode
 
 “Personalized modeling” is a statistical method that has started to gain popularity in recent years for representing complex and heterogeneous systems exhibiting individual, sample-specific effects, such as those prevalent in complex diseases. 
 In its basic form: $x_i \sim P(X_i ;θ_i)$, where $i$ indexes a sample, $θ_i$ is the parameters defining the sample-specific distribution, and $x_i$ corresponds to the  observation drawn from this sample-specific distribution, where understanding sample heterogeneity is equivalent to estimating data distributions with sample-specific parameters. 
-Disparate lineages of research have made contributions to this problem, typically by imposing a constraint on the variation of model parameters across all subjects [@hastie1993varying; @fan_statistical_1999; @wang_bayesian_2022; @kolar_estimating_2010; @parikh_treegl_2011; @kuijjer_estimating_2019]. 
-However, prior methods only model variation for a few continuous covariates [@hastie1993varying; @fan_statistical_1999; @wang_bayesian_2022] or groups [@kolar_estimating_2010; @parikh_treegl_2011], or otherwise employ sample-left-out methods and are statistically underpowered [@kuijjer_estimating_2019]. 
+Disparate lineages of research have made contributions to this problem, typically by imposing a constraint on the variation of model parameters across all subjects [@hastie_varying-coefficient_1993; @fan_statistical_1999; @wang_bayesian_2022; @kolar_estimating_2010; @parikh_treegl_2011; @kuijjer_estimating_2019]. 
+However, prior methods only model variation for a few continuous covariates [@hastie_varying-coefficient_1993; @fan_statistical_1999; @wang_bayesian_2022] or groups [@kolar_estimating_2010; @parikh_treegl_2011], or otherwise employ sample-left-out methods and are statistically underpowered [@kuijjer_estimating_2019]. 
 Recently, contextual explanation networks reframed the sample-specific parameter estimation problem as a more flexible and generalizable latent variable inference problem that can naturally leverage any additional contextual data pertinent to the study subjects [@al-shedivat_contextual_2020]. 
 This was then generalized to a new analytical paradigm, Contextualized Machine Learning, which provides a unified mathematical framework for inferring and estimating personalized models of heterogeneous and context-dependent systems [@lengerich_contextualized_2023].
 
 Formally, given subject data $X = \{X_i\}_{i=1}^N$ and context data $C = \{C_i\}_{i=1}^N$ where $i$ indexes subjects, each observed only once, we can express the likelihood of all data in the form of 
-$$P(X,C) \propto \int_{\theta} d\theta P_M (X \mid \theta) P ( \theta \mid C)\,$
-where we call $P ( \theta \mid C)$ the context encoder, and $P_M (X \mid \theta)$ the sample-specific model of model class $M$. 
+$$P(X,C) \propto \int_{\theta} d\theta P_M (X \mid \theta) P ( \theta \mid C)\,$$
+where we call $P ( \theta \mid C)$ the context encoder, and $P_M (X \mid \theta)$ the sample-specific model, where $M$ denotes model class or type.
 So long as the choice for both the context encoder and sample-specific model are differentiable, we can learn to estimate parameters $Θ_i$ for each subject $i$ via end-to-end backpropagation with gradient-based algorithms 
 such that $P(X \mid C)$ is maximized.
 Conveniently, $C$ can contain any multivariate or real features that are relevant to the study, such as clinical, genetic, textual, or image data, and the context encoder can be any differentiable function, such as a neural network, that maps $C_i$ to $Θ_i$.
 
 `Contextualized` implements this framework for key types of context encoders and sample-specific models, opening up new avenues for quantitative analysis of complex and heterogeeneous data, and simplifying the process of transforming this data into results with plug-and-play analysis tools. In particular, `Contextualized`:
 
-1. **Unifies Past Modeling Frameworks:** `Contextualized` unifies modeling approaches for both homogeneous and heterogeneous data, including population, sub-population, (latent) mixture, cluster-based, time-varying [@kolar_estimating_2010], tree-varying [@parikh_treegl_2011], and varying-coefficient models [@hastie1993varying]. 
+1. **Unifies Past Modeling Frameworks:** `Contextualized` unifies modeling approaches for both homogeneous and heterogeneous data, including population, sub-population, (latent) mixture, cluster-based, time-varying [@kolar_estimating_2010], tree-varying [@parikh_treegl_2011], and varying-coefficient models [@hastie_varying-coefficient_1993]. 
 Additionally, `Contextualized` naturally falls back to these more traditional modeling frameworks when complex heterogeneity is not present.
 Not only is this convenient, but it limits the number of modeling decisions and validation tests required by users, reducing the risk of misspecification and false discoveries [@lengerich_contextualized_2023].
 2. **Models High-resolution Heterogeneity:** Contextualized models adapt to the context of each sample by using a context encoder, naturally accounting for high-dimensional, continuous, and fine-grained variation between samples [@ellington_contextualized_2023].
