@@ -75,9 +75,9 @@ Contextualized Machine Learning is a generalization and abstraction of the CEN m
 Formally, given subject data $X = \{X_i\}_{i=1}^N$ and context data $C = \{C_i\}_{i=1}^N$ where $i$ indexes subjects, each observed only once, we can express the likelihood of all data in the form of 
 $$P(X,C) \propto \int_{\theta} d\theta P_M (X \mid \theta) P ( \theta \mid C)\,$$
 where we call $P ( \theta \mid C)$ the context encoder, and $P_M (X \mid \theta)$ the sample-specific model, where $M$ denotes model class or type.
-So long as the choice for both the context encoder and sample-specific model are differentiable, we can learn to estimate parameters $Θ_i$ for each subject $i$ via end-to-end backpropagation with gradient-based algorithms 
+So long as the choice for both the context encoder and sample-specific model are differentiable, we can learn to estimate parameters $\theta_i$ for each subject $i$ via end-to-end backpropagation with gradient-based algorithms 
 such that $P(X \mid C)$ is maximized.
-Conveniently, $C$ can contain any multivariate or real features that are relevant to the study, such as clinical, genetic, textual, or image data, and the context encoder can be any differentiable function, such as a neural network, that maps $C_i$ to $Θ_i$.
+Conveniently, $C$ can contain any multivariate or real features that are relevant to the study, such as clinical, genetic, textual, or image data, and the context encoder can be any differentiable function, such as a neural network, that maps $C_i$ to $\theta_i$.
 
 `Contextualized` implements this framework for key types of context encoders and sample-specific models, opening up new avenues for quantitative analysis of complex and heterogeeneous data, and simplifying the process of transforming this data into results with plug-and-play analysis tools. In particular, `Contextualized`:
 
