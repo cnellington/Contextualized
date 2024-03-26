@@ -65,12 +65,12 @@ With the flexibility of context-dependent parameters, each context-specific mode
 
 # Statement of Need
 
-“Personalized modeling” is a statistical method that has started to gain popularity in recent years for representing complex and heterogeneous systems exhibiting individual, sample-specific effects, such as those prevalent in complex diseases. 
+“Personalized modeling” is a statistical method that has started to gain popularity in recent years for representing complex and heterogeneous systems exhibiting individual, sample-specific effects, such as those prevalent in complex diseases, financial markets, and social systems. 
 In its basic form: $x_i \sim P(X_i ;θ_i)$, where $i$ indexes a sample, $θ_i$ is the parameters defining the sample-specific distribution, and $x_i$ corresponds to the  observation drawn from this sample-specific distribution, where understanding sample heterogeneity is equivalent to estimating data distributions with sample-specific parameters. 
 Disparate lineages of research have made contributions to this problem, typically by imposing a constraint on the variation of model parameters across all subjects [@hastie_varying-coefficient_1993; @fan_statistical_1999; @wang_bayesian_2022; @kolar_estimating_2010; @parikh_treegl_2011; @kuijjer_estimating_2019]. 
 However, prior methods only model variation for a few continuous covariates [@hastie_varying-coefficient_1993; @fan_statistical_1999; @wang_bayesian_2022] or groups [@kolar_estimating_2010; @parikh_treegl_2011], or otherwise employ sample-left-out methods and are statistically underpowered [@kuijjer_estimating_2019]. 
-Recently, contextual explanation networks reframed the sample-specific parameter estimation problem as a more flexible and generalizable latent variable inference problem that can naturally leverage any additional contextual data pertinent to the study subjects [@al-shedivat_contextual_2020]. 
-This was then generalized to a new analytical paradigm, Contextualized Machine Learning, which provides a unified mathematical framework for inferring and estimating personalized models of heterogeneous and context-dependent systems [@lengerich_contextualized_2023].
+Recently, contextual explanation networks (CENs) reframed the sample-specific parameter estimation problem as a more flexible and generalizable latent variable inference problem that can naturally leverage any additional contextual data pertinent to the study subjects [@al-shedivat_contextual_2020]. 
+Contextualized Machine Learning is a generalization and abstraction of the CEN method, which provides a unified mathematical framework for inferring and estimating personalized models of heterogeneous and context-dependent systems [@lengerich_contextualized_2023].
 
 Formally, given subject data $X = \{X_i\}_{i=1}^N$ and context data $C = \{C_i\}_{i=1}^N$ where $i$ indexes subjects, each observed only once, we can express the likelihood of all data in the form of 
 $$P(X,C) \propto \int_{\theta} d\theta P_M (X \mid \theta) P ( \theta \mid C)\,$$
