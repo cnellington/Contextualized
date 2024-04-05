@@ -48,13 +48,16 @@ class TestTestEachContext(unittest.TestCase):
 		"""
 		self.assertTrue(all(0 <= pval <= 1 for pval in self.pvals['Pvals']))
 
-	def test_significant_pval(self):
+	def test_expected_significant_pval(self):
 		"""
-		Test that there is at least one significant pvalue.
+		Test that expected significant pvals are in fact significant.
 		"""
-		significant_pval_exists = any(pval < 0.05 for pval in self.pvals['Pvals'])
-		self.assertTrue(significant_pval_exists, "No significant pvalue found.")
-			
+		pval_c0_x1 = self.pvals.loc[1, 'Pvals']
+		self.assertTrue(pval_c0_x1 < 0.05, "C0 X1 p-value is not significant.")
+
+		other_pvals = self.pvals.drop(1)
+		self.assertTrue(all(pval >= 0.05 for pval in other_pvals['Pvals']), "Other p-values are significant.")
+
 
 if __name__ == '__main__':
 	unittest.main()
