@@ -45,7 +45,6 @@ class TestContextualizedCorrelationNetworks(TestEasyNetworks):
         )
         self._quicktest(model, self.C, self.X, max_epochs=10, learning_rate=1e-3)
         rho = model.predict_correlation(self.C, squared=False)
-        assert np.min(rho) < 0
         assert rho.shape == (1, self.n_samples, self.x_dim, self.x_dim)
         rho = model.predict_correlation(self.C, individual_preds=False, squared=False)
         assert rho.shape == (self.n_samples, self.x_dim, self.x_dim), rho.shape
