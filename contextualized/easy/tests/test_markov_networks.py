@@ -41,6 +41,8 @@ class TestContextualizedMarkovNetworks(TestEasyNetworks):
         self._quicktest(model, self.C, self.X, max_epochs=10, learning_rate=1e-3)
         omegas = model.predict_precisions(self.C, individual_preds=False)
         assert np.shape(omegas) == (self.n_samples, self.x_dim, self.x_dim)
+        omegas = model.predict_precisions(self.C, individual_preds=True)
+        assert np.shape(omegas) == (1, self.n_samples, self.x_dim, self.x_dim)
 
 
 if __name__ == "__main__":

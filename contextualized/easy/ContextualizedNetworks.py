@@ -42,7 +42,7 @@ class ContextualizedNetworks(SKLearnWrapper):
     def predict_networks(
         self,
         C: np.ndarray,
-        with_offsets: bool,
+        with_offsets: bool = False,
         individual_preds: bool = False,
         **kwargs,
     ) -> Union[
@@ -61,7 +61,7 @@ class ContextualizedNetworks(SKLearnWrapper):
         Returns:
             Union[np.ndarray, List[np.ndarray], Tuple[np.ndarray, np.ndarray], Tuple[List[np.ndarray], List[np.ndarray]]]: The predicted network parameters (and offsets if with_offsets is True). Returned as lists of individual bootstraps if individual_preds is True.
         """
-        betas, mus = self.predict_params(C, uses_y=False, **kwargs)
+        betas, mus = self.predict_params(C, individual_preds=individual_preds, uses_y=False, **kwargs)
         if with_offsets:
             return betas, mus
         return betas
@@ -132,7 +132,7 @@ class ContextualizedCorrelationNetworks(ContextualizedNetworks):
         else:
             if squared:
                 return np.square(np.mean(rhos, axis=0))
-            return np.mean(rhos)
+            return np.mean(rhos, axis=0)
 
     def measure_mses(
         self, C: np.ndarray, X: np.ndarray, individual_preds: bool = False
