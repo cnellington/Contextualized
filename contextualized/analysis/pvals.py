@@ -219,7 +219,8 @@ def test_each_context(
     X: pd.DataFrame,
     Y: pd.DataFrame,
     verbose: bool = True,
-    **kwargs,
+    model_kwargs: Dict = {'encoder_type': 'linear'},
+    fit_kwargs: Dict = {'max_epochs': 3, 'learning_rate': 1e-2, 'n_bootstraps': 20},
 ) -> pd.DataFrame:
     """
     Test heterogeneous predictor effects attributed to every individual context feature.
@@ -239,24 +240,17 @@ def test_each_context(
     Raises:
         ValueError: If the model's n_bootstraps is less than 2.
     """
-    default_fit_params = {
-        "encoder_type": "mlp",
-        "max_epochs": 3,
-        "learning_rate": 1e-2,
-        "n_bootstraps": 20,
-    }
-    fit_params = {**default_fit_params, **kwargs}
     pvals_dict = {
         "Context": [],
         "Predictor": [],
         "Target": [],
         "Pvals": [],
     }
-    _validate_args(fit_params["n_bootstraps"], verbose = verbose) 
+    _validate_args(fit_kwargs["n_bootstraps"], verbose = verbose) 
     for context in C.columns:
         context_col = C[[context]].values
-        model = model_constructor(**fit_params)
-        model.fit(context_col, X.values, Y.values, **fit_params)
+        model = model_constructor(**model_kwargs)
+        model.fit(context_col, X.values, Y.values, **fit_kwargs)
         pvals = calc_heterogeneous_predictor_effects_pvals(
             model, context_col, verbose=False
         )

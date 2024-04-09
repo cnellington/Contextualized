@@ -33,7 +33,7 @@ class TestTestEachContext(unittest.TestCase):
 		self.X_train_df = pd.DataFrame(X, columns=['X0', 'X1'])
 		self.Y_train_df = pd.DataFrame(Y, columns=['Y'])
 
-		self.pvals = test_each_context(ContextualizedRegressor, self.C_train_df, self.X_train_df, self.Y_train_df, encoder_type="mlp", max_epochs=1, learning_rate=1e-2, n_bootstraps=40)
+		self.pvals = test_each_context(ContextualizedRegressor, self.C_train_df, self.X_train_df, self.Y_train_df, model_kwargs={'encoder_type': 'mlp', 'layers': 0}, fit_kwargs={'max_epochs': 1, 'learning_rate': 1e-2, 'n_bootstraps': 40})
 
 	def test_output_shape(self):
 		"""
