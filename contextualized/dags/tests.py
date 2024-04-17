@@ -114,13 +114,13 @@ class TestNOTMAD(unittest.TestCase):
             },
         )
         train_dataloader = model.dataloader(
-            self.C_train, self.X_train, batch_size=1, num_workers=1
+            self.C_train, self.X_train, batch_size=1, num_workers=0
         )
         test_dataloader = model.dataloader(
-            self.C_test, self.X_test, batch_size=10, num_workers=1
+            self.C_test, self.X_test, batch_size=10, num_workers=0
         )
         val_dataloader = model.dataloader(
-            self.C_val, self.X_val, batch_size=10, num_workers=1
+            self.C_val, self.X_val, batch_size=10, num_workers=0
         )
         trainer = GraphTrainer(
             max_epochs=n_epochs, deterministic=True, enable_progress_bar=False
