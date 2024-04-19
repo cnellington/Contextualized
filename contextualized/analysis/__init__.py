@@ -3,6 +3,7 @@ Utilities for analyzing contextualized models.
 """
 
 from contextualized.analysis.accuracy_split import print_acc_by_covars
+from contextualized.analysis.bootstraps import select_good_bootstraps
 from contextualized.analysis.embeddings import (
     plot_lowdim_rep,
     plot_embedding_for_all_covars,

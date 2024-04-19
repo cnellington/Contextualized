@@ -15,6 +15,7 @@ All functions can be loaded directly from the module, e.g. ``from contextualized
     pvals.test_each_context
     pvals.get_possible_pvals
     accuracy_split.print_acc_by_covars
+    bootstraps.select_good_bootstraps
     embeddings.plot_lowdim_rep
     embeddings.plot_embedding_for_all_covars
     effects.plot_homogeneous_context_effects
@@ -27,6 +28,7 @@ All functions can be loaded directly from the module, e.g. ``from contextualized
 .. autofunction:: contextualized.analysis.pvals.test_each_context
 .. autofunction:: contextualized.analysis.pvals.get_possible_pvals
 .. autofunction:: contextualized.analysis.accuracy_split.print_acc_by_covars
+.. autofunction:: contextualized.analysis.bootstraps.select_good_bootstraps
 .. autofunction:: contextualized.analysis.embeddings.plot_lowdim_rep
 .. autofunction:: contextualized.analysis.embeddings.plot_embedding_for_all_covars
 .. autofunction:: contextualized.analysis.effects.plot_homogeneous_context_effects

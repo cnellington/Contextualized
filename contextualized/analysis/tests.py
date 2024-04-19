@@ -3,12 +3,14 @@ Unit tests for analysis utilities.
 """
 
 import unittest
+import copy
 import numpy as np
 import pandas as pd
-from unittest.mock import MagicMock
+
 
 from contextualized.analysis import (
-	test_each_context
+	test_each_context,
+	select_good_bootstraps
 )
 
 from contextualized.easy import ContextualizedRegressor
@@ -57,6 +59,34 @@ class TestTestEachContext(unittest.TestCase):
 
 		other_pvals = self.pvals.drop(1)
 		self.assertTrue(all(pval >= 0.05 for pval in other_pvals['Pvals']), "Other p-values are significant.")
+
+
+class TestSelectGoodBootstraps(unittest.TestCase):
+
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+	
+	def setUp(self):
+		self.model = ContextualizedRegressor(n_bootstraps = 3)
+		C = np.random.uniform(0, 1, size=(100, 2))
+		X = np.random.uniform(0, 1, size=(100, 2))
+		Y = np.random.uniform(0, 1, size=(100, 2))
+		self.model.fit(C, X, Y)
+		Y_pred = self.model.predict(C, X, individual_preds = True)
+		self.train_errs = np.zeros_like((Y - Y_pred) ** 2)
+		self.train_errs[0] = 0.1
+		self.train_errs[1] = 0.2
+		self.train_errs[2] = 0.3
+		self.model_copy = copy.deepcopy(self.model)
+		select_good_bootstraps(self.model, self.train_errs)
+
+	def test_model_has_fewer_bootstraps(self):
+		"""
+		Test that the model has fewer bootstraps after calling select_good_bootstraps.
+		"""
+		self.assertEqual(len(self.model.models), 1)
+		self.assertEqual(len(self.model_copy.models), 3)
+		self.assertLess(len(self.model.models), len(self.model_copy.models))
 
 
 if __name__ == '__main__':

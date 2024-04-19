@@ -1,6 +1,7 @@
 import unittest
 from contextualized.regression.tests import *
 from contextualized.dags.tests import *
+from contextualized.dags.tests_fast import *
 from contextualized.easy.tests.test_regressor import *
 from contextualized.easy.tests.test_classifier import *
 from contextualized.easy.tests.test_markov_networks import *
