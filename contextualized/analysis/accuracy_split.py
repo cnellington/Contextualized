@@ -8,7 +8,7 @@ import pandas as pd
 from sklearn.metrics import roc_auc_score as roc
 
 
-def get_roc(Y_true, Y_pred):
+def get_roc(Y_true: np.ndarray, Y_pred: np.ndarray) -> float:
     """Measures ROC. Return np.nan if no valid ROC value."""
     try:
         return roc(Y_true, Y_pred)
@@ -20,7 +20,7 @@ def print_acc_by_covars(
     Y_true: np.ndarray, Y_pred: np.ndarray, covar_df: pd.DataFrame, **kwargs
 ) -> None:
     """
-    Prints Accuracy for different data splits with covariates.
+    Prints AUROC for each class for different covariate splits. Should only be used with ContextualizedClassifier.
 
     Args:
         Y_true (np.ndarray): True labels.
