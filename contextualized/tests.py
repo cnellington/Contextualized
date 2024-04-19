@@ -5,6 +5,7 @@ import torch
 from contextualized.modules import SoftSelect, Explainer, MLP, NGAM, Linear
 from contextualized.easy import ContextualizedRegressor, ContextualizedBayesianNetworks, ContextualizedCorrelationNetworks
 from contextualized.baselines import BayesianNetwork, CorrelationNetwork
+from contextualized.utils import save, load
 
 
 class TestModules(unittest.TestCase):
@@ -91,18 +92,18 @@ class TestSaveLoad(unittest.TestCase):
         Y = np.random.uniform(0, 1, size=(100, 2))
         mlp = MLP(2, 2, 50, 5)
         Y_pred = mlp(torch.Tensor(X)).detach().numpy()
-        torch.save(mlp, 'unittest_model.pt')
+        save(mlp, 'unittest_model.pt')
         del mlp
-        mlp_loaded = torch.load('unittest_model.pt')
+        mlp_loaded = load('unittest_model.pt')
         Y_pred_loaded = mlp_loaded(torch.Tensor(X)).detach().numpy()
         assert np.all(Y_pred == Y_pred_loaded)
 
         model = ContextualizedRegressor()
         model.fit(C, X, Y)
         Y_pred = model.predict(C, X)
-        torch.save(model, 'unittest_model.pt')
+        save(model, 'unittest_model.pt')
         del model
-        model_loaded = torch.load('unittest_model.pt')
+        model_loaded = load('unittest_model.pt')
         Y_pred_loaded = model_loaded.predict(C, X)
         assert np.all(Y_pred == Y_pred_loaded)
         os.remove('unittest_model.pt')
@@ -110,9 +111,9 @@ class TestSaveLoad(unittest.TestCase):
         model = ContextualizedBayesianNetworks()
         model.fit(C, X)
         pred = model.predict_networks(C)
-        torch.save(model, 'unittest_model.pt')
+        save(model, 'unittest_model.pt')
         del model
-        model_loaded = torch.load('unittest_model.pt')
+        model_loaded = load('unittest_model.pt')
         pred_loaded = model_loaded.predict_networks(C)
         assert np.all(np.array(pred) == np.array(pred_loaded))
         os.remove('unittest_model.pt')
@@ -120,9 +121,9 @@ class TestSaveLoad(unittest.TestCase):
         model = ContextualizedCorrelationNetworks()
         model.fit(C, X)
         pred = model.predict_correlation(C)
-        torch.save(model, 'unittest_model.pt')
+        save(model, 'unittest_model.pt')
         del model
-        model_loaded = torch.load('unittest_model.pt')
+        model_loaded = load('unittest_model.pt')
         pred_loaded = model_loaded.predict_correlation(C)
         assert np.all(np.array(pred) == np.array(pred_loaded))
         os.remove('unittest_model.pt')
@@ -130,9 +131,9 @@ class TestSaveLoad(unittest.TestCase):
         model = BayesianNetwork()
         model.fit(X)
         pred = model.measure_mses(X)
-        torch.save(model, 'unittest_model.pt')
+        save(model, 'unittest_model.pt')
         del model
-        model_loaded = torch.load('unittest_model.pt')
+        model_loaded = load('unittest_model.pt')
         pred_loaded = model_loaded.measure_mses(X)
         assert np.all(np.array(pred) == np.array(pred_loaded))
         os.remove('unittest_model.pt')
@@ -140,9 +141,9 @@ class TestSaveLoad(unittest.TestCase):
         model = CorrelationNetwork()
         model.fit(X)
         pred = model.measure_mses(X)
-        torch.save(model, 'unittest_model.pt')
+        save(model, 'unittest_model.pt')
         del model
-        model_loaded = torch.load('unittest_model.pt')
+        model_loaded = load('unittest_model.pt')
         pred_loaded = model_loaded.measure_mses(X)
         assert np.all(np.array(pred) == np.array(pred_loaded))
         os.remove('unittest_model.pt')

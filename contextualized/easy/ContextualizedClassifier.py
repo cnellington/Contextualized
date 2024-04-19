@@ -51,7 +51,7 @@ class ContextualizedClassifier(ContextualizedRegressor):
             individual_preds (bool, optional): Whether to return individual predictions for each model. Defaults to False.
 
         Returns:
-            Union[np.ndarray, List[np.ndarray]]: The outcome probabilities predicted by the context-specific models (n_samples, y_dim). Returned as lists of individual bootstraps if individual_preds is True.
+            Union[np.ndarray, List[np.ndarray]]: The outcome probabilities predicted by the context-specific models (n_samples, y_dim, 2). Returned as lists of individual bootstraps if individual_preds is True.
         """
         # Returns a np array of shape N samples, K outcomes, 2.
         probs = super().predict(C, X, **kwargs)

@@ -5,6 +5,7 @@ Unit tests for Easy Networks.
 import unittest
 import numpy as np
 import torch
+from sklearn.metrics import roc_auc_score
 
 from contextualized.easy import (
     ContextualizedMarkovNetworks, 
@@ -198,7 +199,10 @@ class TestEasyClassifiers(unittest.TestCase):
     def _quicktest(self, model, C, X, Y, **kwargs):
         print(f"{type(model)} quicktest")
         model.fit(C, X, Y, max_epochs=0)
-        err_init = (Y != model.predict(C, X)).sum()
+        y_preds_init = model.predict(C, X)
+        y_proba_preds_init = model.predict_proba(C, X)[:, :, 1]
+        err_init = (Y != y_preds_init).sum()
+        roc_init = roc_auc_score(Y, y_proba_preds_init)
         model.fit(C, X, Y, **kwargs)
         beta_preds, mu_preds = model.predict_params(C)
         assert beta_preds.shape == (X.shape[0], Y.shape[1], X.shape[1])
@@ -206,9 +210,13 @@ class TestEasyClassifiers(unittest.TestCase):
         assert not np.any(np.isnan(beta_preds))
         assert not np.any(np.isnan(mu_preds))
         y_preds = model.predict(C, X)
+        y_proba_preds = model.predict_proba(C, X)[:, :, 1]
         assert y_preds.shape == Y.shape
+        assert y_proba_preds.shape == Y.shape
         err_trained = (Y != y_preds).sum()
+        roc_trained = roc_auc_score(Y, y_proba_preds)
         assert err_trained < err_init
+        assert roc_trained > roc_init
         print(err_trained, err_init)
 
     def test_classifier(self):
