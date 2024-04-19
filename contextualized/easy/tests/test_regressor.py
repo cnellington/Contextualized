@@ -6,7 +6,7 @@ import unittest
 import numpy as np
 import torch
 
-from contextualized.easy import ContextualizedRegressor
+from contextualized.easy import ContextualizedRegressor, ContextualGAMRegressor
 from contextualized.utils import DummyParamPredictor, DummyYPredictor
 
 
@@ -104,6 +104,29 @@ class TestEasyRegression(unittest.TestCase):
             n_bootstraps=2,
             learning_rate=1e-3,
             es_patience=float("inf"),
+        )
+
+    def test_gam_regressor(self):
+        """Test Case for ContextualGAMRegressor."""
+        n_samples = 100
+        c_dim = 2
+        x_dim = 3
+        y_dim = 2
+        C = torch.rand((n_samples, c_dim)) - 0.5
+        beta_1 = C.sum(axis=1).unsqueeze(-1) ** 2
+        beta_2 = -C.sum(axis=1).unsqueeze(-1)
+        b_1 = C[:, 0].unsqueeze(-1)
+        b_2 = C[:, 1].unsqueeze(-1)
+        X = torch.rand((n_samples, x_dim)) - 0.5
+        outcome_1 = X[:, 0].unsqueeze(-1) * beta_1 + b_1
+        outcome_2 = X[:, 1].unsqueeze(-1) * beta_2 + b_2
+        Y = torch.cat((outcome_1, outcome_2), axis=1)
+
+        C, X, Y = C.numpy(), X.numpy(), Y.numpy()
+
+        model = ContextualGAMRegressor()
+        self._quicktest(
+            model, C, X, Y, max_epochs=10, learning_rate=1e-3, es_patience=float("inf")
         )
 
 
