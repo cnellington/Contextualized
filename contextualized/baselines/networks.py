@@ -198,7 +198,7 @@ class BayesianNetwork:
         dataset = self.model.dataloader(X)
         accelerator = "gpu" if torch.cuda.is_available() else "cpu"
         self.trainer = NOTEARSTrainer(
-            max_epochs=max_epochs, auto_lr_find=True, accelerator=accelerator, devices=1
+            max_epochs=max_epochs, accelerator=accelerator, devices=1
         )
         self.trainer.fit(self.model, dataset)
         return self
