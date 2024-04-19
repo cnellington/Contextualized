@@ -61,9 +61,9 @@ class TestSelectGoodBootstraps(unittest.TestCase):
 		super().__init__(*args, **kwargs)
 	
 	def setUp(self):
-		C = np.random.uniform(0, 1, size=(100, 2))
-		X = np.random.uniform(0, 1, size=(100, 2))
-		Y = np.random.uniform(0, 1, size=(100, 2))
+		self.C = np.random.uniform(0, 1, size=(100, 2))
+		self.X = np.random.uniform(0, 1, size=(100, 2))
+		self.Y = np.random.uniform(0, 1, size=(100, 2))
 
 	def test_model_has_fewer_bootstraps(self):
 		"""
@@ -71,12 +71,12 @@ class TestSelectGoodBootstraps(unittest.TestCase):
 		"""
 		model = ContextualizedRegressor(n_bootstraps = 3)
 		model.fit(self.C, self.X, self.Y)
-		Y_pred = self.model.predict(self.C, self.X, individual_preds = True)
+		Y_pred = model.predict(self.C, self.X, individual_preds = True)
 		train_errs = np.zeros_like((self.Y - Y_pred) ** 2)
 		train_errs[0] = 0.1
 		train_errs[1] = 0.2
 		train_errs[2] = 0.3
-		model_copy = copy.deepcopy(self.model)
+		model_copy = copy.deepcopy(model)
 		select_good_bootstraps(model, train_errs)
 		self.assertEqual(len(model.models), 1)
 		self.assertEqual(len(model_copy.models), 3)
