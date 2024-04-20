@@ -1,7 +1,7 @@
 # This file specifies extra dependencies for the development of Contextualized ML
 
 # Style
-black==23.12.1
+black==24.4.0
 pylint==2.15.5
 pylint-badge @ git+https://github.com/blengerich/pylint-badge
 
