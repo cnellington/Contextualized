@@ -11,7 +11,10 @@ import pandas as pd
 
 from contextualized.analysis import (
 	test_each_context,
-	select_good_bootstraps
+	select_good_bootstraps,
+	calc_heterogeneous_predictor_effects_pvals,
+	calc_homogeneous_context_effects_pvals,
+	calc_homogeneous_predictor_effects_pvals,
 )
 
 from contextualized.easy import ContextualizedRegressor
@@ -81,6 +84,48 @@ class TestSelectGoodBootstraps(unittest.TestCase):
 		self.assertEqual(len(model.models), 1)
 		self.assertEqual(len(model_copy.models), 3)
 		self.assertLess(len(model.models), len(model_copy.models))
+
+
+class TestPvals(unittest.TestCase):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+
+	def setUp(self):
+		np.random.seed(0)
+		torch.manual_seed(0)
+		# X1 is a heterogeneous predictor under C0, X0 is a homogeneous predictor
+  		# C0 is a homogeneous context predictor on Y0, C1 is a heterogeneous context predictor on Y1
+		self.C = np.random.uniform(-1, 1, size=(100, 2))
+		self.X = np.random.uniform(-1, 1, size=(100, 2))
+		betas = np.concatenate([np.ones((100, 1)), self.C[:, 0, None]], axis=1)
+		Y0 = np.sum(betas * self.X, axis=1) + self.C[:, 0]
+		Y1 = np.sum(betas * self.X, axis=1) + self.C[:, 1]
+		self.Y = np.column_stack([Y0, Y1])
+
+	def test_homogeneous_context_effect_pvals(self):
+		model = ContextualizedRegressor(n_bootstraps = 10)
+		model.fit(self.C, self.X, self.Y)
+		pvals = calc_homogeneous_context_effects_pvals(model, self.C)
+		assert pvals.shape == (self.C.shape[1], self.Y.shape[1])
+		assert pvals[0, 0] < 0.2 and pvals[1, 1] < 0.2
+		assert pvals[0, 1] > 0.2 and pvals[1, 0] > 0.2
+
+	def test_homogeneous_predictor_effect_pvals(self):
+		model = ContextualizedRegressor(n_bootstraps = 10)
+		model.fit(self.C, self.X, self.Y)
+		pvals = calc_homogeneous_predictor_effects_pvals(model, self.X)
+		assert pvals.shape == (self.X.shape[1], self.Y.shape[1])
+		assert pvals[0, 0] < 0.2 and pvals[0, 1] < 0.2
+		assert pvals[1, 0] > 0.2 and pvals[1, 1] > 0.2
+
+	def test_heterogeneous_predictor_effect_pvals(self):
+		model = ContextualizedRegressor(n_bootstraps = 10)
+		model.fit(self.C, self.X, self.Y)
+		pvals = calc_heterogeneous_predictor_effects_pvals(model, self.C)
+		assert pvals.shape == (self.C.shape[1], self.X.shape[1], self.Y.shape[1])
+		assert pvals[0, 1, 0] < 0.2 and pvals[0, 1, 1] < 0.2
+		pvals[0, 1, 0] = pvals[0, 1, 1] = 1
+		assert (pvals > 0.2).all()
 
 
 if __name__ == '__main__':
