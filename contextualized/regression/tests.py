@@ -24,6 +24,8 @@ class TestRegression(unittest.TestCase):
         """
         Shared unit test setup code.
         """
+        np.random.seed(0)
+        torch.manual_seed(0)
         n = 100
         c_dim = 4
         x_dim = 5
