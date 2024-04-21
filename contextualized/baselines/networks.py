@@ -14,19 +14,8 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader
 import pytorch_lightning as pl
-from contextualized.dags.graph_utils import project_to_dag_torch
-
-
-dag_pred = lambda X, W: torch.matmul(X.unsqueeze(1), W).squeeze(1)
-mse_loss = lambda y_true, y_pred: ((y_true - y_pred) ** 2).mean()
-l1_loss = lambda w, l1: l1 * torch.norm(w, p=1)
-
-
-def dag_loss(w, alpha, rho):
-    d = w.shape[-1]
-    m = torch.linalg.matrix_exp(w * w)
-    h = torch.trace(m) - d
-    return alpha * h + 0.5 * rho * h * h
+from contextualized.dags.graph_utils import project_to_dag_torch, dag_pred
+from contextualized.dags.losses import dag_loss_notears, mse_loss, l1_loss
 
 
 class NOTEARSTrainer(pl.Trainer):
@@ -70,7 +59,7 @@ class NOTEARS(pl.LightningModule):
         x_pred = self(x_true)
         mse = mse_loss(x_true, x_pred)
         l1 = l1_loss(self.W, self.l1)
-        dag = dag_loss(self.W, self.alpha, self.rho)
+        dag = dag_loss_notears(self.W, alpha=self.alpha, rho=self.rho)
         return 0.5 * mse + l1 + dag
 
     def configure_optimizers(self):
@@ -85,7 +74,7 @@ class NOTEARS(pl.LightningModule):
         x_true = batch
         x_pred = self(x_true).detach()
         mse = mse_loss(x_true, x_pred)
-        dag = dag_loss(self.W, 1e12, 1e12).detach()
+        dag = dag_loss_notears(self.W, alpha=1e12, rho=1e12).detach()
         loss = mse + dag
         self.log_dict({"val_loss": loss})
         return loss
@@ -96,7 +85,7 @@ class NOTEARS(pl.LightningModule):
         return loss
 
     def on_train_epoch_end(self, *args, **kwargs):
-        dag = dag_loss(self.W, self.alpha, self.rho).item()
+        dag = dag_loss_notears(self.W, alpha=self.alpha, rho=self.rho).item()
         if (
             dag > self.tolerance * self.prev_dag
             and self.alpha < 1e12
@@ -209,7 +198,7 @@ class BayesianNetwork:
         dataset = self.model.dataloader(X)
         accelerator = "gpu" if torch.cuda.is_available() else "cpu"
         self.trainer = NOTEARSTrainer(
-            max_epochs=max_epochs, auto_lr_find=True, accelerator=accelerator, devices=1
+            max_epochs=max_epochs, accelerator=accelerator, devices=1
         )
         self.trainer.fit(self.model, dataset)
         return self

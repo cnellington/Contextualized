@@ -3,15 +3,39 @@
 
 import torch
 import torch.nn.functional as F
+from functools import partial
 
-zero_vector = lambda x, *args: torch.zeros((len(x), 1))
-zero = lambda x: torch.zeros_like(x)
-identity = lambda x: x
-linear = lambda x, slope, intercept: x * slope + intercept
-logistic = lambda x, slope, intercept: 1 / (1 + torch.exp(-x * slope - intercept))
-linear_link = lambda x, slope, intercept: x * slope + intercept
-identity_link = lambda x: x
-softmax_link = lambda x, slope, intercept: F.softmax(x * slope + intercept, dim=1)
+
+def zero_vector(x, *args):
+    return torch.zeros((len(x), 1))
+
+
+def zero(x):
+    return torch.zeros_like(x)
+
+
+def identity(x):
+    return x
+
+
+def linear(x, slope, intercept):
+    return x * slope + intercept
+
+
+def logistic(x, slope, intercept):
+    return 1 / (1 + torch.exp(-x * slope - intercept))
+
+
+def linear_link(x, slope, intercept):
+    return x * slope + intercept
+
+
+def identity_link(x):
+    return x
+
+
+def softmax_link(x, slope, intercept):
+    return F.softmax(x * slope + intercept, dim=1)
 
 
 def make_fn(base_fn, **params):
@@ -22,7 +46,7 @@ def make_fn(base_fn, **params):
     :param **params:
 
     """
-    return lambda x: base_fn(x, **params)
+    return partial(base_fn, **params)
 
 
 def linear_constructor(slope=1, intercept=0):

@@ -11,7 +11,6 @@ from contextualized.dags.losses import (
     dag_loss_notears,
     dag_loss_dagma,
     linear_sem_loss,
-    NOTEARS_loss,
 )
 from contextualized.dags.graph_utils import (
     dag_pred,

@@ -1,6 +1,7 @@
 """
 Utilities for plotting embeddings of fitted Contextualized models.
 """
+
 from typing import *
 
 import numpy as np
@@ -8,7 +9,20 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 
-from contextualized.analysis import utils
+
+def convert_to_one_hot(col: Collection[Any]) -> Tuple[np.ndarray, List[Any]]:
+    """
+    Converts a categorical variable to a one-hot vector.
+
+    Args:
+        col (Collection[Any]): The categorical variable.
+
+    Returns:
+        Tuple[np.ndarray, List[Any]]: The one-hot vector and the possible values.
+    """
+    vals = list(set(col))
+    one_hot_vars = np.array([vals.index(x) for x in col], dtype=np.float32)
+    return one_hot_vars, vals
 
 
 def plot_embedding_for_all_covars(
@@ -89,7 +103,7 @@ def plot_lowdim_rep(
         cmap = mpl.colors.LinearSegmentedColormap.from_list(
             "Custom cmap", [cmap(i) for i in range(cmap.N)], cmap.N
         )
-        tag, tag_names = utils.convert_to_one_hot(labels)
+        tag, tag_names = convert_to_one_hot(labels)
         order = np.argsort(tag_names)
         tag_names = np.array(tag_names)[order]
         tag = np.array([list(order).index(int(x)) for x in tag])
@@ -100,7 +114,7 @@ def plot_lowdim_rep(
         tag_names = np.array(tag_names)[good_tags]
         good_idxs = np.array([good_tags[int(tag[i])] for i in range(len(tag))])
         tag = tag[good_idxs]
-        tag, _ = utils.convert_to_one_hot(tag)
+        tag, _ = convert_to_one_hot(tag)
         bounds = np.linspace(0, len(tag_names), len(tag_names) + 1)
         try:
             norm = mpl.colors.BoundaryNorm(bounds, cmap.N)

@@ -1,6 +1,7 @@
 """
 sklearn-like interface to Contextualized Regressors.
 """
+
 from contextualized.regression import (
     NaiveContextualizedRegression,
     ContextualizedRegression,
