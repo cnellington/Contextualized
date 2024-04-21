@@ -3,7 +3,6 @@ Utility functions, including saving/loading of contextualized models.
 """
 
 import torch
-import dill
 
 
 def save(model, path):
@@ -14,7 +13,7 @@ def save(model, path):
 
     """
     with open(path, "wb") as out_file:
-        torch.save(model, out_file, pickle_module=dill)
+        torch.save(model, out_file)
 
 
 def load(path):
@@ -24,7 +23,7 @@ def load(path):
 
     """
     with open(path, "rb") as in_file:
-        model = torch.load(in_file, pickle_module=dill)
+        model = torch.load(in_file)
     return model
 
 
