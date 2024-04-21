@@ -2,6 +2,7 @@
 Analysis tools for generating pvalues from bootstrap replicates.
 
 """
+
 from typing import *
 
 import numpy as np
@@ -41,7 +42,9 @@ def _validate_args(n_bootstraps: int, verbose: bool = False) -> None:
         ValueError: If the number of bootstraps is less than 2.
     """
     if n_bootstraps < 2:
-        raise ValueError(f"P-values are not well defined without multiple bootstrap samples.")
+        raise ValueError(
+            f"P-values are not well defined without multiple bootstrap samples."
+        )
     min_pval, max_pval = get_possible_pvals(n_bootstraps)
     if verbose:
         print(
@@ -103,11 +106,11 @@ def calc_homogeneous_context_effects_pvals(
     Returns:
         np.ndarray: P-values of shape (n_contexts, n_outcomes) testing whether the
             sign of the direct effect of context on outcomes is consistent across bootstraps.
-     
+
     Raises:
         ValueError: If the model's n_bootstraps is less than 2.
     """
-    _validate_args(model.n_bootstraps, verbose = verbose)
+    _validate_args(model.n_bootstraps, verbose=verbose)
     _, effects = get_homogeneous_context_effects(model, C, **kwargs)
     # effects.shape: (n_contexts, n_bootstraps, n_context_vals, n_outcomes)
     diffs = effects[:, :, -1] - effects[:, :, 0]  # Test whether the sign is consistent
@@ -146,7 +149,7 @@ def calc_homogeneous_predictor_effects_pvals(
     Raises:
         ValueError: If the model's n_bootstraps is less than 2.
     """
-    _validate_args(model.n_bootstraps, verbose = verbose)
+    _validate_args(model.n_bootstraps, verbose=verbose)
     _, effects = get_homogeneous_predictor_effects(model, C, **kwargs)
     # effects.shape: (n_predictors, n_bootstraps, n_outcomes)
     pvals = np.array(
@@ -184,7 +187,7 @@ def calc_heterogeneous_predictor_effects_pvals(
     Raises:
         ValueError: If the model's n_bootstraps is less than 2.
     """
-    _validate_args(model.n_bootstraps, verbose = verbose)
+    _validate_args(model.n_bootstraps, verbose=verbose)
     _, effects = get_heterogeneous_predictor_effects(model, C, **kwargs)
     # effects.shape is (n_contexts, n_predictors, n_bootstraps, n_context_vals, n_outcomes)
     diffs = (
@@ -219,8 +222,8 @@ def test_each_context(
     X: pd.DataFrame,
     Y: pd.DataFrame,
     verbose: bool = True,
-    model_kwargs: Dict = {'encoder_type': 'linear'},
-    fit_kwargs: Dict = {'max_epochs': 3, 'learning_rate': 1e-2, 'n_bootstraps': 20},
+    model_kwargs: Dict = {"encoder_type": "linear"},
+    fit_kwargs: Dict = {"max_epochs": 3, "learning_rate": 1e-2, "n_bootstraps": 20},
 ) -> pd.DataFrame:
     """
     Test heterogeneous predictor effects attributed to every individual context feature.
@@ -246,7 +249,7 @@ def test_each_context(
         "Target": [],
         "Pvals": [],
     }
-    _validate_args(fit_kwargs["n_bootstraps"], verbose = verbose) 
+    _validate_args(fit_kwargs["n_bootstraps"], verbose=verbose)
     for context in C.columns:
         context_col = C[[context]].values
         model = model_constructor(**model_kwargs)

@@ -3,7 +3,7 @@
 # Style
 black==24.4.0
 pylint==2.15.5
-pylint-badge @ git+https://github.com/blengerich/pylint-badge
+pylint-badge @ git+https://github.com/blengerich/pylint-badge@54d81ba844c184818e2e84f93ec6f6ee066d6433
 
 # Documentation
 jupyter-book==0.15.1

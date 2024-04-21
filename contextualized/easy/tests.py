@@ -8,8 +8,8 @@ import torch
 from sklearn.metrics import roc_auc_score
 
 from contextualized.easy import (
-    ContextualizedMarkovNetworks, 
-    ContextualizedCorrelationNetworks, 
+    ContextualizedMarkovNetworks,
+    ContextualizedCorrelationNetworks,
     ContextualizedBayesianNetworks,
     ContextualizedRegressor,
     ContextualizedClassifier,
@@ -42,6 +42,7 @@ class TestContextualizedMarkovNetworks(TestEasyNetworks):
     """
     Test Contextualized Markov Network models.
     """
+
     def setUp(self):
         """
         Shared unit test setup code.
@@ -79,6 +80,7 @@ class TestContextualizedCorrelationNetworks(TestEasyNetworks):
     """
     Test Contextualized Correlation Network models.
     """
+
     def setUp(self):
         """
         Shared unit test setup code.
@@ -124,6 +126,7 @@ class TestContextualizedBayesianNetworks(TestEasyNetworks):
     """
     Test Contextualized Bayesian Network models.
     """
+
     def setUp(self):
         """
         Shared unit test setup code.

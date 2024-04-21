@@ -1,6 +1,7 @@
 """
 Unit tests for DAG models.
 """
+
 import unittest
 import numpy as np
 import igraph as ig
@@ -57,9 +58,7 @@ class TestNOTMADFast(unittest.TestCase):
                 "num_archetypes": model_args.get("num_archetypes", k),
             },
         )
-        dataloader = model.dataloader(
-            self.C, self.X, batch_size=1, num_workers=0
-        )
+        dataloader = model.dataloader(self.C, self.X, batch_size=1, num_workers=0)
         trainer = GraphTrainer(
             max_epochs=n_epochs, deterministic=True, enable_progress_bar=False
         )
@@ -67,7 +66,9 @@ class TestNOTMADFast(unittest.TestCase):
             deterministic=True, enable_progress_bar=False, devices=1
         )
         init_preds = predict_trainer.predict_params(
-            model, dataloader, project_to_dag=False,
+            model,
+            dataloader,
+            project_to_dag=False,
         )
         assert init_preds.shape == (self.n, self.x_dim, self.x_dim)
         init_mse = mse(graph_utils.dag_pred_np(self.X, init_preds), self.X)

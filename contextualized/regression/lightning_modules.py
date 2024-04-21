@@ -11,7 +11,6 @@ g: Link Function for contextualized generalized linear models.
 Implemented with PyTorch Lightning
 """
 
-
 from abc import abstractmethod
 import numpy as np
 import torch

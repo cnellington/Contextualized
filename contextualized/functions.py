@@ -8,7 +8,7 @@ from functools import partial
 
 def zero_vector(x, *args):
     return torch.zeros((len(x), 1))
-                       
+
 
 def zero(x):
     return torch.zeros_like(x)

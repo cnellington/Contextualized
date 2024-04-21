@@ -2,7 +2,9 @@ import numpy as np
 from contextualized.easy.wrappers import SKLearnWrapper
 
 
-def select_good_bootstraps(sklearn_wrapper: SKLearnWrapper, train_errs: np.ndarray, tol: float = 2) -> SKLearnWrapper:
+def select_good_bootstraps(
+    sklearn_wrapper: SKLearnWrapper, train_errs: np.ndarray, tol: float = 2
+) -> SKLearnWrapper:
     """
     Select bootstraps that are good for a given model.
 
@@ -19,6 +21,10 @@ def select_good_bootstraps(sklearn_wrapper: SKLearnWrapper, train_errs: np.ndarr
 
     train_errs_by_bootstrap = np.mean(train_errs, axis=(1, 2))
     train_errs_min = np.min(train_errs_by_bootstrap)
-    sklearn_wrapper.models = [model for train_err, model in zip(train_errs_by_bootstrap, sklearn_wrapper.models) if train_err < train_errs_min * tol]
+    sklearn_wrapper.models = [
+        model
+        for train_err, model in zip(train_errs_by_bootstrap, sklearn_wrapper.models)
+        if train_err < train_errs_min * tol
+    ]
     sklearn_wrapper.n_bootstraps = len(sklearn_wrapper.models)
     return sklearn_wrapper

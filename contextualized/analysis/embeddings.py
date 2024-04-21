@@ -1,6 +1,7 @@
 """
 Utilities for plotting embeddings of fitted Contextualized models.
 """
+
 from typing import *
 
 import numpy as np

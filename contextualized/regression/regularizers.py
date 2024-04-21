@@ -1,12 +1,14 @@
 """
 Torch regularizers used for regression.
 """
+
 import torch
 from functools import partial
 
 
 def no_reg_fn(beta, mu):
     return 0.0
+
 
 def no_reg():
     """
@@ -16,7 +18,12 @@ def no_reg():
 
 
 def l1_reg_fn(alpha, mu_ratio, beta, mu):
-    return alpha * (mu_ratio * torch.norm(mu, p=1) + (1 - mu_ratio) * torch.norm(beta, p=1)).mean()
+    return (
+        alpha
+        * (
+            mu_ratio * torch.norm(mu, p=1) + (1 - mu_ratio) * torch.norm(beta, p=1)
+        ).mean()
+    )
 
 
 def l1_reg(alpha, mu_ratio=0.5):
@@ -30,7 +37,12 @@ def l1_reg(alpha, mu_ratio=0.5):
 
 
 def l2_reg_fn(alpha, mu_ratio, beta, mu):
-    return alpha * (mu_ratio * torch.norm(mu, p=2) + (1 - mu_ratio) * torch.norm(beta, p=2)).mean()
+    return (
+        alpha
+        * (
+            mu_ratio * torch.norm(mu, p=2) + (1 - mu_ratio) * torch.norm(beta, p=2)
+        ).mean()
+    )
 
 
 def l2_reg(alpha, mu_ratio=0.5):
@@ -44,11 +56,15 @@ def l2_reg(alpha, mu_ratio=0.5):
 
 
 def l1_l2_reg_fn(alpha, l1_ratio, mu_ratio, beta, mu):
-    return alpha * (
-        l1_ratio * (mu_ratio * torch.norm(mu, p=1) + (1 - mu_ratio) * torch.norm(beta, p=1))
-        + (1 - l1_ratio) * (mu_ratio * torch.norm(mu, p=2) + (1 - mu_ratio) * torch.norm(beta, p=2)
-        )
-    ).mean()
+    return (
+        alpha
+        * (
+            l1_ratio
+            * (mu_ratio * torch.norm(mu, p=1) + (1 - mu_ratio) * torch.norm(beta, p=1))
+            + (1 - l1_ratio)
+            * (mu_ratio * torch.norm(mu, p=2) + (1 - mu_ratio) * torch.norm(beta, p=2))
+        ).mean()
+    )
 
 
 def l1_l2_reg(alpha, l1_ratio=0.5, mu_ratio=0.5):

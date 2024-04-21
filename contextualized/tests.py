@@ -3,7 +3,11 @@ import unittest
 import numpy as np
 import torch
 from contextualized.modules import SoftSelect, Explainer, MLP, NGAM, Linear
-from contextualized.easy import ContextualizedRegressor, ContextualizedBayesianNetworks, ContextualizedCorrelationNetworks
+from contextualized.easy import (
+    ContextualizedRegressor,
+    ContextualizedBayesianNetworks,
+    ContextualizedCorrelationNetworks,
+)
 from contextualized.baselines import BayesianNetwork, CorrelationNetwork
 from contextualized.utils import save, load
 
@@ -95,108 +99,108 @@ class TestSaveLoad(unittest.TestCase):
         Y2 = np.random.uniform(0, 1, size=(100, 2))
         mlp = MLP(2, 2, 50, 5)
         Y_pred = mlp(torch.Tensor(X)).detach().numpy()
-        save(mlp, 'unittest_model.pt')
+        save(mlp, "unittest_model.pt")
         del mlp
-        mlp_loaded = load('unittest_model.pt')
+        mlp_loaded = load("unittest_model.pt")
         Y_pred_loaded = mlp_loaded(torch.Tensor(X)).detach().numpy()
         assert np.all(Y_pred == Y_pred_loaded)
-        os.remove('unittest_model.pt')
+        os.remove("unittest_model.pt")
 
         model = ContextualizedRegressor()
         model.fit(C, X, Y)
         Y_pred = model.predict(C, X)
-        save(model, 'unittest_model.pt')
+        save(model, "unittest_model.pt")
         del model
-        model_loaded = load('unittest_model.pt')
+        model_loaded = load("unittest_model.pt")
         Y_pred_loaded = model_loaded.predict(C, X)
         assert np.all(Y_pred == Y_pred_loaded)
-        os.remove('unittest_model.pt')
+        os.remove("unittest_model.pt")
         model_loaded.fit(C2, X2, Y2)
         Y_pred2 = model_loaded.predict(C2, X2)
         assert not np.all(Y_pred_loaded == Y_pred2)
-        save(model_loaded, 'unittest_model.pt')
+        save(model_loaded, "unittest_model.pt")
         del model_loaded
-        model_loaded2 = load('unittest_model.pt')
+        model_loaded2 = load("unittest_model.pt")
         Y_pred_loaded2 = model_loaded2.predict(C2, X2)
         assert np.all(Y_pred2 == Y_pred_loaded2)
-        os.remove('unittest_model.pt')
+        os.remove("unittest_model.pt")
 
         model = ContextualizedBayesianNetworks()
         model.fit(C, X)
         pred = model.predict_networks(C)
-        save(model, 'unittest_model.pt')
+        save(model, "unittest_model.pt")
         del model
-        model_loaded = load('unittest_model.pt')
+        model_loaded = load("unittest_model.pt")
         pred_loaded = model_loaded.predict_networks(C)
         assert np.all(np.array(pred) == np.array(pred_loaded))
-        os.remove('unittest_model.pt')
+        os.remove("unittest_model.pt")
         model_loaded.fit(C2, X2)
         pred2 = model_loaded.predict_networks(C2)
         assert not np.all(np.array(pred_loaded) == np.array(pred2))
-        save(model_loaded, 'unittest_model.pt')
+        save(model_loaded, "unittest_model.pt")
         del model_loaded
-        model_loaded2 = load('unittest_model.pt')
+        model_loaded2 = load("unittest_model.pt")
         pred_loaded2 = model_loaded2.predict_networks(C2)
         assert np.all(np.array(pred2) == np.array(pred_loaded2))
-        os.remove('unittest_model.pt')
+        os.remove("unittest_model.pt")
 
         model = ContextualizedCorrelationNetworks()
         model.fit(C, X)
         pred = model.predict_correlation(C)
-        save(model, 'unittest_model.pt')
+        save(model, "unittest_model.pt")
         del model
-        model_loaded = load('unittest_model.pt')
+        model_loaded = load("unittest_model.pt")
         pred_loaded = model_loaded.predict_correlation(C)
         assert np.all(np.array(pred) == np.array(pred_loaded))
-        os.remove('unittest_model.pt')
+        os.remove("unittest_model.pt")
         model_loaded.fit(C2, X2)
         pred2 = model_loaded.predict_correlation(C2)
         assert not np.all(np.array(pred_loaded) == np.array(pred2))
-        save(model_loaded, 'unittest_model.pt')
+        save(model_loaded, "unittest_model.pt")
         del model_loaded
-        model_loaded2 = load('unittest_model.pt')
+        model_loaded2 = load("unittest_model.pt")
         pred_loaded2 = model_loaded2.predict_correlation(C2)
         assert np.all(np.array(pred2) == np.array(pred_loaded2))
-        os.remove('unittest_model.pt')
+        os.remove("unittest_model.pt")
 
         model = BayesianNetwork()
         model.fit(X)
         pred = model.measure_mses(X)
-        save(model, 'unittest_model.pt')
+        save(model, "unittest_model.pt")
         del model
-        model_loaded = load('unittest_model.pt')
+        model_loaded = load("unittest_model.pt")
         pred_loaded = model_loaded.measure_mses(X)
         assert np.all(np.array(pred) == np.array(pred_loaded))
-        os.remove('unittest_model.pt')
+        os.remove("unittest_model.pt")
         model_loaded.fit(X2)
         pred2 = model_loaded.measure_mses(X2)
         assert not np.all(np.array(pred_loaded) == np.array(pred2))
-        save(model_loaded, 'unittest_model.pt')
+        save(model_loaded, "unittest_model.pt")
         del model_loaded
-        model_loaded2 = load('unittest_model.pt')
+        model_loaded2 = load("unittest_model.pt")
         pred_loaded2 = model_loaded2.measure_mses(X2)
         assert np.all(np.array(pred2) == np.array(pred_loaded2))
-        os.remove('unittest_model.pt')
+        os.remove("unittest_model.pt")
 
         model = CorrelationNetwork()
         model.fit(X)
         pred = model.measure_mses(X)
-        save(model, 'unittest_model.pt')
+        save(model, "unittest_model.pt")
         del model
-        model_loaded = load('unittest_model.pt')
+        model_loaded = load("unittest_model.pt")
         pred_loaded = model_loaded.measure_mses(X)
         assert np.all(np.array(pred) == np.array(pred_loaded))
-        os.remove('unittest_model.pt')
+        os.remove("unittest_model.pt")
         model_loaded.fit(X2)
         pred2 = model_loaded.measure_mses(X2)
         assert not np.all(np.array(pred_loaded) == np.array(pred2))
-        save(model_loaded, 'unittest_model.pt')
+        save(model_loaded, "unittest_model.pt")
         del model_loaded
-        model_loaded2 = load('unittest_model.pt')
+        model_loaded2 = load("unittest_model.pt")
         pred_loaded2 = model_loaded2.measure_mses(X2)
         assert np.all(np.array(pred2) == np.array(pred_loaded2))
-        os.remove('unittest_model.pt')
+        os.remove("unittest_model.pt")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

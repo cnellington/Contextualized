@@ -1,6 +1,7 @@
 """
 Utilities for plotting effects learned by Contextualized models.
 """
+
 from typing import *
 
 import numpy as np

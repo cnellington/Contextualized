@@ -1,6 +1,7 @@
 """
 sklearn-like interface to Contextualized Networks.
 """
+
 from typing import *
 
 import numpy as np
@@ -61,7 +62,9 @@ class ContextualizedNetworks(SKLearnWrapper):
         Returns:
             Union[np.ndarray, List[np.ndarray], Tuple[np.ndarray, np.ndarray], Tuple[List[np.ndarray], List[np.ndarray]]]: The predicted network parameters (and offsets if with_offsets is True). Returned as lists of individual bootstraps if individual_preds is True.
         """
-        betas, mus = self.predict_params(C, individual_preds=individual_preds, uses_y=False, **kwargs)
+        betas, mus = self.predict_params(
+            C, individual_preds=individual_preds, uses_y=False, **kwargs
+        )
         if with_offsets:
             return betas, mus
         return betas

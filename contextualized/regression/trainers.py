@@ -1,6 +1,7 @@
 """
 PyTorch-Lightning trainers used for Contextualized regression.
 """
+
 import numpy as np
 import pytorch_lightning as pl
 
@@ -40,9 +41,9 @@ class CorrelationTrainer(RegressionTrainer):
         """
         betas, _ = super().predict_params(model, dataloader)
         signs = np.sign(betas)
-        signs[
-            signs != np.transpose(signs, (0, 2, 1))
-        ] = 0  # remove asymmetric estimations
+        signs[signs != np.transpose(signs, (0, 2, 1))] = (
+            0  # remove asymmetric estimations
+        )
         correlations = signs * np.sqrt(np.abs(betas * np.transpose(betas, (0, 2, 1))))
         return correlations
 
