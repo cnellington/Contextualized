@@ -46,6 +46,8 @@ class TestContextualizedMarkovNetworks(TestEasyNetworks):
         """
         Shared unit test setup code.
         """
+        np.random.seed(0)
+        torch.manual_seed(0)
         self.n_samples = 100
         self.c_dim = 4
         self.x_dim = 5
@@ -81,6 +83,8 @@ class TestContextualizedCorrelationNetworks(TestEasyNetworks):
         """
         Shared unit test setup code.
         """
+        np.random.seed(0)
+        torch.manual_seed(0)
         self.n_samples = 100
         self.c_dim = 4
         self.x_dim = 5
@@ -124,6 +128,8 @@ class TestContextualizedBayesianNetworks(TestEasyNetworks):
         """
         Shared unit test setup code.
         """
+        np.random.seed(0)
+        torch.manual_seed(0)
         self.n_samples = 100
         self.c_dim = 4
         self.x_dim = 5
