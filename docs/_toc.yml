@@ -10,7 +10,6 @@ parts:
     - file: model-fitting
     - file: model-analysis
     - file: under-the-hood
-    - file: faq
   - caption: Models
     chapters:
     - file: models/regression_intro
