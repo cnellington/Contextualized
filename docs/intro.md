@@ -76,9 +76,9 @@ Contextualized provides two main functionalities:
 2. Utilities to analyze, test, and visualize contextualized models, leading to new insights about data heterogeneity, context-dependence, hidden subpopulations, and more.
 
 ```{note}
-The SKLearn-style interfaces don't try to use best PyTorch practices (prioritizing easy use over computational efficiency), but our backend is written in native PyTorch for flexibility and speed. 
+The SKLearn-style interfaces prioritize easy use over computational efficiency, but our backend is written in native PyTorch for flexibility and speed. 
 If you have an application requiring more control or efficiency, we recommend using the PyTorch backend directly.
-While we work on making this public, please reach out to us through the [Contextualized GitHub repository](https://github.com/cnellington/Contextualized/) and we'll be happy to help.
+Please reach out to us through the [Contextualized GitHub repository](https://github.com/cnellington/Contextualized/) and we'll be happy to help.
 ```
 
 ## More Information
