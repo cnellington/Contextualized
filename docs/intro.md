@@ -71,7 +71,7 @@ calc_heterogeneous_predictor_effects_pvals(model, C_test)
 ```
 
 ## Capabilities
-Contextualized provides two main resources:
+Contextualized provides two main functionalities:
 1. A SKLearn-style interface for fitting and predicting contextualized versions of workhorse statistical models (e.g. linear regression, logistic regression, networks, etc.).
 2. Utilities to analyze, test, and visualize contextualized models, leading to new insights about data heterogeneity, context-dependence, hidden subpopulations, and more.
 
