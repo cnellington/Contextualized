@@ -1,7 +1,7 @@
-Easy-start Models
+Models
 =================
 
-The ``contextualized.easy`` module contains the most popular and useful model types, which have an SKLearn-like API for minimal overhead.
+The ``contextualized.easy`` module contains Contextualized models, which are implemented with a simple SKLearn-style import-fit-predict pattern.
 All models can be loaded directly from the module, e.g. ``from contextualized.easy import ContextualizedRegressor``.
 
 .. currentmodule:: contextualized.easy

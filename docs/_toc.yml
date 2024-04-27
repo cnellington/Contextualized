@@ -4,30 +4,30 @@
 format: jb-book
 root: intro
 parts:
-  - caption: Quick Start
+  - caption: Introduction
     chapters:
-    - file: getting-started-intro
-      sections:
-      - file: installation
-      - file: model-fitting
-      - file: model-analysis
-    - file: faq
+    - file: installation
+    - file: model-fitting
+    - file: model-analysis
+    - file: under-the-hood
   - caption: Models
     chapters:
-    - file: models/easy_regression
-    - file: models/easy_classification
-    - file: models/easy_networks
+    - file: models/regression_intro
+      sections: 
+        - file: models/easy_regression
+        - file: models/easy_classification
+    - file: models/networks_intro
       sections:
         - file: models/easy_correlation_networks
         - file: models/easy_markov_networks
         - file: models/easy_bayesian_networks
         - file: models/easy_bayesian_networks_factors
-  - caption: Demos
-    chapters:
-    - file: demos/custom_models
-    - file: demos/benefits
-    - file: demos/sequential_testing
   - caption: API Reference
     chapters:
     - file: source/easy
     - file: source/analysis
+  - caption: Beyond Basics
+    chapters:
+    - file: demos/sequential_testing
+    - file: demos/custom_models
+    - file: demos/benefits

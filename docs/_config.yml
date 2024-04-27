@@ -1,8 +1,8 @@
 # Book settings
 # Learn more at https://jupyterbook.org/customize/config.html
 
-title: Contextualized.ML Documentation
-author: Contextualized.ML Team
+title: Contextualized Documentation
+author: Contextualized Team
 copyright: "2023"
 logo: logo.png
 

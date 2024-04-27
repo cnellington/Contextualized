@@ -6,7 +6,7 @@ def select_good_bootstraps(
     sklearn_wrapper: SKLearnWrapper, train_errs: np.ndarray, tol: float = 2
 ) -> SKLearnWrapper:
     """
-    Select bootstraps that are good for a given model.
+    Prune any divergent or bad bootstraps with mean training errors below tol * min(training errors).
 
     Args:
         sklearn_wrapper (contextualized.easy.wrappers.SKLearnWrapper): Wrapper for the sklearn model.

@@ -1,4 +1,4 @@
-Model Analysis
+Analysis
 ==============
 
 ``contextualized.analysis`` contains functions to analyze and plot the results of contextualized models.
