@@ -25,6 +25,23 @@ A contextualized model contains two components:
 These components are modular, and each can be customized to suit the needs of the user.
 The only constraint is that both must be differentiable to permit gradient-based optimization with our PyTorch backend.
 
+### Statistical Models vs. Neural Networks
+Contextualized models address a gap between traditional statistical models and modern deep learning methods.
+Traditional statistical models are inflexible, and often make rigid assumptions about underlying data distributions.
+Statistical models often failing to account for context-dependent parameters and cannot generalize to new contexts.
+
+Neural networks are also insufficient on their own, and do not explicitly reveal a context-specific data distribution.
+
+```{note}
+Contextualized models have many motivations, but a common one is to interpret complex data distributions in terms of context-specific models.
+While Contextualized models are not constrained to a specific model type, a common form of interpretability is linear or additive feature atribution, which can be obtained with neural networks via post-hoc interpretability methods like [LIME](https://github.com/marcotcr/lime) and [SHAP](https://github.com/shap/shap).
+
+In this limited linear interpretability regime, there are direct comparisons between contextualized models and popular post-hoc interpretability methods. 
+We explore this comparison at the end of the [Death to Cluster Models Demo](https://contextualized.ml/docs/demos/custom_models.html).
+```
+
+Unlike vanilla statistical models and neural networks, Contextualized models can recover context-specific models while also generalizing to new contexts.
+
 ## Context Encoders
 
 Contextualized currently implements three types of context encoders
