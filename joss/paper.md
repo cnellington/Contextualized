@@ -76,7 +76,7 @@ Recently, the contextual explanation network (CEN) was developed to learn this c
 However, like model-based partitioning, the CEN is designed only for linear model personalization.
 Contextualized Machine Learning generalizes the CEN method, reframing the sample-specific parameter estimation problem as a more flexible and generalizable latent variable inference problem which provides a unified mathematical framework for inferring and estimating personalized models of heterogeneous and context-dependent systems using a wide range of model types [@lengerich_contextualized_2023].
 
-Formally, Contexutalized Machine Learning uses subject data $X = \{X_i\}_{i=1}^N$ and context data $C = \{C_i\}_{i=1}^N$ where $i$ indexes samples.
+Formally, Contextualized Machine Learning uses subject data $X = \{X_i\}_{i=1}^N$ and context data $C = \{C_i\}_{i=1}^N$ where $i$ indexes samples.
 We can express the likelihood of all data in the form of 
 $$P(X,C) \propto \int_{\theta} d\theta P_M (X \mid \theta) P ( \theta \mid C)\,$$
 where we call $P ( \theta \mid C)$ the context encoder, and $P_M (X \mid \theta)$ the sample-specific model, where $M$ denotes model class or type.
