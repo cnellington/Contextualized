@@ -18,7 +18,7 @@ authors:
     equal-contrib: true
     affiliation: "2, 3"
   - name: Wesley Lo
-    affiliation: "2, 4"
+    affiliation: "4"
   - name: Aaron Alvarez
     affiliation: "5"
   - name: Andrea Rubbi
@@ -115,6 +115,11 @@ Installation instructions, tutorials, API reference, and open-source code are al
 # Acknowledgements
 
 We are grateful for early user input from Juwayni Lucman, Alyssa Lee, and Jannik Deuschel.
+
+
+# Funding
+
+C.E., B.L., and E.X. were supported by National Institutes of Health R01GM140467.
 
 
 # References
