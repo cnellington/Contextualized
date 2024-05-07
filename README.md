@@ -10,7 +10,7 @@
 <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
 
 
-An easy-to-use machine learning toolbox for estimating models, distributions, and functions with context-specific parameters.
+An SKLearn-style toolbox for estimating and analyzing models, distributions, and functions with context-specific parameters.
 
 Context-specific parameters:
 - Find hidden heterogeneity in data -- are all samples the same?
