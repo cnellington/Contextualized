@@ -8,7 +8,7 @@
 [![Downloads](https://pepy.tech/badge/contextualized-ml)](https://pepy.tech/project/contextualized-ml)
 ![pylint Score](pylint.svg)
 <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
-[![DOI](https://zenodo.org/badge/392447369.svg)](https://zenodo.org/doi/10.5281/zenodo.11130703)
+[![DOI](https://joss.theoj.org/papers/10.21105/joss.06469/status.svg)](https://doi.org/10.21105/joss.06469)
 
 
 An SKLearn-style toolbox for estimating and analyzing models, distributions, and functions with context-specific parameters.
