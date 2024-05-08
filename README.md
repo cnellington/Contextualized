@@ -13,11 +13,18 @@
 
 An SKLearn-style toolbox for estimating and analyzing models, distributions, and functions with context-specific parameters.
 
+For example, contextualized linear regression:
+```math
+Y \approx X\beta(C) + \epsilon
+```
+allows the coefficients $\beta$ of a linear regression model to adapt to context $C$.
+
 Context-specific parameters:
 - Find hidden heterogeneity in data -- are all samples the same?
 - Identify context-specific predictors -- are there different reasons for outcomes?
 - Enable domain adaptation -- can learned models extrapolate to new contexts?
 
+For more details, see the [ContextualizedML whitepaper](https://arxiv.org/abs/2310.11340).
 
 ## Quick Start
 
@@ -34,6 +41,7 @@ from contextualized.easy import ContextualizedRegressor
 model = ContextualizedRegressor()
 model.fit(C, X, Y)
 ```
+This builds a contextualized linear regression model by fitting a deep-learning model to generate context-specific coefficients $\beta(C)$.
 
 ### Predict Context-Specific Parameters
 ```
@@ -47,19 +55,26 @@ See the [docs](https://contextualized.ml/docs) for more examples.
 - [Documentation](https://contextualized.ml/docs)
 - [Pypi package index](https://pypi.python.org/pypi/contextualized-ml)
 
+## Citing
+If you use this software, please cite the software [publication](https://doi.org/10.21105/joss.06469):
+```
+@article{Ellington2024,
+  doi = {10.21105/joss.06469},
+  url = {https://doi.org/10.21105/joss.06469},
+  year = {2024},
+  publisher = {The Open Journal},
+  volume = {9},
+  number = {97},
+  pages = {6469},
+  author = {Caleb N. Ellington and Benjamin J. Lengerich and Wesley Lo and Aaron Alvarez and Andrea Rubbi and Manolis Kellis and Eric P. Xing},
+  title = {Contextualized: Heterogeneous Modeling Toolbox},
+  journal = {Journal of Open Source Software}
+}
+```
 
-## Contextualized Family
-Context-dependent modeling is a universal problem, and every domain presents unique challenges and opportunities.
-Here are some layers that others have added on top of Contextualized.
-Feel free to add your own page(s) by sending a PR or request an improvement by creating an issue. See [CONTRIBUTING.md](https://github.com/cnellington/Contextualized/blob/main/CONTRIBUTING.md) for more information about the process of contributing to this project.
+## Contributing
 
-<table>
-<tr>
-<td><a href="http://bio-contextualized.ml/">bio-contextualized.ml</a></td>
-<td>Contextualized and analytical tools for modeling medical and biological heterogeneity</td>
-</tr>
-</table>
-
+Add your own contributions by sending a PR or request an improvement by creating an [issue](https://github.com/cnellington/Contextualized/issues). See [CONTRIBUTING.md](https://github.com/cnellington/Contextualized/blob/main/CONTRIBUTING.md) for more info.
 
 ## Thanks to all our contributors
 
@@ -69,19 +84,21 @@ Feel free to add your own page(s) by sending a PR or request an improvement by c
 
 Contextualized ML was originally implemented by [Caleb Ellington](https://calebellington.com/) (CMU) and [Ben Lengerich](http://web.mit.edu/~blengeri/www) (MIT).
 
-Many people have helped. Check out [ACKNOWLEDGEMENTS.md](https://github.com/cnellington/Contextualized/blob/main/ACKNOWLEDGEMENTS.md)!
-
-
+Beyond code contributions, many people have helped. Check out [ACKNOWLEDGEMENTS.md](https://github.com/cnellington/Contextualized/blob/main/ACKNOWLEDGEMENTS.md)!
 
 ## Related Publications and Pre-prints
 - [Contextualized Machine Learning](https://arxiv.org/abs/2310.11340)
-- [Contextualized Networks Reveal Heterogeneous Transcriptomic Regulation in Tumors at Sample-Specific Resolution](https://www.biorxiv.org/content/10.1101/2023.12.01.569658v1)
-- [Contextualized Policy Recovery: Modeling and Interpreting Medical Decisions with Adaptive Imitation Learning](https://arxiv.org/abs/2310.07918)
-- [Automated Interpretable Discovery of Heterogeneous Treatment Effectiveness: A COVID-19 Case Study](https://www.sciencedirect.com/science/article/pii/S1532046422001022)
-- [NOTMAD: Estimating Bayesian Networks with Sample-Specific Structures and Parameters](http://arxiv.org/abs/2111.01104)
-- [Discriminative Subtyping of Lung Cancers from Histopathology Images via Contextual Deep Learning](https://www.medrxiv.org/content/10.1101/2020.06.25.20140053v1.abstract)
-- [Personalized Survival Prediction with Contextual Explanation Networks](http://arxiv.org/abs/1801.09810)
-- [Contextual Explanation Networks](https://jmlr.org/papers/v21/18-856.html)
+- Networks
+  - [Contextualized Networks Reveal Heterogeneous Transcriptomic Regulation in Tumors at Sample-Specific Resolution](https://www.biorxiv.org/content/10.1101/2023.12.01.569658v1)
+  - [NOTMAD: Estimating Bayesian Networks with Sample-Specific Structures and Parameters](http://arxiv.org/abs/2111.01104)
+- Applications
+  - [Contextualized Policy Recovery: Modeling and Interpreting Medical Decisions with Adaptive Imitation Learning](https://arxiv.org/abs/2310.07918)
+  - [Automated Interpretable Discovery of Heterogeneous Treatment Effectiveness: A COVID-19 Case Study](https://www.sciencedirect.com/science/article/pii/S1532046422001022)
+  - [Discriminative Subtyping of Lung Cancers from Histopathology Images via Contextual Deep Learning](https://www.medrxiv.org/content/10.1101/2020.06.25.20140053v1.abstract)
+  - [Personalized Survival Prediction with Contextual Explanation Networks](http://arxiv.org/abs/1801.09810)
+  - [Contextual Explanation Networks](https://jmlr.org/papers/v21/18-856.html)
+- Background reading:
+  - [Varying-Coefficient Models](https://academic.oup.com/jrsssb/article-abstract/55/4/757/7028270)
 
 
 ## Videos
