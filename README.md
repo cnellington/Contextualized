@@ -13,18 +13,24 @@
 
 An SKLearn-style toolbox for estimating and analyzing models, distributions, and functions with context-specific parameters.
 
-For example, contextualized linear regression:
-```math
-Y \approx X\beta(C) + \epsilon
-```
-allows the coefficients $\beta$ of a linear regression model to adapt to context $C$.
-
 Context-specific parameters:
 - Find hidden heterogeneity in data -- are all samples the same?
 - Identify context-specific predictors -- are there different reasons for outcomes?
 - Enable domain adaptation -- can learned models extrapolate to new contexts?
 
-For more details, see the [ContextualizedML whitepaper](https://arxiv.org/abs/2310.11340).
+Most models can be contextualized. For example, [linear regression](https://en.wikipedia.org/wiki/Linear_regression#Formulation) is
+```math
+Y = X\beta + \epsilon
+```
+
+Contextualized linear regression is
+```math
+Y = X\beta(C) + \epsilon
+```
+where the coefficients $\beta$ are now a function of context $C$, allowing the model to adapt to context-specific changes. 
+Contextualized implements this for many types of statistical models, including linear regression, logistic regression, Bayesian networks, correlation networks, and Markov networks.
+
+For more details, see the [Contextualized Machine Learning whitepaper](https://arxiv.org/abs/2310.11340).
 
 ## Quick Start
 
