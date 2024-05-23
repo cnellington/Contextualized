@@ -114,12 +114,15 @@ class CorrelationNetwork:
                 self.regs[i][j].fit(X[:, j, np.newaxis], X[:, i, np.newaxis])
         return self
 
-    def predict(self, n):
+    def predict(self, n, squared=False):
         betas = np.zeros((self.p, self.p))
         for i in range(self.p):
             for j in range(self.p):
                 betas[i, j] = self.regs[i][j].coef_.squeeze()
         corrs = betas * betas.T
+        if not squared:
+            mask = (corrs > 0).astype(int)
+            corrs = mask * np.sign(betas) * np.sqrt(np.abs(corrs))
         return np.tile(np.expand_dims(corrs, axis=0), (n, 1, 1))
 
     def measure_mses(self, X):
