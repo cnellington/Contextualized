@@ -114,12 +114,15 @@ class CorrelationNetwork:
                 self.regs[i][j].fit(X[:, j, np.newaxis], X[:, i, np.newaxis])
         return self
 
-    def predict(self, n):
+    def predict(self, n, squared=False):
         betas = np.zeros((self.p, self.p))
         for i in range(self.p):
             for j in range(self.p):
                 betas[i, j] = self.regs[i][j].coef_.squeeze()
         corrs = betas * betas.T
+        if not squared:
+            mask = (corrs > 0).astype(int)
+            corrs = mask * np.sign(betas) * np.sqrt(np.abs(corrs))
         return np.tile(np.expand_dims(corrs, axis=0), (n, 1, 1))
 
     def measure_mses(self, X):
@@ -236,11 +239,11 @@ class GroupedNetworks:
             self.models[label] = model
         return self
 
-    def predict(self, labels):
+    def predict(self, labels, **kwargs):
         networks = np.zeros((len(labels), self.p, self.p))
         for label in np.unique(labels):
             label_idx = labels == label
-            networks[label_idx] = self.models[label].predict(label_idx.sum())
+            networks[label_idx] = self.models[label].predict(label_idx.sum(), **kwargs)
         return networks
 
     def measure_mses(self, X, labels):
