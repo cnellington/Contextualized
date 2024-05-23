@@ -239,11 +239,11 @@ class GroupedNetworks:
             self.models[label] = model
         return self
 
-    def predict(self, labels):
+    def predict(self, labels, **kwargs):
         networks = np.zeros((len(labels), self.p, self.p))
         for label in np.unique(labels):
             label_idx = labels == label
-            networks[label_idx] = self.models[label].predict(label_idx.sum())
+            networks[label_idx] = self.models[label].predict(label_idx.sum(), **kwargs)
         return networks
 
     def measure_mses(self, X, labels):
