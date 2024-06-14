@@ -14,6 +14,50 @@ from contextualized.dags import graph_utils
 from contextualized.dags.trainers import GraphTrainer
 from contextualized.dags.losses import mse_loss as mse
 
+class TestProjectToDag(unittest.TestCase):
+    """
+    Test that the project_to_dag function works to create a DAG from a directed cyclic graph.
+    """
+    def __init__(self, *args, **kwargs):
+        super(TestProjectToDag, self).__init__(*args, **kwargs)
+
+    def setUp(self):
+        """
+        Shared unit test setup code.
+        """
+        pass
+
+    def test_project_to_dag(self):
+        """
+        Test that the project_to_dag function works to create a DAG from a directed cyclic graph.
+        """
+        # Create a cyclic graph.
+        W = np.zeros((5, 5))
+        W[0, 1] = 1
+        W[1, 2] = 1
+        W[2, 3] = 1
+        W[3, 4] = 1
+        W[4, 0] = 1
+
+        # Project to a DAG.
+        dag = graph_utils.project_to_dag_torch(W)
+        assert graph_utils.is_dag(dag)
+
+    def test_project_to_dag_from_dag(self):
+        """
+        Test that the project_to_dag function works to create a DAG from a DAG.
+        """
+        # Create a DAG.
+        W = np.zeros((5, 5))
+        W[0, 1] = 1
+        W[1, 2] = 1
+        W[2, 3] = 1
+        W[3, 4] = 1
+
+        # Project to a DAG.
+        dag = graph_utils.project_to_dag_torch(W)
+        assert graph_utils.is_dag(dag)
+
 
 class TestNOTMADFast(unittest.TestCase):
     """Unit tests for NOTMAD."""
