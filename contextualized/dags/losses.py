@@ -18,12 +18,12 @@ def dag_loss_dagma(W, s=1, alpha=0.0, **kwargs):
 
 def dag_loss_poly_indiv(w):
     d = w.shape[-1]
-    return torch.trace(torch.eye(d) + (1 / d) * torch.matmul(w, w)) - d
+    return torch.trace((torch.eye(d) + (1 / d) * torch.matmul(w, w))^d) - d
 
 
 def dag_loss_poly(W, **kwargs):
     """DAG loss on batched networks W using the
-    h_poly form: h_poly(W) = Tr((I + 1/d(W*W)^d) - d
+    h_poly form: h_poly(W) = Tr((I + 1/d(W*W))^d) - d
     """
     return torch.mean(torch.Tensor([dag_loss_poly_indiv(w) for w in W]))
 
