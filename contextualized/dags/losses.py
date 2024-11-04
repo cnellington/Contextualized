@@ -18,7 +18,7 @@ def dag_loss_dagma(W, s=1, alpha=0.0, **kwargs):
 
 def dag_loss_poly_indiv(w):
     d = w.shape[-1]
-    return torch.trace((torch.eye(d).to(w.device) + (1 / d) * torch.matmul(w, w))^d) - d
+    return torch.trace((torch.eye(d).to(w.device) + (1 / d) * torch.matmul(w, w)) ** d) - d
 
 
 def dag_loss_poly(W, **kwargs):

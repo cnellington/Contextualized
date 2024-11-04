@@ -48,7 +48,10 @@ class TestNOTMADFast(unittest.TestCase):
                 "factor_mat_l1": 0.0,
                 "num_archetypes": model_args.get("num_archetypes", k),
             },
-            # Todo: add sample-specific params
+            sample_specific_loss_params= {
+                "l1": 0.0,
+                "dag": DEFAULT_SS_PARAMS["dag"],
+            }
         )
         dataloader = model.dataloader(self.C, self.X, batch_size=1, num_workers=0)
         trainer = GraphTrainer(
@@ -184,7 +187,10 @@ class TestNOTMAD(unittest.TestCase):
                 "factor_mat_l1": 0.0,
                 "num_archetypes": model_args.get("num_archetypes", k),
             },
-            # TODO: Add sample-specific params
+            sample_specific_loss_params= {
+                "l1": 0.0,
+                "dag": DEFAULT_SS_PARAMS["dag"],
+            }
         )
         train_dataloader = model.dataloader(
             self.C_train, self.X_train, batch_size=1, num_workers=0
