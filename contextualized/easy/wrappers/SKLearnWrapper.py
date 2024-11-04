@@ -335,7 +335,7 @@ class SKLearnWrapper:
             else:
                 print("X_val not provided, not using the provided C_val.")
         if "val_split" in kwargs:
-            if 0 < kwargs["val_split"] < 1:
+            if 0 <= kwargs["val_split"] < 1:
                 val_split = kwargs["val_split"]
             else:
                 print(
@@ -346,15 +346,23 @@ class SKLearnWrapper:
         else:
             val_split = self.default_val_split
         if Y is None:
-            C_train, C_val, X_train, X_val = train_test_split(
-                C, X, test_size=val_split, shuffle=True
-            )
+            if val_split > 0:
+                C_train, C_val, X_train, X_val = train_test_split(
+                    C, X, test_size=val_split, shuffle=True
+                )
+            else:
+                C_train, X_train = C, X
+                C_val, X_val = C, X
             train_data = [C_train, X_train]
             val_data = [C_val, X_val]
         else:
-            C_train, C_val, X_train, X_val, Y_train, Y_val = train_test_split(
-                C, X, Y, test_size=val_split, shuffle=True
-            )
+            if val_split > 0:
+                C_train, C_val, X_train, X_val, Y_train, Y_val = train_test_split(
+                    C, X, Y, test_size=val_split, shuffle=True
+                )
+            else:
+                C_train, X_train, Y_train = C, X, Y
+                C_val, X_val, Y_val = C, X, Y
             train_data = [C_train, X_train, Y_train]
             val_data = [C_val, X_val, Y_val]
         return train_data, val_data

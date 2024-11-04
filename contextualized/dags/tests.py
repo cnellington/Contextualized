@@ -9,7 +9,7 @@ from pytorch_lightning import seed_everything
 from pytorch_lightning.callbacks import LearningRateFinder
 
 
-from contextualized.dags.lightning_modules import NOTMAD
+from contextualized.dags.lightning_modules import NOTMAD, DEFAULT_SS_PARAMS, DEFAULT_ARCH_PARAMS
 from contextualized.dags import graph_utils
 from contextualized.dags.trainers import GraphTrainer
 from contextualized.dags.losses import mse_loss as mse
@@ -37,26 +37,21 @@ class TestNOTMADFast(unittest.TestCase):
         model = NOTMAD(
             self.C.shape[-1],
             self.X.shape[-1],
-            archetype_params={
+            archetype_loss_params={
                 "l1": 0.0,
                 "dag": model_args.get(
                     "dag",
-                    {
-                        "loss_type": "NOTEARS",
-                        "params": {
-                            "alpha": 1e-1,
-                            "rho": 1e-2,
-                            "h_old": 0.0,
-                            "tol": 0.25,
-                            "use_dynamic_alpha_rho": True,
-                        },
-                    },
+                    DEFAULT_ARCH_PARAMS["dag"],
                 ),
                 "init_mat": INIT_MAT,
                 "num_factors": model_args.get("num_factors", 0),
                 "factor_mat_l1": 0.0,
                 "num_archetypes": model_args.get("num_archetypes", k),
             },
+            sample_specific_loss_params= {
+                "l1": 0.0,
+                "dag": DEFAULT_SS_PARAMS["dag"],
+            }
         )
         dataloader = model.dataloader(self.C, self.X, batch_size=1, num_workers=0)
         trainer = GraphTrainer(
@@ -181,26 +176,21 @@ class TestNOTMAD(unittest.TestCase):
         model = NOTMAD(
             self.C.shape[-1],
             self.X.shape[-1],
-            archetype_params={
+            archetype_loss_params={
                 "l1": 0.0,
                 "dag": model_args.get(
                     "dag",
-                    {
-                        "loss_type": "NOTEARS",
-                        "params": {
-                            "alpha": 1e-1,
-                            "rho": 1e-2,
-                            "h_old": 0.0,
-                            "tol": 0.25,
-                            "use_dynamic_alpha_rho": True,
-                        },
-                    },
+                    DEFAULT_ARCH_PARAMS["dag"],
                 ),
                 "init_mat": INIT_MAT,
                 "num_factors": model_args.get("num_factors", 0),
                 "factor_mat_l1": 0.0,
                 "num_archetypes": model_args.get("num_archetypes", k),
             },
+            sample_specific_loss_params= {
+                "l1": 0.0,
+                "dag": DEFAULT_SS_PARAMS["dag"],
+            }
         )
         train_dataloader = model.dataloader(
             self.C_train, self.X_train, batch_size=1, num_workers=0
