@@ -99,6 +99,7 @@ Beyond code contributions, many people have helped. Check out [ACKNOWLEDGEMENTS.
   - [Contextualized Networks Reveal Heterogeneous Transcriptomic Regulation in Tumors at Sample-Specific Resolution](https://www.biorxiv.org/content/10.1101/2023.12.01.569658v1)
   - [NOTMAD: Estimating Bayesian Networks with Sample-Specific Structures and Parameters](http://arxiv.org/abs/2111.01104)
 - Applications
+  - [Patient-Specific Models of Treatment Effects Explain Heterogeneity in Tuberculosis](https://arxiv.org/abs/2411.10645)
   - [Contextualized Policy Recovery: Modeling and Interpreting Medical Decisions with Adaptive Imitation Learning](https://arxiv.org/abs/2310.07918)
   - [Automated Interpretable Discovery of Heterogeneous Treatment Effectiveness: A COVID-19 Case Study](https://www.sciencedirect.com/science/article/pii/S1532046422001022)
   - [Discriminative Subtyping of Lung Cancers from Histopathology Images via Contextual Deep Learning](https://www.medrxiv.org/content/10.1101/2020.06.25.20140053v1.abstract)
