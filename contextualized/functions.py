@@ -18,10 +18,6 @@ def identity(x):
     return x
 
 
-def linear(x, slope, intercept):
-    return x * slope + intercept
-
-
 def logistic(x, slope, intercept):
     return 1 / (1 + torch.exp(-x * slope - intercept))
 
@@ -47,16 +43,6 @@ def make_fn(base_fn, **params):
 
     """
     return partial(base_fn, **params)
-
-
-def linear_constructor(slope=1, intercept=0):
-    """
-    Creates a single-parameter linear function with slope m and offset b.
-    :param slope:  (Default value = 1)
-    :param intercept:  (Default value = 0)
-
-    """
-    return make_fn(linear, slope=slope, intercept=intercept)
 
 
 def logistic_constructor(slope=1, intercept=0):
@@ -97,7 +83,8 @@ def softmax_link_constructor(slope=1, intercept=0):
 
 
 LINK_FUNCTIONS = {
-    "identity": linear_link_constructor(),
+    "identity": identity_link_constructor(),
+    "linear": linear_link_constructor(),
     "logistic": logistic_constructor(),
     "softmax": softmax_link_constructor(),
 }
