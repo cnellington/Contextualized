@@ -7,3 +7,4 @@ Thank you to everyone here for your impactful contributions!
 - Avinava Dubey
 - Manolis Kellis
 - Eric Xing
+- Jason Miller
