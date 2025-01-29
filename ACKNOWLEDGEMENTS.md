@@ -6,5 +6,5 @@ Thank you to everyone here for your impactful contributions!
 - Rich Caruana
 - Avinava Dubey
 - Manolis Kellis
-- Jason Miller
 - Eric Xing
+- Jason Miller
