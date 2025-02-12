@@ -27,7 +27,7 @@ class NOTEARSTrainer(pl.Trainer):
         preds = self.predict(model, dataloader)
         W = model.W.detach() * model.diag_mask
         if project_to_dag:
-            W = torch.tensor(project_to_dag_torch(W.numpy(force=True))[0])
+            W = torch.tensor(project_to_dag_torch(W.numpy(force=True)))
         W_batch = W.unsqueeze(0).expand(len(preds), -1, -1)
         return W_batch.numpy()
 
