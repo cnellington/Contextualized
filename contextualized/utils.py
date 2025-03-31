@@ -62,3 +62,21 @@ class DummyYPredictor:
         """
         n = len(args[0])
         return torch.zeros((n, *self.y_dim))
+    
+import numpy as np
+from sklearn.preprocessing import StandardScaler
+
+def normalize_data(C, X, return_scaler=False):
+    """
+    Normalize C and X 
+    """
+    scaler_C = StandardScaler()
+    scaler_X = StandardScaler()
+
+    C_norm = scaler_C.fit_transform(C)
+    X_norm = scaler_X.fit_transform(X)
+
+    if return_scaler:
+        return C_norm, X_norm, scaler_C, scaler_X
+    return C_norm, X_norm
+
