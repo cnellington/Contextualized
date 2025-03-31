@@ -31,8 +31,7 @@ assert np.allclose(model.scaler_C.mean_, np.mean(C_train, axis=0), atol=1e-1), "
 assert np.allclose(model.scaler_C.scale_, np.std(C_train, axis=0), atol=1e-1), "C normalization failed!"
 assert np.allclose(model.scaler_X.mean_, np.mean(X_train, axis=0), atol=1e-1), "X normalization failed!"
 assert np.allclose(model.scaler_X.scale_, np.std(X_train, axis=0), atol=1e-1), "X normalization failed!"
-print("\n✅ fit() successfully normailized C_train and X_train!")
-
+print("\n✅ fit() successfully normalized C_train and X_train!")
 # predict on test data by trained model
 Y_pred = model.predict(C_test, X_test)
 
