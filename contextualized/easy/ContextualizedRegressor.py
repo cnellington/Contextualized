@@ -30,11 +30,12 @@ class ContextualizedRegressor(SKLearnWrapper):
         l1_ratio (float, optional): Float in range (0.0, 1.0), governs how much the regularization penalizes l1 vs l2 parameter norms. Defaults to 0.0.
     """
 
-    def __init__(self, normalize=True, **kwargs):
+    def __init__(self, **kwargs):
         # for normalization
-        self.normalize = normalize
-        self.scaler_C = None
-        self.scaler_X = None
+        self.normalize = kwargs.pop("normalize", True)
+        # Scalers used to normalize C and X during fit and predict
+        self.scaler_C = None  # StandardScaler for context features (C)
+        self.scaler_X = None  # StandardScaler for input features (X)
 
         self.num_archetypes = kwargs.get("num_archetypes", 0)
         if self.num_archetypes == 0:
