@@ -5,12 +5,20 @@ Data generators used for Contextualized regression training.
 from abc import abstractmethod
 import torch
 from torch.utils.data import IterableDataset
-
+import pandas as pd
 
 class Dataset:
     """Superclass for datastreams (iterators) used to train contextualized.regression models"""
 
     def __init__(self, C, X, Y, dtype=torch.float):
+        # Allow input is dataframe
+        if isinstance(C, pd.DataFrame):
+            C = C.to_numpy()
+        if isinstance(X, pd.DataFrame):
+            X = X.to_numpy()
+        if isinstance(Y, pd.DataFrame):
+            Y = Y.to_numpy()
+        
         self.C = torch.tensor(C, dtype=dtype)
         self.X = torch.tensor(X, dtype=dtype)
         self.Y = torch.tensor(Y, dtype=dtype)
