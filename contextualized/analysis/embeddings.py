@@ -90,14 +90,34 @@ def plot_lowdim_rep(
         None
     """
 
-    if len(set(labels)) < kwargs.get("max_classes_for_discrete", 10):  # discrete labels
-        discrete = True
-        cmap = plt.cm.jet
+    # if len(set(labels)) < kwargs.get("max_classes_for_discrete", 10):  # discrete labels
+    #     discrete = True
+    #     cmap = plt.cm.jet
+    # else:
+    #     discrete = False
+    #     tag = labels
+    #     norm = None
+    #     cmap = plt.cm.coolwarm
+
+    # enhancement of the above code: users can override if they want to force discrete
+    force_discrete = kwargs.get("force_discrete", None)
+    max_classes = kwargs.get("max_classes_for_discrete", 10)
+
+    if force_discrete is not None:
+        discrete = force_discrete
     else:
-        discrete = False
+        discrete = len(np.unique(labels)) < max_classes # 'np.unique' is better than 'set' for performance
+
+    if discrete:
+        # tag = labels # when discrete, tag should also be set to labels?
+        cmap = plt.cm.jet
+        # norm = None
+    else:
         tag = labels
         norm = None
         cmap = plt.cm.coolwarm
+
+
     fig = plt.figure(figsize=kwargs.get("figsize", (12, 12)))
     if discrete:
         cmap = mpl.colors.LinearSegmentedColormap.from_list(
@@ -158,12 +178,22 @@ def plot_lowdim_rep(
             ticks=bounds[:-1] + 0.5,  # boundaries=bounds,
             format="%1i",
         )
+        # try:
+        #     color_bar.ax.set(yticks=bounds[:-1] + 0.5, yticklabels=np.round(tag_names))
+        # except ValueError:
+        #     color_bar.ax.set(yticks=bounds[:-1] + 0.5, yticklabels=tag_names)
+
+        # enhancement of the above code, accepting strings as labels
         try:
-            color_bar.ax.set(yticks=bounds[:-1] + 0.5, yticklabels=np.round(tag_names))
-        except ValueError:
-            color_bar.ax.set(yticks=bounds[:-1] + 0.5, yticklabels=tag_names)
+            tag_labels = np.round(tag_names)
+        except TypeError:
+            tag_labels = [str(x) for x in tag_names]
+        color_bar.ax.set(yticks=bounds[:-1] + 0.5, yticklabels=tag_labels)
+
     else:
         color_bar = mpl.colorbar.ColorbarBase(ax2, cmap=cmap, format="%.1f")
+
+
     if kwargs.get("cbar_label", None) is not None:
         color_bar.ax.set_ylabel(
             kwargs["cbar_label"], fontsize=kwargs.get("cbar_fontsize", 32)
