@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.lines import Line2D
 
+
 def convert_to_one_hot(col: Collection[Any]) -> Tuple[np.ndarray, List[Any]]:
     """
     Converts a categorical variable to a one-hot vector.
@@ -90,34 +91,22 @@ def plot_lowdim_rep(
         None
     """
 
-    # if len(set(labels)) < kwargs.get("max_classes_for_discrete", 10):  # discrete labels
-    #     discrete = True
-    #     cmap = plt.cm.jet
-    # else:
-    #     discrete = False
-    #     tag = labels
-    #     norm = None
-    #     cmap = plt.cm.coolwarm
-
     # enhancement of the above code: users can override if they want to force discrete; not good
     # It is better to use the default value of max_classes_for_discrete
 
-    # force_discrete = kwargs.get("force_discrete", None)
     max_classes = kwargs.get("max_classes_for_discrete", 10)
     plot_nan = kwargs.get("plot_nan", True)
 
-
-    discrete = len(np.unique(labels)) < max_classes # 'np.unique' is better than 'set' for performance
+    discrete = (
+        len(np.unique(labels)) < max_classes
+    )  # 'np.unique' is better than 'set' for performance
 
     if discrete:
-        # tag = labels # when discrete, tag should also be set to labels?
         cmap = plt.cm.jet
-        # norm = None
     else:
         tag = labels
         norm = None
         cmap = plt.cm.coolwarm
-
 
     fig = plt.figure(figsize=kwargs.get("figsize", (12, 12)))
     if discrete:
@@ -125,7 +114,6 @@ def plot_lowdim_rep(
             "Custom cmap", [cmap(i) for i in range(cmap.N)], cmap.N
         )
         tag, tag_names = convert_to_one_hot(labels)
-        # tag_names = [str(x) if pd.notnull(x) else "NaN" for x in tag_names] # Ensure NaN can be shown as 'NaN'
         order = np.argsort(tag_names)
         tag_names = np.array(tag_names)[order]
         tag = np.array([list(order).index(int(x)) for x in tag])
@@ -169,17 +157,16 @@ def plot_lowdim_rep(
         )
 
         # then users decide whether or not to plot NaN points
-        if mask_nan.any() and plot_nan:          
+        if mask_nan.any() and plot_nan:
             plt.scatter(
                 low_dim[mask_nan, 0],
                 low_dim[mask_nan, 1],
-                c='green', # For continuous labels, colorbar is coolwarm, so green is a good choice to show NaN
-                marker='s',
+                c="green",  # For continuous labels, colorbar is coolwarm, so green is a good choice to show NaN
+                marker="s",
                 alpha=kwargs.get("alpha", 1.0),
                 s=100,
-                # cmap=cmap,
             )
-        
+
     plt.xlabel(kwargs.get("xlabel", "X"), fontsize=kwargs.get("xlabel_fontsize", 48))
     plt.ylabel(kwargs.get("ylabel", "Y"), fontsize=kwargs.get("ylabel_fontsize", 48))
     plt.xticks([])
@@ -197,10 +184,6 @@ def plot_lowdim_rep(
             ticks=bounds[:-1] + 0.5,  # boundaries=bounds,
             format="%1i",
         )
-        # try:
-        #     color_bar.ax.set(yticks=bounds[:-1] + 0.5, yticklabels=np.round(tag_names))
-        # except ValueError:
-        #     color_bar.ax.set(yticks=bounds[:-1] + 0.5, yticklabels=tag_names)
 
         # enhancement of the above code, accepting strings as labels
         try:
@@ -212,14 +195,17 @@ def plot_lowdim_rep(
     else:
         color_bar = mpl.colorbar.ColorbarBase(ax2, cmap=cmap, format="%.1f")
         if mask_nan.any() and plot_nan:
-            nan_legend = Line2D([0], [0], marker='s', color='w',
-                                label='NaN',
-                                markerfacecolor='green',
-                                markersize=10,
-                                alpha=1)
+            nan_legend = Line2D(
+                [0],
+                [0],
+                marker="s",
+                color="w",
+                label="NaN",
+                markerfacecolor="green",
+                markersize=10,
+                alpha=1,
+            )
             plt.legend(handles=[nan_legend], loc="best")
-
-
 
     if kwargs.get("cbar_label", None) is not None:
         color_bar.ax.set_ylabel(

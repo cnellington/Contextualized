@@ -69,8 +69,10 @@ class ContextualizedRegressor(SKLearnWrapper):
         Normalize C and X before training if normalization is enabled.
         """
         if self.normalize:
-            C, X, self.scaler_C, self.scaler_X = normalize_data(C, X, return_scaler=True)  # make sure here it is assigned
-        
+            C, X, self.scaler_C, self.scaler_X = normalize_data(
+                C, X, return_scaler=True
+            )  # make sure here it is assigned
+
         return super().fit(C, X, Y, **kwargs)
 
     # for normalization

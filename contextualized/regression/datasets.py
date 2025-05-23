@@ -7,6 +7,7 @@ import torch
 from torch.utils.data import IterableDataset
 import pandas as pd
 
+
 class Dataset:
     """Superclass for datastreams (iterators) used to train contextualized.regression models"""
 
@@ -18,7 +19,7 @@ class Dataset:
             X = X.to_numpy()
         if isinstance(Y, pd.DataFrame):
             Y = Y.to_numpy()
-        
+
         self.C = torch.tensor(C, dtype=dtype)
         self.X = torch.tensor(X, dtype=dtype)
         self.Y = torch.tensor(Y, dtype=dtype)

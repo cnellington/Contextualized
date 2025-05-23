@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 from contextualized.easy.wrappers import SKLearnWrapper
 from contextualized.utils import inverse_transform_preserve_df
 
+
 def simple_plot(
     x_vals: List[Union[float, int]],
     y_vals: List[Union[float, int]],
@@ -253,7 +254,7 @@ def plot_boolean_vars(names, y_mean, y_err, **kwargs):
 def plot_homogeneous_context_effects(
     model: SKLearnWrapper,
     C: np.ndarray,
-    inverse_transform: bool = True, # inverse normalization to make axes meaningful
+    inverse_transform: bool = True,  # inverse normalization to make axes meaningful
     **kwargs,
 ) -> None:
     """
@@ -283,11 +284,9 @@ def plot_homogeneous_context_effects(
     # if normalization is implemented, we hope to inverse_transform and show original context axis
     if inverse_transform and getattr(model, "normalize", False):
         if hasattr(model, "scaler_C") and model.scaler_C is not None:
-            # C = model.scaler_C.inverse_transform(C)
-            # C = inverse_transform_preserve_df(model.scaler_C, C)
-            C = inverse_transform_preserve_df(model.scaler_C, C, reference=kwargs.get("original_C"))
-
-
+            C = inverse_transform_preserve_df(
+                model.scaler_C, C, reference=kwargs.get("original_C")
+            )
 
     c_vis, effects = get_homogeneous_context_effects(model, C, **kwargs)
     # effects.shape is (n_context, n_bootstraps, n_context_vals, n_outcomes)
