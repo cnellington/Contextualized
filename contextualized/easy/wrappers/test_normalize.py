@@ -41,7 +41,3 @@ assert Y_pred.shape == Y_test.shape, "predict() has wrong output shape!"
 print("\n✅ predict() ran successfully, un-normalized C_test and X_test were correctly treated!")
 
 print("predicted value:", Y_pred)
-
-# print("model is already trained？", hasattr(model, "scaler_C"), hasattr(model, "scaler_X"))
-# print("scaler_C exists？", model.scaler_C)
-# print("scaler_X exists？", model.scaler_X)

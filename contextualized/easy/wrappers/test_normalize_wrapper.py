@@ -8,8 +8,8 @@ import numpy as np
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from contextualized.easy.ContextualizedRegressor import ContextualizedRegressor
-from contextualized.easy.wrappers.SKLearnWrapper import SKLearnWrapper  # [修改] 使用 wrapper
-from contextualized.dags.trainers import GraphTrainer  # [修改] 使用 GraphTrainer 替代 TrainerFactory
+from contextualized.easy.wrappers.SKLearnWrapper import SKLearnWrapper
+from contextualized.dags.trainers import GraphTrainer
 from contextualized.regression import NaiveContextualizedRegression
 
 # generate random un-normalized C and X
@@ -23,12 +23,12 @@ C_train, C_test = C[:80], C[80:]
 X_train, X_test = X[:80], X[80:]
 Y_train, Y_test = Y[:80], Y[80:]
 
-# initialized wrapper with normalize=True  # [修改] 构造 wrapper 代替原模型
+# initialized wrapper with normalize=True
 model = SKLearnWrapper(
     base_constructor=NaiveContextualizedRegression, 
     extra_model_kwargs={},
     extra_data_kwargs={},
-    # trainer_constructor=lambda: GraphTrainer(max_epochs=1),  # [修改] 使用 GraphTrainer
+
     trainer_constructor=lambda **kwargs: GraphTrainer(**kwargs),
     normalize=True
 )
