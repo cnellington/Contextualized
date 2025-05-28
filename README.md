@@ -4,7 +4,7 @@
 ![License](https://img.shields.io/github/license/cnellington/contextualized.svg?style=flat-square)
 ![python](https://img.shields.io/badge/python-3.8%20|%203.9%20|%203.10%20|%203.11-blue)
 [![PyPI version](https://badge.fury.io/py/contextualized-ml.svg)](https://badge.fury.io/py/contextualized-ml)
-![Maintenance](https://img.shields.io/maintenance/yes/2024?style=flat-square)
+![Maintenance](https://img.shields.io/maintenance/yes/2025?style=flat-square)
 [![Downloads](https://pepy.tech/badge/contextualized-ml)](https://pepy.tech/project/contextualized-ml)
 ![pylint Score](pylint.svg)
 <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
