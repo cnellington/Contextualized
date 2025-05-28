@@ -96,7 +96,7 @@ Beyond code contributions, many people have helped. Check out [ACKNOWLEDGEMENTS.
 - [Contextualized Machine Learning](https://arxiv.org/abs/2310.11340)
 - [Contextualized: Heterogeneous Modeling Toolbox](https://doi.org/10.21105/joss.06469)
 - Networks
-  - [Contextualized Networks Reveal Heterogeneous Transcriptomic Regulation in Tumors at Sample-Specific Resolution](https://www.biorxiv.org/content/10.1101/2023.12.01.569658v1)
+  - [Learning to estimate sample-specific transcriptional networks for 7,000 tumors](https://www.pnas.org/doi/10.1073/pnas.2411930122)
   - [NOTMAD: Estimating Bayesian Networks with Sample-Specific Structures and Parameters](http://arxiv.org/abs/2111.01104)
 - Applications
   - [Patient-Specific Models of Treatment Effects Explain Heterogeneity in Tuberculosis](https://arxiv.org/abs/2411.10645)
