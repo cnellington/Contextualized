@@ -23,7 +23,7 @@ def load(path):
 
     """
     with open(path, "rb") as in_file:
-        model = torch.load(in_file)
+        model = torch.load(in_file, weights_only=False)
     return model
 
 
