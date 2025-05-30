@@ -25,7 +25,8 @@ keywords = [
     "multitask learning",
 ]
 dependencies = [
-    'lightning>=2.0.0',
+    'lightning>=2.4.0',
+    'jsonargparse[signatures]>=4.27.7',
     'torch>=2.0.0',
     'torchvision>=0.8.0',
     'numpy>=1.19.0',
@@ -44,3 +45,6 @@ packages = ["contextualized"]
 [project.urls]
 "Homepage" = "https://contextualized.ml/"
 "Source" = "https://github.com/cnellington/Contextualized/"
+
+[project.scripts]
+cml = "contextualized.main:cli_main"
