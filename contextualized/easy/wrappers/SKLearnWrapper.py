@@ -327,6 +327,10 @@ class SKLearnWrapper:
     def _split_train_data(self, C, X, Y=None, Y_required=False, **kwargs):
         if "C_val" in kwargs:
             if "X_val" in kwargs:
+                if not Y_required:
+                    train_data = [C, X]
+                    val_data = [kwargs["C_val"], X, kwargs["X_val"]]
+                    return train_data, val_data
                 if Y_required and "Y_val" in kwargs:
                     train_data = [C, X, Y]
                     val_data = [kwargs["C_val"], X, kwargs["X_val"], Y, kwargs["Y_val"]]
