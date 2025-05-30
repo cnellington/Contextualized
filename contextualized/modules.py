@@ -144,7 +144,8 @@ class Linear(nn.Module):
     Linear encoder
     """
 
-    def __init__(self, input_dim, output_dim):
+    def __init__(self, input_dim, output_dim, **kwargs):
+        # Todo: remove kwargs, useless but fixes linear encoder breaking with contextualized.easy
         super().__init__()
         self.linear = MLP(
             input_dim, output_dim, width=output_dim, layers=0, activation=None
