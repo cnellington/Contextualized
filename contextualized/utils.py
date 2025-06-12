@@ -3,7 +3,9 @@ Utility functions, including saving/loading of contextualized models.
 """
 
 import torch
-
+import numpy as np
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
 
 def save(model, path):
     """
@@ -62,11 +64,6 @@ class DummyYPredictor:
         """
         n = len(args[0])
         return torch.zeros((n, *self.y_dim))
-
-
-import numpy as np
-import pandas as pd
-from sklearn.preprocessing import StandardScaler
 
 
 def normalize_data(C, X, return_scaler=False):
