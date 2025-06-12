@@ -9,7 +9,7 @@ from contextualized.regression import (
 from contextualized.easy.wrappers import SKLearnWrapper
 from contextualized.regression import RegressionTrainer
 
-from contextualized.utils import normalize_data
+from contextualized.easy.utils import normalize_data
 
 # TODO: Multitask metamodels
 # TODO: Task-specific link functions.
