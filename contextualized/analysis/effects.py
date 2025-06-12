@@ -8,6 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from contextualized.easy.wrappers import SKLearnWrapper
+from contextualized.utils import inverse_transform_preserve_df
 
 
 def simple_plot(
@@ -253,6 +254,7 @@ def plot_boolean_vars(names, y_mean, y_err, **kwargs):
 def plot_homogeneous_context_effects(
     model: SKLearnWrapper,
     C: np.ndarray,
+    inverse_transform: bool = True,  # inverse normalization to make axes meaningful
     **kwargs,
 ) -> None:
     """
@@ -278,6 +280,14 @@ def plot_homogeneous_context_effects(
     Returns:
         None
     """
+
+    # if normalization is implemented, we hope to inverse_transform and show original context axis
+    if inverse_transform and getattr(model, "normalize", False):
+        if hasattr(model, "scaler_C") and model.scaler_C is not None:
+            C = inverse_transform_preserve_df(
+                model.scaler_C, C, reference=kwargs.get("original_C")
+            )
+
     c_vis, effects = get_homogeneous_context_effects(model, C, **kwargs)
     # effects.shape is (n_context, n_bootstraps, n_context_vals, n_outcomes)
     for outcome in range(effects.shape[-1]):
@@ -322,6 +332,7 @@ def plot_homogeneous_predictor_effects(
     model: SKLearnWrapper,
     C: np.ndarray,
     X: np.ndarray,
+    # inverse_transform: bool = True,
     **kwargs,
 ) -> None:
     """
@@ -348,6 +359,11 @@ def plot_homogeneous_predictor_effects(
     Returns:
         None
     """
+
+    if inverse_transform and getattr(model, "normalize", False):
+        if hasattr(model, "scaler_X") and model.scaler_X is not None:
+            X = model.scaler_X.inverse_transform(X)
+
     c_vis = np.zeros_like(C.values)
     x_vis = make_grid_mat(X.values, 1000)
     (betas, _) = model.predict_params(
