@@ -64,7 +64,7 @@ class ContextualizedRegressor(SKLearnWrapper):
         return super()._split_train_data(C, X, Y, Y_required=True, **kwargs)
 
     # for normalization
-    def fit(self, C, X, Y=None, **kwargs):
+    def fit(self, C, X, Y, **kwargs):
         """
         Normalize C and X before training if normalization is enabled.
         """
