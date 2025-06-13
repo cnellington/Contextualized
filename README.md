@@ -47,7 +47,7 @@ from contextualized.easy import ContextualizedRegressor
 model = ContextualizedRegressor()
 model.fit(C, X, Y, normalize=True)
 ```
-This builds a contextualized linear regression model by fitting a deep-learning model to generate context-specific coefficients $\beta(C)$. Passing `normalize=True` automatically standardizes the inputs and inversely transforms predictions.
+This builds a contextualized linear regression model by fitting a deep-learning model to generate context-specific coefficients $\beta(C)$.
 
 ### Predict Context-Specific Parameters
 ```
