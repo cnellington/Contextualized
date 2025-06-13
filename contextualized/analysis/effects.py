@@ -332,7 +332,6 @@ def plot_homogeneous_predictor_effects(
     model: SKLearnWrapper,
     C: np.ndarray,
     X: np.ndarray,
-    # inverse_transform: bool = True,
     **kwargs,
 ) -> None:
     """
