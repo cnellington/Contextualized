@@ -9,7 +9,7 @@ from contextualized.regression import (
 from contextualized.easy.wrappers import SKLearnWrapper
 from contextualized.regression import RegressionTrainer
 
-from contextualized.easy.utils import normalize_data
+# from contextualized.easy.utils import normalize_data
 
 # TODO: Multitask metamodels
 # TODO: Task-specific link functions.
@@ -31,11 +31,11 @@ class ContextualizedRegressor(SKLearnWrapper):
     """
 
     def __init__(self, **kwargs):
-        # for normalization
-        self.normalize = kwargs.pop("normalize", True)
-        # Scalers used to normalize C and X during fit and predict
-        self.scaler_C = None  # StandardScaler for context features (C)
-        self.scaler_X = None  # StandardScaler for input features (X)
+        # # for normalization
+        # self.normalize = kwargs.pop("normalize", True)
+        # # Scalers used to normalize C and X during fit and predict
+        # self.scaler_C = None  # StandardScaler for context features (C)
+        # self.scaler_X = None  # StandardScaler for input features (X)
 
         self.num_archetypes = kwargs.get("num_archetypes", 0)
         if self.num_archetypes == 0:
@@ -63,25 +63,25 @@ class ContextualizedRegressor(SKLearnWrapper):
     def _split_train_data(self, C, X, Y=None, Y_required=False, **kwargs):
         return super()._split_train_data(C, X, Y, Y_required=True, **kwargs)
 
-    # for normalization
-    def fit(self, C, X, Y, **kwargs):
-        """
-        Normalize C and X before training if normalization is enabled.
-        """
-        if self.normalize:
-            C, X, self.scaler_C, self.scaler_X = normalize_data(
-                C, X, return_scaler=True
-            )  # make sure here it is assigned
+    # # for normalization
+    # def fit(self, C, X, Y, **kwargs):
+    #     """
+    #     Normalize C and X before training if normalization is enabled.
+    #     """
+    #     if self.normalize:
+    #         C, X, self.scaler_C, self.scaler_X = normalize_data(
+    #             C, X, return_scaler=True
+    #         )  # make sure here it is assigned
 
-        return super().fit(C, X, Y, **kwargs)
+    #     return super().fit(C, X, Y, **kwargs)
 
-    # for normalization
-    def predict(self, C, X, individual_preds=False, **kwargs):
-        """
-        Ensure C and X are normalized before prediction.
-        """
-        if self.normalize and self.scaler_C and self.scaler_X:
-            C = self.scaler_C.transform(C)
-            X = self.scaler_X.transform(X)
+    # # for normalization
+    # def predict(self, C, X, individual_preds=False, **kwargs):
+    #     """
+    #     Ensure C and X are normalized before prediction.
+    #     """
+    #     if self.normalize and self.scaler_C and self.scaler_X:
+    #         C = self.scaler_C.transform(C)
+    #         X = self.scaler_X.transform(X)
 
-        return super().predict(C, X, individual_preds, **kwargs)
+    #     return super().predict(C, X, individual_preds, **kwargs)
