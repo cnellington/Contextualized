@@ -14,6 +14,7 @@ import torch
 
 from contextualized.functions import LINK_FUNCTIONS
 from contextualized.regression import REGULARIZERS, LOSSES
+from contextualized.easy.utils import normalize_data
 
 DEFAULT_LEARNING_RATE = 1e-3
 DEFAULT_N_BOOTSTRAPS = 1
@@ -68,6 +69,13 @@ class SKLearnWrapper:
         **kwargs,
     ):
         self._set_defaults()
+
+        # for normalization
+        self.normalize = kwargs.pop("normalize", True)
+        # Scalers used to normalize C and X during fit and predict
+        self.scaler_C = None  # StandardScaler for context features (C)
+        self.scaler_X = None  # StandardScaler for input features (X)
+
         self.base_constructor = base_constructor
         self.n_bootstraps = 1
         self.models = None
@@ -408,6 +416,12 @@ class SKLearnWrapper:
         Returns:
             Union[np.ndarray, List[np.ndarray]]: The outcomes predicted by the context-specific models (n_samples, y_dim). Returned as lists of individual bootstraps if individual_preds is True.
         """
+
+        # for normalization
+        if self.normalize and self.scaler_C is not None and self.scaler_X is not None:
+            C = self.scaler_C.transform(C)
+            X = self.scaler_X.transform(X)
+
         if not hasattr(self, "models") or self.models is None:
             raise ValueError(
                 "Trying to predict with a model that hasn't been trained yet."
@@ -500,6 +514,13 @@ class SKLearnWrapper:
             es_mode (str, optional): Mode for early stopping. Defaults to "min".
             es_verbose (bool, optional): Whether to print early stopping updates. Defaults to False.
         """
+
+        # for normalization
+        if self.normalize:
+            C, X = args[0], args[1]
+            C, X, self.scaler_C, self.scaler_X = normalize_data(C, X, return_scaler=True)
+            args = (C, X) + args[2:]
+
         self.models = []
         self.trainers = []
         self.dataloaders = {"train": [], "val": [], "test": []}
