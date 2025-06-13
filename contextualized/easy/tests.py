@@ -376,6 +376,26 @@ class TestEasyRegression(unittest.TestCase):
             model, C, X, Y, max_epochs=10, learning_rate=1e-3, es_patience=float("inf")
         )
 
+    def test_regressor_normalization(self):
+        """Ensure normalization option scales data during fit."""
+
+        n = 50
+        c_dim = 2
+        x_dim = 2
+        C = np.random.randn(n, c_dim) * 10 + 5
+        X = np.random.randn(n, x_dim) * 3 + 2
+        Y = X.sum(axis=1, keepdims=True) + C.sum(axis=1, keepdims=True)
+
+        model = ContextualizedRegressor(normalize=True)
+        model.fit(C, X, Y, max_epochs=1, es_patience=float("inf"))
+        assert model.normalize
+        assert model.scalers["C"] is not None
+        assert model.scalers["X"] is not None
+        assert model.scalers["Y"] is not None
+        preds = model.predict(C, X)
+        assert preds.shape == Y.shape
+
+
 
 if __name__ == "__main__":
     unittest.main()

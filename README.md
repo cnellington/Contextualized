@@ -45,7 +45,7 @@ Take a look at the [easy demo](docs/models/easy_regression.ipynb) for a quicksta
 ```
 from contextualized.easy import ContextualizedRegressor
 model = ContextualizedRegressor()
-model.fit(C, X, Y)
+model.fit(C, X, Y, normalize=True)
 ```
 This builds a contextualized linear regression model by fitting a deep-learning model to generate context-specific coefficients $\beta(C)$.
 
