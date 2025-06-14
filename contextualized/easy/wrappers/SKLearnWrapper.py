@@ -10,6 +10,7 @@ import numpy as np
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import ModelCheckpoint
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 import torch
 
 from contextualized.functions import LINK_FUNCTIONS
@@ -26,6 +27,7 @@ DEFAULT_ENCODER_TYPE = "mlp"
 DEFAULT_ENCODER_WIDTH = 25
 DEFAULT_ENCODER_LAYERS = 3
 DEFAULT_ENCODER_LINK_FN = LINK_FUNCTIONS["identity"]
+DEFAULT_NORMALIZE = False
 
 
 class SKLearnWrapper:
@@ -44,6 +46,7 @@ class SKLearnWrapper:
         alpha (float, optional): Regularization strength. Defaults to 0.0.
         mu_ratio (float, optional): Float in range (0.0, 1.0), governs how much the regularization applies to context-specific parameters or context-specific offsets.
         l1_ratio (float, optional): Float in range (0.0, 1.0), governs how much the regularization penalizes l1 vs l2 parameter norms.
+        normalize (bool, optional): If True, automatically standardize inputs during training and inverse-transform predictions. Defaults to False.
     """
 
     def _set_defaults(self):
@@ -58,6 +61,7 @@ class SKLearnWrapper:
         self.default_encoder_layers = DEFAULT_ENCODER_LAYERS
         self.default_encoder_link_fn = DEFAULT_ENCODER_LINK_FN
         self.default_encoder_type = DEFAULT_ENCODER_TYPE
+        self.default_normalize = DEFAULT_NORMALIZE
 
     def __init__(
         self,
@@ -73,6 +77,8 @@ class SKLearnWrapper:
         self.models = None
         self.trainers = None
         self.dataloaders = None
+        self.normalize = kwargs.pop("normalize", self.default_normalize)
+        self.scalers = {"C": None, "X": None, "Y": None}
         self.context_dim = None
         self.x_dim = None
         self.y_dim = None
@@ -115,6 +121,7 @@ class SKLearnWrapper:
                 "es_mode",
                 "es_min_delta",
                 "es_verbose",
+                "normalize",
             ],
         }
         self._update_acceptable_kwargs("model", extra_model_kwargs)
@@ -395,6 +402,16 @@ class SKLearnWrapper:
 
         return train_dataloader, val_dataloader
 
+    def _maybe_scale_C(self, C: np.ndarray) -> np.ndarray:
+        if self.normalize and self.scalers["C"] is not None:
+            return self.scalers["C"].transform(C)
+        return C
+
+    def _maybe_scale_X(self, X: np.ndarray) -> np.ndarray:
+        if self.normalize and self.scalers["X"] is not None:
+            return self.scalers["X"].transform(X)
+        return X
+
     def predict(
         self, C: np.ndarray, X: np.ndarray, individual_preds: bool = False, **kwargs
     ) -> Union[np.ndarray, List[np.ndarray]]:
@@ -416,15 +433,26 @@ class SKLearnWrapper:
             [
                 self.trainers[i].predict_y(
                     self.models[i],
-                    self.models[i].dataloader(C, X, np.zeros((len(C), self.y_dim))),
+                    self.models[i].dataloader(
+                        self._maybe_scale_C(C),
+                        self._maybe_scale_X(X),
+                        np.zeros((len(C), self.y_dim)),
+                    ),
                     **kwargs,
                 )
                 for i in range(len(self.models))
             ]
         )
         if individual_preds:
-            return predictions
-        return np.mean(predictions, axis=0)
+            preds = predictions
+        else:
+            preds = np.mean(predictions, axis=0)
+        if self.normalize and self.scalers["Y"] is not None:
+            if individual_preds:
+                preds = np.array([self.scalers["Y"].inverse_transform(p) for p in preds])
+            else:
+                preds = self.scalers["Y"].inverse_transform(preds)
+        return preds
 
     def predict_params(
         self,
@@ -458,11 +486,14 @@ class SKLearnWrapper:
         # Returns betas, mus
         if kwargs.pop("uses_y", True):
             get_dataloader = lambda i: self.models[i].dataloader(
-                C, np.zeros((len(C), self.x_dim)), np.zeros((len(C), self.y_dim))
+                self._maybe_scale_C(C),
+                np.zeros((len(C), self.x_dim)),
+                np.zeros((len(C), self.y_dim))
             )
         else:
             get_dataloader = lambda i: self.models[i].dataloader(
-                C, np.zeros((len(C), self.x_dim))
+                self._maybe_scale_C(C),
+                np.zeros((len(C), self.x_dim))
             )
         predictions = [
             self.trainers[i].predict_params(self.models[i], get_dataloader(i), **kwargs)
@@ -503,18 +534,31 @@ class SKLearnWrapper:
         self.models = []
         self.trainers = []
         self.dataloaders = {"train": [], "val": [], "test": []}
-        self.context_dim = args[0].shape[-1]
-        self.x_dim = args[1].shape[-1]
+        C, X = args[0], args[1]
+        if self.normalize:
+            if self.scalers["C"] is None:
+                self.scalers["C"] = StandardScaler().fit(C)
+            C = self.scalers["C"].transform(C)
+            if self.scalers["X"] is None:
+                self.scalers["X"] = StandardScaler().fit(X)
+            X = self.scalers["X"].transform(X)
+        self.context_dim = C.shape[-1]
+        self.x_dim = X.shape[-1]
         if len(args) == 3:
             Y = args[2]
             if kwargs.get("Y", None) is not None:
                 Y = kwargs.get("Y")
             if len(Y.shape) == 1:  # add feature dimension to Y if not given.
                 Y = np.expand_dims(Y, 1)
+            if self.normalize and not np.array_equal(np.unique(Y), np.array([0, 1])):
+                if self.scalers["Y"] is None:
+                    self.scalers["Y"] = StandardScaler().fit(Y)
+                Y = self.scalers["Y"].transform(Y)
             self.y_dim = Y.shape[-1]
-            args = (args[0], args[1], Y)
+            args = (C, X, Y)
         else:
             self.y_dim = self.x_dim
+            args = (C, X)
         organized_kwargs = self._organize_and_expand_fit_kwargs(**kwargs)
         self.n_bootstraps = organized_kwargs["wrapper"].get(
             "n_bootstraps", self.n_bootstraps
