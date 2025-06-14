@@ -91,23 +91,14 @@ def plot_lowdim_rep(
         None
     """
 
-    # enhancement of the above code: users can override if they want to force discrete; not good
-    # It is better to use the default value of max_classes_for_discrete
-
-    max_classes = kwargs.get("max_classes_for_discrete", 10)
-    plot_nan = kwargs.get("plot_nan", True)
-
-    discrete = (
-        len(np.unique(labels)) < max_classes
-    )  # 'np.unique' is better than 'set' for performance
-
-    if discrete:
+    if len(set(labels)) < kwargs.get("max_classes_for_discrete", 10):  # discrete labels
+        discrete = True
         cmap = plt.cm.jet
     else:
+        discrete = False
         tag = labels
         norm = None
         cmap = plt.cm.coolwarm
-
     fig = plt.figure(figsize=kwargs.get("figsize", (12, 12)))
     if discrete:
         cmap = mpl.colors.LinearSegmentedColormap.from_list(
@@ -142,7 +133,6 @@ def plot_lowdim_rep(
             cmap=cmap,
             norm=norm,
         )
-
     else:
         # plot valid points first
         mask_nan = np.isnan(labels)
