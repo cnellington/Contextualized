@@ -7,7 +7,8 @@ import copy
 import torch
 import numpy as np
 import pandas as pd
-
+from unittest import mock
+import matplotlib as mpl
 
 from contextualized.analysis import (
     test_each_context,
@@ -18,6 +19,7 @@ from contextualized.analysis import (
 )
 
 from contextualized.easy import ContextualizedRegressor
+from contextualized.analysis.embeddings import plot_lowdim_rep
 
 
 class TestTestEachContext(unittest.TestCase):
@@ -143,6 +145,45 @@ class TestPvals(unittest.TestCase):
         assert pvals[0, 1, 0] < 0.2 and pvals[0, 1, 1] < 0.2
         pvals[0, 1, 0] = pvals[0, 1, 1] = 1
         assert (pvals > 0.2).all()
+
+
+class TestPlotLowdimRep(unittest.TestCase):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def setUp(self):
+        np.random.seed(42)
+        self.low_dim = np.random.randn(10, 2)
+
+    @mock.patch("contextualized.analysis.embeddings.plt.scatter")
+    @mock.patch("contextualized.analysis.embeddings.plt.legend")
+    @mock.patch("contextualized.analysis.embeddings.plt.figure")
+    @mock.patch("contextualized.analysis.embeddings.mpl.colorbar.ColorbarBase")
+    def test_plot_nan_points(self, mock_colorbar, mock_figure, mock_legend, mock_scatter):
+        labels = np.array([1.0, 2.0, np.nan, 4.0, 5.0, np.nan, 7.0, 8.0, 9.0, 10.0])
+        plot_lowdim_rep(self.low_dim, labels, plot_nan=True)
+        self.assertEqual(mock_scatter.call_count, 2)
+        self.assertTrue(mock_legend.called)
+
+    @mock.patch("contextualized.analysis.embeddings.plt.scatter")
+    @mock.patch("contextualized.analysis.embeddings.plt.legend")
+    @mock.patch("contextualized.analysis.embeddings.plt.figure")
+    @mock.patch("contextualized.analysis.embeddings.mpl.colorbar.ColorbarBase")
+    def test_no_plot_nan_points(self, mock_colorbar, mock_figure, mock_legend, mock_scatter):
+        labels = np.array([1.0, 2.0, np.nan, 4.0, 5.0, np.nan, 7.0, 8.0, 9.0, 10.0])
+        plot_lowdim_rep(self.low_dim, labels, plot_nan=False)
+        self.assertEqual(mock_scatter.call_count, 1)
+        self.assertFalse(mock_legend.called)
+
+    @mock.patch("contextualized.analysis.embeddings.plt.scatter")
+    @mock.patch("contextualized.analysis.embeddings.plt.legend")
+    @mock.patch("contextualized.analysis.embeddings.plt.figure")
+    @mock.patch("contextualized.analysis.embeddings.mpl.colorbar.ColorbarBase")
+    def test_string_labels(self, mock_colorbar, mock_figure, mock_legend, mock_scatter):
+        labels = np.array(["cat", "dog", "cat", "dog", "fish", "cat", "dog", "fish", "cat", "dog"])
+        plot_lowdim_rep(self.low_dim, labels)
+        self.assertEqual(mock_scatter.call_count, 1)
 
 
 if __name__ == "__main__":
