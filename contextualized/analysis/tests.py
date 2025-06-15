@@ -160,7 +160,9 @@ class TestPlotLowdimRep(unittest.TestCase):
     @mock.patch("contextualized.analysis.embeddings.plt.legend")
     @mock.patch("contextualized.analysis.embeddings.plt.figure")
     @mock.patch("contextualized.analysis.embeddings.mpl.colorbar.ColorbarBase")
-    def test_plot_nan_points(self, mock_colorbar, mock_figure, mock_legend, mock_scatter):
+    def test_plot_nan_points(
+        self, mock_colorbar, mock_figure, mock_legend, mock_scatter
+    ):
         labels = np.array([1.0, 2.0, np.nan, 4.0, 5.0, np.nan, 7.0, 8.0, 9.0, 10.0])
         plot_lowdim_rep(self.low_dim, labels, plot_nan=True)
         self.assertEqual(mock_scatter.call_count, 2)
@@ -170,7 +172,9 @@ class TestPlotLowdimRep(unittest.TestCase):
     @mock.patch("contextualized.analysis.embeddings.plt.legend")
     @mock.patch("contextualized.analysis.embeddings.plt.figure")
     @mock.patch("contextualized.analysis.embeddings.mpl.colorbar.ColorbarBase")
-    def test_no_plot_nan_points(self, mock_colorbar, mock_figure, mock_legend, mock_scatter):
+    def test_no_plot_nan_points(
+        self, mock_colorbar, mock_figure, mock_legend, mock_scatter
+    ):
         labels = np.array([1.0, 2.0, np.nan, 4.0, 5.0, np.nan, 7.0, 8.0, 9.0, 10.0])
         plot_lowdim_rep(self.low_dim, labels, plot_nan=False)
         self.assertEqual(mock_scatter.call_count, 1)
@@ -181,7 +185,9 @@ class TestPlotLowdimRep(unittest.TestCase):
     @mock.patch("contextualized.analysis.embeddings.plt.figure")
     @mock.patch("contextualized.analysis.embeddings.mpl.colorbar.ColorbarBase")
     def test_string_labels(self, mock_colorbar, mock_figure, mock_legend, mock_scatter):
-        labels = np.array(["cat", "dog", "cat", "dog", "fish", "cat", "dog", "fish", "cat", "dog"])
+        labels = np.array(
+            ["cat", "dog", "cat", "dog", "fish", "cat", "dog", "fish", "cat", "dog"]
+        )
         plot_lowdim_rep(self.low_dim, labels)
         self.assertEqual(mock_scatter.call_count, 1)
 
