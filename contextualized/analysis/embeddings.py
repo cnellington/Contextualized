@@ -90,7 +90,7 @@ def plot_lowdim_rep(
     Returns:
         None
     """
-    
+
     plot_nan = kwargs.get("plot_nan", True)  # whether to plot NaN points
     if len(set(labels)) < kwargs.get("max_classes_for_discrete", 10):  # discrete labels
         discrete = True
