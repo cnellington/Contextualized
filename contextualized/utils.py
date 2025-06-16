@@ -3,6 +3,7 @@ Utility functions, including saving/loading of contextualized models.
 """
 
 import torch
+import warnings
 
 
 def save(model, path):
@@ -62,3 +63,30 @@ class DummyYPredictor:
         """
         n = len(args[0])
         return torch.zeros((n, *self.y_dim))
+
+
+def check_kwargs(kwargs, allowed_keys, context=""):
+    """
+    Check for unexpected keyword arguments and issue warnings.
+
+    Parameters
+    ----------
+    kwargs : dict
+        Dictionary of keyword arguments to validate.
+    allowed_keys : set or list
+        The expected valid keyword argument names.
+    context : str
+        Optional name of the function or class calling this check.
+
+    Raises
+    ------
+    UserWarning for any unknown key in kwargs.
+    """
+    allowed_keys = set(allowed_keys)
+    for key in kwargs:
+        if key not in allowed_keys:
+            warnings.warn(
+                f"[{context}] Unexpected keyword argument: '{key}'",
+                category=UserWarning,
+                stacklevel=2
+            )

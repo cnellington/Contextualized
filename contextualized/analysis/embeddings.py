@@ -9,6 +9,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.lines import Line2D
+from contextualized.utils import check_kwargs
 
 
 def convert_to_one_hot(col: Collection[Any]) -> Tuple[np.ndarray, List[Any]]:
@@ -92,6 +93,13 @@ def plot_lowdim_rep(
     """
 
     plot_nan = kwargs.get("plot_nan", True)  # whether to plot NaN points
+    allowed_keys = [
+        "max_classes_for_discrete", "figsize", "alpha", "xlabel", "xlabel_fontsize",
+        "ylabel", "ylabel_fontsize", "title", "title_fontsize", "cbar_label",
+        "cbar_fontsize", "figname", "min_samples"
+    ]
+    check_kwargs(kwargs, allowed_keys)
+
     if len(set(labels)) < kwargs.get("max_classes_for_discrete", 10):  # discrete labels
         discrete = True
         cmap = plt.cm.jet
