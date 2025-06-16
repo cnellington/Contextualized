@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+from matplotlib.lines import Line2D
 
 
 def convert_to_one_hot(col: Collection[Any]) -> Tuple[np.ndarray, List[Any]]:
@@ -90,6 +91,7 @@ def plot_lowdim_rep(
         None
     """
 
+    plot_nan = kwargs.get("plot_nan", True)  # whether to plot NaN points
     if len(set(labels)) < kwargs.get("max_classes_for_discrete", 10):  # discrete labels
         discrete = True
         cmap = plt.cm.jet
@@ -133,14 +135,29 @@ def plot_lowdim_rep(
             norm=norm,
         )
     else:
+        # plot valid points first
+        mask_nan = np.isnan(labels)
+        mask_valid = ~mask_nan
         plt.scatter(
-            low_dim[:, 0],
-            low_dim[:, 1],
-            c=labels,
+            low_dim[mask_valid, 0],
+            low_dim[mask_valid, 1],
+            c=labels[mask_valid],
             alpha=kwargs.get("alpha", 1.0),
             s=100,
             cmap=cmap,
         )
+
+        # then users decide whether or not to plot NaN points
+        if mask_nan.any() and plot_nan:
+            plt.scatter(
+                low_dim[mask_nan, 0],
+                low_dim[mask_nan, 1],
+                c="green",  # For continuous labels, colorbar is coolwarm, so green is a good choice to show NaN
+                marker="s",
+                alpha=kwargs.get("alpha", 1.0),
+                s=100,
+            )
+
     plt.xlabel(kwargs.get("xlabel", "X"), fontsize=kwargs.get("xlabel_fontsize", 48))
     plt.ylabel(kwargs.get("ylabel", "Y"), fontsize=kwargs.get("ylabel_fontsize", 48))
     plt.xticks([])
@@ -158,12 +175,29 @@ def plot_lowdim_rep(
             ticks=bounds[:-1] + 0.5,  # boundaries=bounds,
             format="%1i",
         )
+
+        # enhancement of the above code, accepting strings as labels
         try:
-            color_bar.ax.set(yticks=bounds[:-1] + 0.5, yticklabels=np.round(tag_names))
-        except ValueError:
-            color_bar.ax.set(yticks=bounds[:-1] + 0.5, yticklabels=tag_names)
+            tag_labels = np.round(tag_names)
+        except TypeError:
+            tag_labels = [str(x) for x in tag_names]
+        color_bar.ax.set(yticks=bounds[:-1] + 0.5, yticklabels=tag_labels)
+
     else:
         color_bar = mpl.colorbar.ColorbarBase(ax2, cmap=cmap, format="%.1f")
+        if mask_nan.any() and plot_nan:
+            nan_legend = Line2D(
+                [0],
+                [0],
+                marker="s",
+                color="w",
+                label="NaN",
+                markerfacecolor="green",
+                markersize=10,
+                alpha=1,
+            )
+            plt.legend(handles=[nan_legend], loc="best")
+
     if kwargs.get("cbar_label", None) is not None:
         color_bar.ax.set_ylabel(
             kwargs["cbar_label"], fontsize=kwargs.get("cbar_fontsize", 32)
