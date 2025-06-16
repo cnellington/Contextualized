@@ -92,14 +92,25 @@ def plot_lowdim_rep(
         None
     """
 
-    plot_nan = kwargs.get("plot_nan", True)  # whether to plot NaN points
     allowed_keys = [
-        "max_classes_for_discrete", "figsize", "alpha", "xlabel", "xlabel_fontsize",
-        "ylabel", "ylabel_fontsize", "title", "title_fontsize", "cbar_label",
-        "cbar_fontsize", "figname", "min_samples"
+        "max_classes_for_discrete",
+        "figsize",
+        "alpha",
+        "xlabel",
+        "xlabel_fontsize",
+        "ylabel",
+        "ylabel_fontsize",
+        "title",
+        "title_fontsize",
+        "cbar_label",
+        "cbar_fontsize",
+        "figname",
+        "min_samples",
+        "plot_nan",
     ]
     check_kwargs(kwargs, allowed_keys)
 
+    plot_nan = kwargs.get("plot_nan", True)  # whether to plot NaN points
     if len(set(labels)) < kwargs.get("max_classes_for_discrete", 10):  # discrete labels
         discrete = True
         cmap = plt.cm.jet

@@ -88,5 +88,5 @@ def check_kwargs(kwargs, allowed_keys, context=""):
             warnings.warn(
                 f"[{context}] Unexpected keyword argument: '{key}'",
                 category=UserWarning,
-                stacklevel=2
+                stacklevel=2,
             )

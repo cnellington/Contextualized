@@ -194,12 +194,13 @@ class TestPlotLowdimRep(unittest.TestCase):
 
 class TestCheckKwargs(unittest.TestCase):
     def test_allowed_kwargs(self):
-        # 不应抛出异常
-        plot_lowdim_rep(np.random.randn(5,2), np.array([0,1,0,1,0]), alpha=0.5)
+        plot_lowdim_rep(
+            np.random.randn(5, 2), np.array([0, 1, 0, 1, 0]), alpha=0.5, plot_nan=False
+        )
 
     def test_unallowed_kwargs(self):
         with self.assertWarns(UserWarning):
-            plot_lowdim_rep(np.random.randn(5,2), np.array([0,1,0,1,0]), foo="bar")
+            plot_lowdim_rep(np.random.randn(5, 2), np.array([0, 1, 0, 1, 0]), foo="bar")
 
 
 if __name__ == "__main__":
