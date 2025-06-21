@@ -77,7 +77,20 @@ def plot_embedding_for_all_covars(
 def plot_lowdim_rep(
     low_dim: np.ndarray,
     labels: np.ndarray,
-    **kwargs,
+    max_classes_for_discrete: int = 10,
+    figsize: Tuple[int, int] = (12, 12),
+    min_samples: int = 0,
+    alpha: float = 1.0,
+    plot_nan: bool = True,
+    xlabel: str = "X",
+    xlabel_fontsize: int = 48,
+    ylabel: str = "Y",
+    ylabel_fontsize: int = 48,
+    title: str = "",
+    title_fontsize: int = 52,
+    cbar_label: Optional[str] = None,
+    cbar_fontsize: int = 32,
+    figname: Optional[str] = None,
 ):
     """
     Plot a low-dimensional representation of a dataset.
@@ -85,14 +98,13 @@ def plot_lowdim_rep(
     Args:
         low_dim (np.ndarray): Low-dimensional representation of shape (n_samples, 2).
         labels (np.ndarray): Labels of shape (n_samples,).
-        kwargs: Keyword arguments for plotting.
+        kwargs: Keyword arguments for plotting. Substituted by explicit parameters.
 
     Returns:
         None
     """
 
-    plot_nan = kwargs.get("plot_nan", True)  # whether to plot NaN points
-    if len(set(labels)) < kwargs.get("max_classes_for_discrete", 10):  # discrete labels
+    if len(set(labels)) < max_classes_for_discrete:  # discrete labels
         discrete = True
         cmap = plt.cm.jet
     else:
@@ -100,7 +112,7 @@ def plot_lowdim_rep(
         tag = labels
         norm = None
         cmap = plt.cm.coolwarm
-    fig = plt.figure(figsize=kwargs.get("figsize", (12, 12)))
+    fig = plt.figure(figsize)
     if discrete:
         cmap = mpl.colors.LinearSegmentedColormap.from_list(
             "Custom cmap", [cmap(i) for i in range(cmap.N)], cmap.N
@@ -110,7 +122,7 @@ def plot_lowdim_rep(
         tag_names = np.array(tag_names)[order]
         tag = np.array([list(order).index(int(x)) for x in tag])
         good_tags = [
-            np.sum(tag == i) > kwargs.get("min_samples", 0)
+            np.sum(tag == i) > min_samples
             for i in range(len(tag_names))
         ]
         tag_names = np.array(tag_names)[good_tags]
@@ -129,7 +141,7 @@ def plot_lowdim_rep(
             low_dim[good_idxs, 0],
             low_dim[good_idxs, 1],
             c=tag,
-            alpha=kwargs.get("alpha", 1.0),
+            alpha=alpha,
             s=100,
             cmap=cmap,
             norm=norm,
@@ -142,7 +154,7 @@ def plot_lowdim_rep(
             low_dim[mask_valid, 0],
             low_dim[mask_valid, 1],
             c=labels[mask_valid],
-            alpha=kwargs.get("alpha", 1.0),
+            alpha=alpha,
             s=100,
             cmap=cmap,
         )
@@ -154,15 +166,15 @@ def plot_lowdim_rep(
                 low_dim[mask_nan, 1],
                 c="green",  # For continuous labels, colorbar is coolwarm, so green is a good choice to show NaN
                 marker="s",
-                alpha=kwargs.get("alpha", 1.0),
+                alpha=alpha,
                 s=100,
             )
 
-    plt.xlabel(kwargs.get("xlabel", "X"), fontsize=kwargs.get("xlabel_fontsize", 48))
-    plt.ylabel(kwargs.get("ylabel", "Y"), fontsize=kwargs.get("ylabel_fontsize", 48))
+    plt.xlabel(xlabel, fontsize=xlabel_fontsize)
+    plt.ylabel(ylabel, fontsize=ylabel_fontsize)
     plt.xticks([])
     plt.yticks([])
-    plt.title(kwargs.get("title", ""), fontsize=kwargs.get("title_fontsize", 52))
+    plt.title(title, fontsize=title_fontsize)
 
     # create a second axes for the colorbar
     ax2 = fig.add_axes([0.95, 0.15, 0.03, 0.7])
@@ -198,9 +210,9 @@ def plot_lowdim_rep(
             )
             plt.legend(handles=[nan_legend], loc="best")
 
-    if kwargs.get("cbar_label", None) is not None:
+    if cbar_label is not None:
         color_bar.ax.set_ylabel(
-            kwargs["cbar_label"], fontsize=kwargs.get("cbar_fontsize", 32)
+            cbar_label, fontsize=cbar_fontsize
         )
-    if "figname" in kwargs:
-        plt.savefig(f"{kwargs['figname']}.pdf", dpi=300, bbox_inches="tight")
+    if figname is not None:
+        plt.savefig(f"{figname}.pdf", dpi=300, bbox_inches="tight")
