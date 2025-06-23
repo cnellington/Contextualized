@@ -98,7 +98,20 @@ def plot_lowdim_rep(
     Args:
         low_dim (np.ndarray): Low-dimensional representation of shape (n_samples, 2).
         labels (np.ndarray): Labels of shape (n_samples,).
-        kwargs: Keyword arguments for plotting. Substituted by explicit parameters.
+        max_classes_for_discrete (int, optional): Maximum number of classes to treat labels as discrete. Default is 10.
+        figsize (tuple, optional): Size of the figure. Default is (12, 12).
+        min_samples (int, optional): Minimum number of samples required to include a class. Default is 0.
+        alpha (float, optional): Alpha blending value for scatter plot. Default is 1.0.
+        plot_nan (bool, optional): Whether to plot NaN values in a separate color. Default is True.
+        xlabel (str, optional): Label for the x-axis. Default is 'X'.
+        xlabel_fontsize (int, optional): Font size for x-axis label. Default is 48.
+        ylabel (str, optional): Label for the y-axis. Default is 'Y'.
+        ylabel_fontsize (int, optional): Font size for y-axis label. Default is 48.
+        title (str, optional): Title of the plot. Default is an empty string.
+        title_fontsize (int, optional): Font size for the title. Default is 52.
+        cbar_label (str, optional): Label for the colorbar. Default is None.
+        cbar_fontsize (int, optional): Font size for the colorbar label. Default is 32.
+        figname (str, optional): If provided, saves the figure to this name (with .pdf extension). Default is None.
 
     Returns:
         None
@@ -112,7 +125,7 @@ def plot_lowdim_rep(
         tag = labels
         norm = None
         cmap = plt.cm.coolwarm
-    fig = plt.figure(figsize)
+    fig = plt.figure(figsize=figsize)
     if discrete:
         cmap = mpl.colors.LinearSegmentedColormap.from_list(
             "Custom cmap", [cmap(i) for i in range(cmap.N)], cmap.N
