@@ -23,11 +23,9 @@ class NaiveMetamodel(nn.Module):
         y_dim,
         univariate=False,
         encoder_type="mlp",
-        encoder_kwargs={
-            "width": 25,
-            "layers": 1,
-            "link_fn": LINK_FUNCTIONS["identity"],
-        },
+        width=25,
+        layers=1,
+        link_fn=LINK_FUNCTIONS["identity"],
     ):
         """
         context_dim (int): dimension of flattened context
@@ -38,7 +36,9 @@ class NaiveMetamodel(nn.Module):
         univariate (bool: False): flag to solve a univariate regression problem instead
             of the standard multivariate problem
         encoder_type (str: mlp): encoder module to use
-        encoder_kwargs (dict): encoder args and kwargs
+        width (int: 25): width of the MLP encoder
+        layers (int: 1): number of hidden layers in the MLP encoder
+        link_fn (callable: identity): link function to apply to the output of the encoder
         """
         super().__init__()
         self.context_dim = context_dim
@@ -49,8 +49,9 @@ class NaiveMetamodel(nn.Module):
         self.mu_dim = x_dim if univariate else 1
         out_dim = (x_dim + self.mu_dim) * y_dim
         if encoder_type == 'linear':
-            encoder_kwargs = {}
-        self.context_encoder = encoder(context_dim, out_dim, **encoder_kwargs)
+            self.context_encoder = encoder(context_dim, out_dim)
+        else:
+            self.context_encoder = encoder(context_dim, out_dim, width=width, layers=layers, link_fn=link_fn)
 
     def forward(self, C):
         """

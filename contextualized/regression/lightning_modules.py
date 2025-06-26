@@ -45,7 +45,9 @@ class ContextualizedRegressionBase(pl.LightningModule):
 
     def __init__(
         self,
-        *args,
+        context_dim,
+        x_dim,
+        y_dim,
         learning_rate=1e-3,
         metamodel_type="subtype",
         fit_intercept=True,
@@ -54,7 +56,7 @@ class ContextualizedRegressionBase(pl.LightningModule):
         model_regularizer=REGULARIZERS["none"],
         base_y_predictor=None,
         base_param_predictor=None,
-        **kwargs,
+        encoder_type="mlp",
     ):
         super().__init__()
         self.learning_rate = learning_rate
@@ -65,19 +67,32 @@ class ContextualizedRegressionBase(pl.LightningModule):
         self.model_regularizer = model_regularizer
         self.base_y_predictor = base_y_predictor
         self.base_param_predictor = base_param_predictor
-        self._build_metamodel(*args, **kwargs)
+        self._build_metamodel(context_dim, x_dim, y_dim, encoder_type=encoder_type)
 
     @abstractmethod
-    def _build_metamodel(self, *args, **kwargs):
+    def _build_metamodel(
+        self,
+        context_dim,
+        x_dim,
+        y_dim,
+        encoder_type="mlp",
+    ):
         """
-
-        :param *args:
-        :param **kwargs:
+        
+        :param context_dim: Dimension of the context vector
+        :param x_dim: Dimension of the input features
+        :param y_dim: Dimension of the output labels
+        :param encoder_type: Type of encoder to use (default is "mlp")
 
         """
         # builds the metamodel
-        kwargs["univariate"] = False
-        self.metamodel = SINGLE_TASK_METAMODELS[self.metamodel_type](*args, **kwargs)
+        self.metamodel = SINGLE_TASK_METAMODELS[self.metamodel_type](
+            context_dim,
+            x_dim,
+            y_dim,
+            univariate=False,
+            encoder_type=encoder_type,
+        )
 
     @abstractmethod
     def dataloader(self, C, X, Y, batch_size=32):
@@ -231,15 +246,28 @@ class ContextualizedRegressionBase(pl.LightningModule):
 class NaiveContextualizedRegression(ContextualizedRegressionBase):
     """See NaiveMetamodel"""
 
-    def _build_metamodel(self, *args, **kwargs):
+    def _build_metamodel(
+        self,
+        context_dim,
+        x_dim,
+        y_dim,
+        encoder_type="mlp",
+    ):
         """
-
-        :param *args:
-        :param **kwargs:
+        
+        :param context_dim: Dimension of the context vector
+        :param x_dim: Dimension of the input features
+        :param y_dim: Dimension of the output labels
+        :param encoder_type: Type of encoder to use (default is "mlp")
 
         """
-        kwargs["univariate"] = False
-        self.metamodel = NaiveMetamodel(*args, **kwargs)
+        self.metamodel = NaiveMetamodel(
+            context_dim,
+            x_dim,
+            y_dim,
+            univariate=False,
+            encoder_type=encoder_type,
+        )
 
     def _batch_loss(self, batch, batch_idx):
         """
