@@ -387,7 +387,7 @@ class NOTMAD(pl.LightningModule):
             w_preds = self._project_factor_graph_to_var(w_preds)
         if kwargs.get("project_to_dag", False):
             try:
-                w_preds = np.array([project_to_dag_torch(w)[0] for w in w_preds])
+                w_preds = np.array([project_to_dag_torch(w) for w in w_preds])
             except:
                 print("Error, couldn't project to dag. Returning normal predictions.")
         return trim_params(w_preds, thresh=kwargs.get("threshold", 0.0))
