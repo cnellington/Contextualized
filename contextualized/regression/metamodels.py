@@ -22,10 +22,10 @@ class NaiveMetamodel(nn.Module):
         x_dim,
         y_dim,
         univariate=False,
-        encoder_type="mlp",
-        width=25,
-        layers=1,
-        link_fn=LINK_FUNCTIONS["identity"],
+        encoder_type: str = "mlp",
+        width: int = 25,
+        layers: int = 1,
+        link_fn: callable = LINK_FUNCTIONS["identity"],
     ):
         """
         context_dim (int): dimension of flattened context

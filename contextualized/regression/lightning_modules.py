@@ -45,9 +45,9 @@ class ContextualizedRegressionBase(pl.LightningModule):
 
     def __init__(
         self,
-        context_dim,
-        x_dim,
-        y_dim,
+        context_dim: int,
+        x_dim: int,
+        y_dim: int,
         learning_rate=1e-3,
         metamodel_type="subtype",
         fit_intercept=True,
@@ -56,7 +56,7 @@ class ContextualizedRegressionBase(pl.LightningModule):
         model_regularizer=REGULARIZERS["none"],
         base_y_predictor=None,
         base_param_predictor=None,
-        encoder_type="mlp",
+        encoder_type: str = "mlp",
     ):
         super().__init__()
         self.learning_rate = learning_rate
@@ -72,10 +72,10 @@ class ContextualizedRegressionBase(pl.LightningModule):
     @abstractmethod
     def _build_metamodel(
         self,
-        context_dim,
-        x_dim,
-        y_dim,
-        encoder_type="mlp",
+        context_dim: int,
+        x_dim: int,
+        y_dim: int,
+        encoder_type: str = "mlp",
     ):
         """
         
@@ -248,10 +248,10 @@ class NaiveContextualizedRegression(ContextualizedRegressionBase):
 
     def _build_metamodel(
         self,
-        context_dim,
-        x_dim,
-        y_dim,
-        encoder_type="mlp",
+        context_dim: int,
+        x_dim: int,
+        y_dim: int,
+        encoder_type: str = "mlp",
     ):
         """
         
