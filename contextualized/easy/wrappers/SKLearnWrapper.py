@@ -570,9 +570,9 @@ class SKLearnWrapper:
                 x_dim=model_args["x_dim"],
                 y_dim=model_args["y_dim"],
                 encoder_type=model_args.get("encoder_type", "mlp"),
-                # width=model_args.get("width", 25),
-                # layers=model_args.get("layers", 1),
-                # link_fn=model_args.get("link_fn", LINK_FUNCTIONS["identity"]),
+                width=model_args.get("width", 25),
+                layers=model_args.get("layers", 1),
+                link_fn=model_args.get("link_fn", LINK_FUNCTIONS["identity"]),
             )
             train_data, val_data = self._split_train_data(
                 *args, **organized_kwargs["data"]
