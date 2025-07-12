@@ -5,7 +5,7 @@ PyTorch modules which are used as building blocks of Contextualized models.
 import torch
 from torch import nn
 
-from contextualized.functions import identity_link
+from contextualized.functions import LINK_FUNCTIONS
 
 
 class SoftSelect(nn.Module):
@@ -80,7 +80,7 @@ class MLP(nn.Module):
         width,
         layers,
         activation=nn.ReLU,
-        link_fn=identity_link,
+        link_fn="identity",
     ):
         super().__init__()
         if layers > 0:
@@ -91,7 +91,7 @@ class MLP(nn.Module):
         else:  # Linear encoder
             mlp_layers = [nn.Linear(input_dim, output_dim)]
         self.mlp = nn.Sequential(*mlp_layers)
-        self.link_fn = link_fn
+        self.link_fn = LINK_FUNCTIONS[link_fn]
 
     def forward(self, X):
         """Torch Forward pass."""
@@ -111,7 +111,7 @@ class NGAM(nn.Module):
         width,
         layers,
         activation=nn.ReLU,
-        link_fn=identity_link,
+        link_fn="identity",
     ):
         super().__init__()
         self.intput_dim = input_dim
@@ -129,7 +129,7 @@ class NGAM(nn.Module):
                 for _ in range(input_dim)
             ]
         )
-        self.link_fn = link_fn
+        self.link_fn = LINK_FUNCTIONS[link_fn]
 
     def forward(self, X):
         """Torch Forward pass."""

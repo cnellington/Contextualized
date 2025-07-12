@@ -83,7 +83,7 @@ class SubtypeMetamodel(nn.Module):
         encoder_kwargs={
             "width": 25,
             "layers": 1,
-            "link_fn": LINK_FUNCTIONS["identity"],
+            "link_fn": "identity",
         },
     ):
         """

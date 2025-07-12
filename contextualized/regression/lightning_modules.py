@@ -45,13 +45,23 @@ class ContextualizedRegressionBase(pl.LightningModule):
 
     def __init__(
         self,
-        *args,
+        context_dim,
+        x_dim,
+        y_dim,
+        univariate=False,
+        num_archetypes=10,
+        encoder_type="mlp",
+        encoder_kwargs={
+            "width": 25,
+            "layers": 1,
+            "link_fn": "identity",
+        },
         learning_rate=1e-3,
         metamodel_type="subtype",
         fit_intercept=True,
-        link_fn=LINK_FUNCTIONS["identity"],
-        loss_fn=MSE,
-        model_regularizer=REGULARIZERS["none"],
+        link_fn="identity",
+        loss_fn="mse",
+        model_regularizer="none",
         base_y_predictor=None,
         base_param_predictor=None,
         **kwargs,
@@ -60,15 +70,37 @@ class ContextualizedRegressionBase(pl.LightningModule):
         self.learning_rate = learning_rate
         self.metamodel_type = metamodel_type
         self.fit_intercept = fit_intercept
-        self.link_fn = link_fn
-        self.loss_fn = loss_fn
-        self.model_regularizer = model_regularizer
+        self.link_fn = LINK_FUNCTIONS[link_fn]
+        if loss_fn == "mse":
+            self.loss_fn = MSE
+        else:
+            raise ValueError("Supported loss_fn's: mse")
+        self.model_regularizer = REGULARIZERS[model_regularizer]
         self.base_y_predictor = base_y_predictor
         self.base_param_predictor = base_param_predictor
-        self._build_metamodel(*args, **kwargs)
+        self._build_metamodel(
+            context_dim, 
+            x_dim,
+            y_dim,
+            univariate,
+            num_archetypes,
+            encoder_type,
+            encoder_kwargs,
+            **kwargs,
+        )
 
     @abstractmethod
-    def _build_metamodel(self, *args, **kwargs):
+    def _build_metamodel(
+        self, 
+        context_dim, 
+        x_dim,
+        y_dim,
+        univariate,
+        num_archetypes,
+        encoder_type,
+        encoder_kwargs,
+        **kwargs
+    ):
         """
 
         :param *args:
@@ -76,8 +108,16 @@ class ContextualizedRegressionBase(pl.LightningModule):
 
         """
         # builds the metamodel
-        kwargs["univariate"] = False
-        self.metamodel = SINGLE_TASK_METAMODELS[self.metamodel_type](*args, **kwargs)
+        self.metamodel = SINGLE_TASK_METAMODELS[self.metamodel_type](
+            context_dim, 
+            x_dim,
+            y_dim,
+            univariate,
+            num_archetypes,
+            encoder_type,
+            encoder_kwargs,
+            **kwargs
+        )
 
     @abstractmethod
     def dataloader(self, C, X, Y, batch_size=32):
@@ -317,7 +357,6 @@ class ContextualizedRegression(ContextualizedRegressionBase):
         :param **kwargs:
 
         """
-        kwargs["univariate"] = False
         self.metamodel = SINGLE_TASK_METAMODELS[self.metamodel_type](*args, **kwargs)
 
     def _batch_loss(self, batch, batch_idx):
@@ -331,7 +370,6 @@ class ContextualizedRegression(ContextualizedRegressionBase):
             C,
             X,
             Y,
-            _,
         ) = batch
         beta_hat, mu_hat = self.predict_step(batch, batch_idx)
         pred_loss = self.loss_fn(Y, self._predict_y(C, X, beta_hat, mu_hat))
@@ -345,7 +383,7 @@ class ContextualizedRegression(ContextualizedRegressionBase):
         :param batch_idx:
 
         """
-        C, _, _, _ = batch
+        C, _, _ = batch
         beta_hat, mu_hat = self(C)
         return beta_hat, mu_hat
 
