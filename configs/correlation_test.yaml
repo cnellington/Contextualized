@@ -1,0 +1,9 @@
+model:
+  class_path: ContextualizedCorrelation
+  init_args:
+    context_dim: 10
+    x_dim: 10
+data:
+  class_path: MyCorrelationDataModule
+  init_args:
+    batch_size: 2

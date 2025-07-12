@@ -3,7 +3,7 @@ from lightning.pytorch.cli import LightningCLI, SaveConfigCallback
 from lightning.pytorch.loggers import WandbLogger
 
 from contextualized.regression.lightning_modules import ContextualizedRegression
-from contextualized.data import MyDataModule
+from contextualized.data import *
 
 
 class MyLightningCLI(LightningCLI):

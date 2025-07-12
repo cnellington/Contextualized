@@ -370,6 +370,7 @@ class ContextualizedRegression(ContextualizedRegressionBase):
             C,
             X,
             Y,
+            _,
         ) = batch
         beta_hat, mu_hat = self.predict_step(batch, batch_idx)
         pred_loss = self.loss_fn(Y, self._predict_y(C, X, beta_hat, mu_hat))
@@ -383,7 +384,7 @@ class ContextualizedRegression(ContextualizedRegressionBase):
         :param batch_idx:
 
         """
-        C, _, _ = batch
+        C, _, _, _ = batch
         beta_hat, mu_hat = self(C)
         return beta_hat, mu_hat
 
@@ -590,15 +591,39 @@ class TasksplitContextualizedRegression(ContextualizedRegressionBase):
 class ContextualizedUnivariateRegression(ContextualizedRegression):
     """Supports SubtypeMetamodel and NaiveMetamodel, see selected metamodel for docs"""
 
-    def _build_metamodel(self, *args, **kwargs):
+    def _build_metamodel(
+        self, 
+        context_dim,
+        x_dim,
+        y_dim,
+        univariate=True,
+        num_archetypes=10,
+        encoder_type="mlp",
+        encoder_kwargs={
+            "width": 25,
+            "layers": 1,
+            "link_fn": "identity",
+        },
+        **kwargs
+    ):
         """
 
         :param *args:
         :param **kwargs:
 
         """
-        kwargs["univariate"] = True
-        self.metamodel = SINGLE_TASK_METAMODELS[self.metamodel_type](*args, **kwargs)
+        if not univariate:
+            univariate = True
+        self.metamodel = SINGLE_TASK_METAMODELS[self.metamodel_type](
+            context_dim,
+            x_dim,
+            y_dim,
+            univariate,
+            num_archetypes,
+            encoder_type,
+            encoder_kwargs,
+            **kwargs,
+        )
 
     def _params_reshape(self, preds, dataloader):
         """

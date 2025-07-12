@@ -1,0 +1,10 @@
+model:
+  class_path: ContextualizedRegression
+  init_args:
+    context_dim: 10
+    x_dim: 10
+    y_dim: 1
+data:
+  class_path: MyRegressionDataModule
+  init_args:
+    batch_size: 32

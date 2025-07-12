@@ -55,6 +55,16 @@ class MultivariateDataset(Dataset):
         )
         self.n_i += 1
         return ret
+    
+    def __getitem__(self, idx):
+        if idx >= self.n:
+            raise IndexError("Index out of range")
+        return (
+            self.C[idx],
+            self.X[idx].expand(self.y_dim, -1),
+            self.Y[idx].unsqueeze(-1),
+            idx,
+        )
 
     def __len__(self):
         return self.n
@@ -77,6 +87,16 @@ class UnivariateDataset(Dataset):
         )
         self.n_i += 1
         return ret
+    
+    def __getitem__(self, idx):
+        if idx >= self.n:
+            raise IndexError("Index out of range")
+        return (
+            self.C[idx],
+            self.X[idx].expand(self.y_dim, -1).unsqueeze(-1),
+            self.Y[idx].expand(self.x_dim, -1).T.unsqueeze(-1),
+            idx,
+        )
 
     def __len__(self):
         return self.n
