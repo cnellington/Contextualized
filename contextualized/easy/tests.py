@@ -407,6 +407,5 @@ class TestEasyRegression(unittest.TestCase):
             self.fail(f"Linear encoder crashed with exception: {e}")
 
 
-
 if __name__ == "__main__":
     unittest.main()

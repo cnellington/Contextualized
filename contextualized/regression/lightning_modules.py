@@ -70,14 +70,15 @@ class ContextualizedRegressionBase(pl.LightningModule):
         self.model_regularizer = model_regularizer
         self.base_y_predictor = base_y_predictor
         self.base_param_predictor = base_param_predictor
-        self._build_metamodel(context_dim, 
-                              x_dim, 
-                              y_dim, 
-                              encoder_type=encoder_type, 
-                              width=width, 
-                              layers=layers,
-                              link_fn=link_fn)
-
+        self._build_metamodel(
+            context_dim,
+            x_dim,
+            y_dim,
+            encoder_type=encoder_type,
+            width=width,
+            layers=layers,
+            link_fn=link_fn,
+        )
 
     @abstractmethod
     def _build_metamodel(
@@ -92,7 +93,7 @@ class ContextualizedRegressionBase(pl.LightningModule):
         *args,
     ):
         """
-        
+
         :param context_dim: Dimension of the context vector
         :param x_dim: Dimension of the input features
         :param y_dim: Dimension of the output labels
@@ -276,7 +277,7 @@ class NaiveContextualizedRegression(ContextualizedRegressionBase):
         encoder_type: str = "mlp",
     ):
         """
-        
+
         :param context_dim: Dimension of the context vector
         :param x_dim: Dimension of the input features
         :param y_dim: Dimension of the output labels

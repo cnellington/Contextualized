@@ -49,10 +49,12 @@ class NaiveMetamodel(nn.Module):
         encoder = ENCODERS[encoder_type]
         self.mu_dim = x_dim if univariate else 1
         out_dim = (x_dim + self.mu_dim) * y_dim
-        if encoder_type == 'linear':
+        if encoder_type == "linear":
             self.context_encoder = encoder(context_dim, out_dim)
         else:
-            self.context_encoder = encoder(context_dim, out_dim, width=width, layers=layers, link_fn=link_fn)
+            self.context_encoder = encoder(
+                context_dim, out_dim, width=width, layers=layers, link_fn=link_fn
+            )
 
     def forward(self, C):
         """
