@@ -11,7 +11,7 @@ class PredictionWriter(BasePredictionWriter):
     def write_on_batch_end(
         self, trainer, pl_module, prediction, batch_indices, batch, batch_idx, dataloader_idx
     ):
-        torch.save(prediction, os.path.join(self.output_dir, dataloader_idx, f"predictions_{trainer.global_rank}_{batch_idx}.pt"))
+        torch.save(prediction, os.path.join(self.output_dir, f"predictions_{trainer.global_rank}_{dataloader_idx}_{batch_idx}.pt"))
 
     def write_on_epoch_end(self, trainer, pl_module, predictions, batch_indices):
         torch.save(predictions, os.path.join(self.output_dir, f"predictions_{trainer.global_rank}.pt"))

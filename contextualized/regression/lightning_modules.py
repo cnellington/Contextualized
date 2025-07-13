@@ -784,7 +784,6 @@ class ContextualizedCorrelation(ContextualizedUnivariateRegression):
         signs = torch.sign(beta_hat)
         signs[signs != signs.transpose(1, 2)] = 0
         correlations = signs * torch.sqrt(torch.abs(beta_hat * beta_hat_T))
-        breakpoint()
         batch.update({
             "betas": beta_hat.squeeze(-1),
             "mus": mu_hat.squeeze(-1),
