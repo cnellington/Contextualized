@@ -1,8 +1,14 @@
+trainer:
+  callbacks:
+    - class_path: contextualized.callbacks.PredictionWriter
+      dict_kwargs:
+        write_interval: epoch
+        output_dir: my_predictions
 model:
   class_path: ContextualizedCorrelation
   init_args:
     context_dim: 10
-    x_dim: 10
+    x_dim: 3
 data:
   class_path: MyCorrelationDataModule
   init_args:

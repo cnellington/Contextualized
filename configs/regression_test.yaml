@@ -1,3 +1,10 @@
+trainer:
+  callbacks:
+    - class_path: contextualized.callbacks.PredictionWriter
+      dict_kwargs:
+        write_interval: epoch
+        output_dir: my_predictions
+  max_epochs: 1
 model:
   class_path: ContextualizedRegression
   init_args:

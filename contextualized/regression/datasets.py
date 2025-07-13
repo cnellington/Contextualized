@@ -42,29 +42,16 @@ class MultivariateDataset(Dataset):
     """
     Simple multivariate dataset with context, predictors, and outcomes.
     """
-
-    def __next__(self):
-        if self.n_i >= self.n:
-            self.n_i = 0
-            raise StopIteration
-        ret = (
-            self.C[self.n_i],
-            self.X[self.n_i].expand(self.y_dim, -1),
-            self.Y[self.n_i].unsqueeze(-1),
-            self.n_i,
-        )
-        self.n_i += 1
-        return ret
-    
+ 
     def __getitem__(self, idx):
         if idx >= self.n:
             raise IndexError("Index out of range")
-        return (
-            self.C[idx],
-            self.X[idx].expand(self.y_dim, -1),
-            self.Y[idx].unsqueeze(-1),
-            idx,
-        )
+        return {
+            "idx": idx,
+            "contexts": self.C[idx],
+            "predictors": self.X[idx].expand(self.y_dim, -1).unsqueeze(-1),
+            "outcomes": self.Y[idx].expand(self.x_dim, -1).T.unsqueeze(-1),
+        }
 
     def __len__(self):
         return self.n
@@ -74,29 +61,16 @@ class UnivariateDataset(Dataset):
     """
     Simple univariate dataset with context, predictors, and one outcome.
     """
-
-    def __next__(self):
-        if self.n_i >= self.n:
-            self.n_i = 0
-            raise StopIteration
-        ret = (
-            self.C[self.n_i],
-            self.X[self.n_i].expand(self.y_dim, -1).unsqueeze(-1),
-            self.Y[self.n_i].expand(self.x_dim, -1).T.unsqueeze(-1),
-            self.n_i,
-        )
-        self.n_i += 1
-        return ret
-    
+ 
     def __getitem__(self, idx):
         if idx >= self.n:
             raise IndexError("Index out of range")
-        return (
-            self.C[idx],
-            self.X[idx].expand(self.y_dim, -1).unsqueeze(-1),
-            self.Y[idx].expand(self.x_dim, -1).T.unsqueeze(-1),
-            idx,
-        )
+        return {
+            "idx": idx,
+            "contexts": self.C[idx],
+            "predictors": self.X[idx].expand(self.y_dim, -1).unsqueeze(-1),
+            "outcomes": self.Y[idx].expand(self.x_dim, -1).T.unsqueeze(-1),
+        }
 
     def __len__(self):
         return self.n

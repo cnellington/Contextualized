@@ -173,17 +173,17 @@ class ContextualizedRegressionBase(pl.LightningModule):
         """
         # reshapes the batch y predictions into a desirable format
 
-    def forward(self, *args, **kwargs):
+    def forward(self, batch):
         """
 
         :param *args:
 
         """
-        beta, mu = self.metamodel(*args)
+        beta, mu = self.metamodel(batch["contexts"])
         if not self.fit_intercept:
             mu = torch.zeros_like(mu)
         if self.base_param_predictor is not None:
-            base_beta, base_mu = self.base_param_predictor.predict_params(*args)
+            base_beta, base_mu = self.base_param_predictor.predict_params(batch["contexts"])
             beta = beta + base_beta.to(beta.device)
             mu = mu + base_mu.to(mu.device)
         return beta, mu
@@ -366,14 +366,8 @@ class ContextualizedRegression(ContextualizedRegressionBase):
         :param batch_idx:
 
         """
-        (
-            C,
-            X,
-            Y,
-            _,
-        ) = batch
-        beta_hat, mu_hat = self.predict_step(batch, batch_idx)
-        pred_loss = self.loss_fn(Y, self._predict_y(C, X, beta_hat, mu_hat))
+        beta_hat, mu_hat = self(batch)
+        pred_loss = self.loss_fn(batch["outcomes"], self._predict_y(batch["contexts"], batch["predictors"], beta_hat, mu_hat))
         reg_loss = self.model_regularizer(beta_hat, mu_hat)
         return pred_loss + reg_loss
 
@@ -384,39 +378,42 @@ class ContextualizedRegression(ContextualizedRegressionBase):
         :param batch_idx:
 
         """
-        C, _, _, _ = batch
-        beta_hat, mu_hat = self(C)
-        return beta_hat, mu_hat
+        beta_hat, mu_hat = self(batch)
+        batch.update({
+            "betas": beta_hat,
+            "mus": mu_hat.squeeze(-1),
+        })
+        return batch
 
-    def _params_reshape(self, preds, dataloader):
-        """
+    # def _params_reshape(self, preds, dataloader):
+    #     """
 
-        :param preds:
-        :param dataloader:
+    #     :param preds:
+    #     :param dataloader:
 
-        """
-        ds = dataloader.dataset.dataset
-        betas = np.zeros((ds.n, ds.y_dim, ds.x_dim))
-        mus = np.zeros((ds.n, ds.y_dim))
-        for (beta_hats, mu_hats), data in zip(preds, dataloader):
-            _, _, _, n_idx = data
-            betas[n_idx] = beta_hats
-            mus[n_idx] = mu_hats.squeeze(-1)
-        return betas, mus
+    #     """
+    #     ds = dataloader.dataset.dataset
+    #     betas = np.zeros((ds.n, ds.y_dim, ds.x_dim))
+    #     mus = np.zeros((ds.n, ds.y_dim))
+    #     for (beta_hats, mu_hats), data in zip(preds, dataloader):
+    #         _, _, _, n_idx = data
+    #         betas[n_idx] = beta_hats
+    #         mus[n_idx] = mu_hats.squeeze(-1)
+    #     return betas, mus
 
-    def _y_reshape(self, preds, dataloader):
-        """
+    # def _y_reshape(self, preds, dataloader):
+    #     """
 
-        :param preds:
-        :param dataloader:
+    #     :param preds:
+    #     :param dataloader:
 
-        """
-        ds = dataloader.dataset.dataset
-        ys = np.zeros((ds.n, ds.y_dim))
-        for (beta_hats, mu_hats), data in zip(preds, dataloader):
-            C, X, _, n_idx = data
-            ys[n_idx] = self._predict_y(C, X, beta_hats, mu_hats).squeeze(-1)
-        return ys
+    #     """
+    #     ds = dataloader.dataset.dataset
+    #     ys = np.zeros((ds.n, ds.y_dim))
+    #     for (beta_hats, mu_hats), data in zip(preds, dataloader):
+    #         C, X, _, n_idx = data
+    #         ys[n_idx] = self._predict_y(C, X, beta_hats, mu_hats).squeeze(-1)
+    #     return ys
 
     def dataloader(self, C, X, Y, **kwargs):
         """
@@ -625,6 +622,20 @@ class ContextualizedUnivariateRegression(ContextualizedRegression):
             **kwargs,
         )
 
+    def predict_step(self, batch, batch_idx):
+        """
+
+        :param batch:
+        :param batch_idx:
+
+        """
+        beta_hat, mu_hat = self(batch)
+        batch.update({
+            "betas": beta_hat.squeeze(-1),
+            "mus": mu_hat.squeeze(-1),
+        })
+        return batch
+
     def _params_reshape(self, preds, dataloader):
         """
 
@@ -641,19 +652,19 @@ class ContextualizedUnivariateRegression(ContextualizedRegression):
             mus[n_idx] = mu_hats.squeeze(-1)
         return betas, mus
 
-    def _y_reshape(self, preds, dataloader):
-        """
+    # def _y_reshape(self, preds, dataloader):
+    #     """
 
-        :param preds:
-        :param dataloader:
+    #     :param preds:
+    #     :param dataloader:
 
-        """
-        ds = dataloader.dataset.dataset
-        ys = np.zeros((ds.n, ds.y_dim, ds.x_dim))
-        for (beta_hats, mu_hats), data in zip(preds, dataloader):
-            C, X, _, n_idx = data
-            ys[n_idx] = self._predict_y(C, X, beta_hats, mu_hats).squeeze(-1)
-        return ys
+    #     """
+    #     ds = dataloader.dataset.dataset
+    #     ys = np.zeros((ds.n, ds.y_dim, ds.x_dim))
+    #     for (beta_hats, mu_hats), data in zip(preds, dataloader):
+    #         C, X, _, n_idx = data
+    #         ys[n_idx] = self._predict_y(C, X, beta_hats, mu_hats).squeeze(-1)
+    #     return ys
 
     def dataloader(self, C, X, Y, **kwargs):
         """
@@ -759,6 +770,27 @@ class ContextualizedCorrelation(ContextualizedUnivariateRegression):
         if "y_dim" in kwargs:
             del kwargs["y_dim"]
         super().__init__(context_dim, x_dim, x_dim, **kwargs)
+
+    def predict_step(self, batch, batch_idx):
+        """
+
+        :param batch:
+        :param batch_idx:
+
+        """
+        beta_hat, mu_hat = self(batch)
+        beta_hat = beta_hat.squeeze(-1)
+        beta_hat_T = beta_hat.transpose(1, 2)
+        signs = torch.sign(beta_hat)
+        signs[signs != signs.transpose(1, 2)] = 0
+        correlations = signs * torch.sqrt(torch.abs(beta_hat * beta_hat_T))
+        breakpoint()
+        batch.update({
+            "betas": beta_hat.squeeze(-1),
+            "mus": mu_hat.squeeze(-1),
+            "correlations": correlations,
+        })
+        return batch
 
     def dataloader(self, C, X, Y=None, **kwargs):
         """

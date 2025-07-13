@@ -39,7 +39,7 @@ class MyCorrelationDataModule(LightningDataModule):
         super().__init__()
         self.batch_size = batch_size
         self.C = torch.randn(100, (10))
-        self.X = torch.randn(100, (10))
+        self.X = torch.randn(100, (3))
 
     def setup(self, stage=None):
         # Called on every GPU
