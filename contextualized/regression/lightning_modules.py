@@ -16,6 +16,7 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 import pytorch_lightning as pl
+from typing import Callable
 
 from contextualized.regression.regularizers import REGULARIZERS
 from contextualized.regression.losses import MSE
@@ -51,6 +52,8 @@ class ContextualizedRegressionBase(pl.LightningModule):
         learning_rate=1e-3,
         metamodel_type="subtype",
         fit_intercept=True,
+        width=25,
+        layers=1,
         link_fn=LINK_FUNCTIONS["identity"],
         loss_fn=MSE,
         model_regularizer=REGULARIZERS["none"],
@@ -67,7 +70,14 @@ class ContextualizedRegressionBase(pl.LightningModule):
         self.model_regularizer = model_regularizer
         self.base_y_predictor = base_y_predictor
         self.base_param_predictor = base_param_predictor
-        self._build_metamodel(context_dim, x_dim, y_dim, encoder_type=encoder_type)
+        self._build_metamodel(context_dim, 
+                              x_dim, 
+                              y_dim, 
+                              encoder_type=encoder_type, 
+                              width=width, 
+                              layers=layers,
+                              link_fn=link_fn)
+
 
     @abstractmethod
     def _build_metamodel(
@@ -76,6 +86,10 @@ class ContextualizedRegressionBase(pl.LightningModule):
         x_dim: int,
         y_dim: int,
         encoder_type: str = "mlp",
+        width: int = 25,
+        layers: int = 1,
+        link_fn: Callable = LINK_FUNCTIONS["identity"],
+        *args,
     ):
         """
         
@@ -83,6 +97,10 @@ class ContextualizedRegressionBase(pl.LightningModule):
         :param x_dim: Dimension of the input features
         :param y_dim: Dimension of the output labels
         :param encoder_type: Type of encoder to use (default is "mlp")
+        :param width: Hidden layer width (used by MLP encoders).
+        :param layers: Number of layers (used by MLP encoders).
+        :param link_fn: Link function applied to final output.
+        :param *args: Optional extra arguments.
 
         """
         # builds the metamodel
@@ -92,6 +110,10 @@ class ContextualizedRegressionBase(pl.LightningModule):
             y_dim,
             univariate=False,
             encoder_type=encoder_type,
+            width=width,
+            layers=layers,
+            link_fn=link_fn,
+            *args,
         )
 
     @abstractmethod

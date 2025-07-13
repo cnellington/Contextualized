@@ -18,14 +18,15 @@ class NaiveMetamodel(nn.Module):
 
     def __init__(
         self,
-        context_dim,
-        x_dim,
-        y_dim,
-        univariate=False,
+        context_dim: int,
+        x_dim: int,
+        y_dim: int,
+        univariate: bool = False,
         encoder_type: str = "mlp",
         width: int = 25,
         layers: int = 1,
         link_fn: callable = LINK_FUNCTIONS["identity"],
+        *args,
     ):
         """
         context_dim (int): dimension of flattened context
