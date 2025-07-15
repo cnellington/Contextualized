@@ -26,7 +26,6 @@ class NaiveMetamodel(nn.Module):
         width: int = 25,
         layers: int = 1,
         link_fn: callable = LINK_FUNCTIONS["identity"],
-        *args,
     ):
         """
         context_dim (int): dimension of flattened context
@@ -80,17 +79,15 @@ class SubtypeMetamodel(nn.Module):
 
     def __init__(
         self,
-        context_dim,
-        x_dim,
-        y_dim,
-        univariate=False,
-        num_archetypes=10,
-        encoder_type="mlp",
-        encoder_kwargs={
-            "width": 25,
-            "layers": 1,
-            "link_fn": LINK_FUNCTIONS["identity"],
-        },
+        context_dim: int,
+        x_dim: int,
+        y_dim: int,
+        univariate: bool = False,
+        num_archetypes: int = 10,
+        encoder_type: str = "mlp",
+        width: int = 25,
+        layers: int = 1,
+        link_fn: callable = LINK_FUNCTIONS["identity"],
     ):
         """
         context_dim (int): dimension of flattened context
@@ -102,7 +99,9 @@ class SubtypeMetamodel(nn.Module):
             of the standard multivariate problem
         num_archetypes (int: 10): number of atomic regression models in {Z}
         encoder_type (str: mlp): encoder module to use
-        encoder_kwargs (dict): encoder args and kwargs
+        width (int: 25): width of the MLP encoder
+        layers (int: 1): number of hidden layers in the MLP encoder
+        link_fn (callable: identity): link function to apply to the output of the encoder
         """
         super().__init__()
         self.context_dim = context_dim
@@ -111,7 +110,12 @@ class SubtypeMetamodel(nn.Module):
 
         encoder = ENCODERS[encoder_type]
         out_shape = (y_dim, x_dim * 2, 1) if univariate else (y_dim, x_dim + 1)
-        self.context_encoder = encoder(context_dim, num_archetypes, **encoder_kwargs)
+        if encoder_type == "linear":
+            self.context_encoder = encoder(context_dim, num_archetypes)
+        else:
+            self.context_encoder = encoder(
+                context_dim, num_archetypes, width=width, layers=layers, link_fn=link_fn
+                )
         self.explainer = Explainer(num_archetypes, out_shape)
 
     def forward(self, C):
@@ -139,17 +143,15 @@ class MultitaskMetamodel(nn.Module):
 
     def __init__(
         self,
-        context_dim,
-        x_dim,
-        y_dim,
-        univariate=False,
-        num_archetypes=10,
-        encoder_type="mlp",
-        encoder_kwargs={
-            "width": 25,
-            "layers": 1,
-            "link_fn": LINK_FUNCTIONS["identity"],
-        },
+        context_dim: int,
+        x_dim: int,
+        y_dim: int,
+        univariate: bool = False,
+        num_archetypes: int = 10,
+        encoder_type: str = "mlp",
+        width: int = 25,
+        layers: int = 1,
+        link_fn: callable = LINK_FUNCTIONS["identity"],
     ):
         """
         context_dim (int): dimension of flattened context
@@ -161,7 +163,9 @@ class MultitaskMetamodel(nn.Module):
             of the standard multivariate problem
         num_archetypes (int: 10): number of atomic regression models in {Z}
         encoder_type (str: mlp): encoder module to use
-        encoder_kwargs (dict): encoder args and kwargs
+        width (int: 25): width of the MLP encoder
+        layers (int: 1): number of hidden layers in the MLP encoder
+        link_fn (callable: identity): link function to apply to the output of the encoder
         """
         super().__init__()
         self.context_dim = context_dim
@@ -171,9 +175,12 @@ class MultitaskMetamodel(nn.Module):
         encoder = ENCODERS[encoder_type]
         beta_dim = 1 if univariate else x_dim
         task_dim = y_dim + x_dim if univariate else y_dim
-        self.context_encoder = encoder(
-            context_dim + task_dim, num_archetypes, **encoder_kwargs
-        )
+        if encoder_type == "linear":
+            self.context_encoder = encoder(context_dim + task_dim, num_archetypes)
+        else:
+            self.context_encoder = encoder(
+                context_dim + task_dim, num_archetypes, width=width, layers=layers, link_fn=link_fn
+            )
         self.explainer = Explainer(num_archetypes, (beta_dim + 1,))
 
     def forward(self, C, T):
