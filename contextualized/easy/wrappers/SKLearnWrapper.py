@@ -574,6 +574,7 @@ class SKLearnWrapper:
                 width=model_args.get("width", 25),
                 layers=model_args.get("layers", 1),
                 link_fn=model_args.get("link_fn", LINK_FUNCTIONS["identity"]),
+                **kwargs, # for one-off args
             )
             train_data, val_data = self._split_train_data(
                 *args, **organized_kwargs["data"]

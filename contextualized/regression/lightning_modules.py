@@ -100,8 +100,8 @@ class ContextualizedRegressionBase(pl.LightningModule):
             context_dim,
             x_dim,
             y_dim,
-            univariate=False,
             encoder_type=encoder_type,
+            univariate=False,
             **kwargs,
         )
 
@@ -263,6 +263,7 @@ class NaiveContextualizedRegression(ContextualizedRegressionBase):
         x_dim: int,
         y_dim: int,
         encoder_type: str = "mlp",
+        **kwargs,
     ):
         """
 
@@ -276,8 +277,9 @@ class NaiveContextualizedRegression(ContextualizedRegressionBase):
             context_dim,
             x_dim,
             y_dim,
-            univariate=False,
             encoder_type=encoder_type,
+            univariate=False,
+            **kwargs,
         )
 
     def _batch_loss(self, batch, batch_idx):
