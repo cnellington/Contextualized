@@ -351,15 +351,30 @@ class NaiveContextualizedRegression(ContextualizedRegressionBase):
 class ContextualizedRegression(ContextualizedRegressionBase):
     """Supports SubtypeMetamodel and NaiveMetamodel, see selected metamodel for docs"""
 
-    def _build_metamodel(self, *args, **kwargs):
+    def _build_metamodel(
+        self, 
+        context_dim: int,
+        x_dim: int,
+        y_dim: int,
+        encoder_type: str = "mlp",
+        **kwargs,
+    ):
         """
 
-        :param *args:
-        :param **kwargs:
+        :param context_dim: Dimension of the context vector
+        :param x_dim: Dimension of the input features
+        :param y_dim: Dimension of the output labels
+        :param encoder_type: Type of encoder to use (default is "mlp")
 
         """
-        kwargs["univariate"] = False
-        self.metamodel = SINGLE_TASK_METAMODELS[self.metamodel_type](*args, **kwargs)
+        self.metamodel = SINGLE_TASK_METAMODELS[self.metamodel_type](
+            context_dim,
+            x_dim,
+            y_dim,
+            encoder_type=encoder_type,
+            univariate=False,
+            **kwargs,
+        )
 
     def _batch_loss(self, batch, batch_idx):
         """
@@ -434,16 +449,31 @@ class ContextualizedRegression(ContextualizedRegressionBase):
 
 class MultitaskContextualizedRegression(ContextualizedRegressionBase):
     """See MultitaskMetamodel"""
-
-    def _build_metamodel(self, *args, **kwargs):
+    
+    def _build_metamodel(
+        self,
+        context_dim: int,
+        x_dim: int,
+        y_dim: int,
+        encoder_type: str = "mlp",
+        **kwargs,
+    ):
         """
 
-        :param *args:
-        :param **kwargs:
+        :param context_dim: Dimension of the context vector
+        :param x_dim: Dimension of the input features
+        :param y_dim: Dimension of the output labels
+        :param encoder_type: Type of encoder to use (default is "mlp")
 
         """
-        kwargs["univariate"] = False
-        self.metamodel = MultitaskMetamodel(*args, **kwargs)
+        self.metamodel = MultitaskMetamodel(
+            context_dim,
+            x_dim,
+            y_dim,
+            encoder_type=encoder_type,
+            univariate=False,
+            **kwargs,
+        )
 
     def _batch_loss(self, batch, batch_idx):
         """
@@ -514,15 +544,30 @@ class MultitaskContextualizedRegression(ContextualizedRegressionBase):
 class TasksplitContextualizedRegression(ContextualizedRegressionBase):
     """See TasksplitMetamodel"""
 
-    def _build_metamodel(self, *args, **kwargs):
+    def _build_metamodel(
+        self,
+        context_dim: int,
+        x_dim: int,
+        y_dim: int,
+        encoder_type: str = "mlp",
+        **kwargs,
+    ):
         """
 
-        :param *args:
-        :param **kwargs:
+        :param context_dim: Dimension of the context vector
+        :param x_dim: Dimension of the input features
+        :param y_dim: Dimension of the output labels
+        :param encoder_type: Type of encoder to use (default is "mlp")
 
         """
-        kwargs["univariate"] = False
-        self.metamodel = TasksplitMetamodel(*args, **kwargs)
+        self.metamodel = TasksplitMetamodel(
+            context_dim,
+            x_dim,
+            y_dim,
+            encoder_type=encoder_type,
+            univariate=False,
+            **kwargs,
+        )
 
     def _batch_loss(self, batch, batch_idx):
         """
@@ -593,15 +638,30 @@ class TasksplitContextualizedRegression(ContextualizedRegressionBase):
 class ContextualizedUnivariateRegression(ContextualizedRegression):
     """Supports SubtypeMetamodel and NaiveMetamodel, see selected metamodel for docs"""
 
-    def _build_metamodel(self, *args, **kwargs):
+    def _build_metamodel(
+        self,
+        context_dim: int,
+        x_dim: int,
+        y_dim: int,
+        encoder_type: str = "mlp",
+        **kwargs,
+    ):
         """
 
-        :param *args:
-        :param **kwargs:
+        :param context_dim: Dimension of the context vector
+        :param x_dim: Dimension of the input features
+        :param y_dim: Dimension of the output labels
+        :param encoder_type: Type of encoder to use (default is "mlp")
 
         """
-        kwargs["univariate"] = True
-        self.metamodel = SINGLE_TASK_METAMODELS[self.metamodel_type](*args, **kwargs)
+        self.metamodel = SINGLE_TASK_METAMODELS[self.metamodel_type](
+            context_dim,
+            x_dim,
+            y_dim,
+            encoder_type=encoder_type,
+            univariate=True,
+            **kwargs,
+        )
 
     def _params_reshape(self, preds, dataloader):
         """
@@ -648,15 +708,30 @@ class ContextualizedUnivariateRegression(ContextualizedRegression):
 class TasksplitContextualizedUnivariateRegression(TasksplitContextualizedRegression):
     """See TasksplitMetamodel"""
 
-    def _build_metamodel(self, *args, **kwargs):
+    def _build_metamodel(
+        self,
+        context_dim: int,
+        x_dim: int,
+        y_dim: int,
+        encoder_type: str = "mlp",
+        **kwargs,
+    ):
         """
 
-        :param *args:
-        :param **kwargs:
+        :param context_dim: Dimension of the context vector
+        :param x_dim: Dimension of the input features
+        :param y_dim: Dimension of the output labels
+        :param encoder_type: Type of encoder to use (default is "mlp")
 
         """
-        kwargs["univariate"] = True
-        self.metamodel = TasksplitMetamodel(*args, **kwargs)
+        self.metamodel = TasksplitMetamodel(
+            context_dim,
+            x_dim,
+            y_dim,
+            encoder_type=encoder_type,
+            univariate=True,
+            **kwargs,
+        )
 
     def _batch_loss(self, batch, batch_idx):
         """
