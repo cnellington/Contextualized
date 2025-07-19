@@ -449,7 +449,9 @@ class SKLearnWrapper:
             preds = np.mean(predictions, axis=0)
         if self.normalize and self.scalers["Y"] is not None:
             if individual_preds:
-                preds = np.array([self.scalers["Y"].inverse_transform(p) for p in preds])
+                preds = np.array(
+                    [self.scalers["Y"].inverse_transform(p) for p in preds]
+                )
             else:
                 preds = self.scalers["Y"].inverse_transform(preds)
         return preds
@@ -488,12 +490,11 @@ class SKLearnWrapper:
             get_dataloader = lambda i: self.models[i].dataloader(
                 self._maybe_scale_C(C),
                 np.zeros((len(C), self.x_dim)),
-                np.zeros((len(C), self.y_dim))
+                np.zeros((len(C), self.y_dim)),
             )
         else:
             get_dataloader = lambda i: self.models[i].dataloader(
-                self._maybe_scale_C(C),
-                np.zeros((len(C), self.x_dim))
+                self._maybe_scale_C(C), np.zeros((len(C), self.x_dim))
             )
         predictions = [
             self.trainers[i].predict_params(self.models[i], get_dataloader(i), **kwargs)
@@ -564,7 +565,17 @@ class SKLearnWrapper:
             "n_bootstraps", self.n_bootstraps
         )
         for bootstrap in range(self.n_bootstraps):
-            model = self.base_constructor(**organized_kwargs["model"])
+            model_args = organized_kwargs["model"]
+            model = self.base_constructor(
+                context_dim=model_args["context_dim"],
+                x_dim=model_args["x_dim"],
+                y_dim=model_args["y_dim"],
+                encoder_type=model_args.get("encoder_type", "mlp"),
+                width=model_args.get("width", 25),
+                layers=model_args.get("layers", 1),
+                link_fn=model_args.get("link_fn", LINK_FUNCTIONS["identity"]),
+                **kwargs, # for one-off args
+            )
             train_data, val_data = self._split_train_data(
                 *args, **organized_kwargs["data"]
             )

@@ -18,16 +18,14 @@ class NaiveMetamodel(nn.Module):
 
     def __init__(
         self,
-        context_dim,
-        x_dim,
-        y_dim,
-        univariate=False,
-        encoder_type="mlp",
-        encoder_kwargs={
-            "width": 25,
-            "layers": 1,
-            "link_fn": LINK_FUNCTIONS["identity"],
-        },
+        context_dim: int,
+        x_dim: int,
+        y_dim: int,
+        univariate: bool = False,
+        encoder_type: str = "mlp",
+        width: int = 25,
+        layers: int = 1,
+        link_fn: callable = LINK_FUNCTIONS["identity"],
     ):
         """
         context_dim (int): dimension of flattened context
@@ -38,7 +36,9 @@ class NaiveMetamodel(nn.Module):
         univariate (bool: False): flag to solve a univariate regression problem instead
             of the standard multivariate problem
         encoder_type (str: mlp): encoder module to use
-        encoder_kwargs (dict): encoder args and kwargs
+        width (int: 25): width of the MLP encoder
+        layers (int: 1): number of hidden layers in the MLP encoder
+        link_fn (callable: identity): link function to apply to the output of the encoder
         """
         super().__init__()
         self.context_dim = context_dim
@@ -48,7 +48,12 @@ class NaiveMetamodel(nn.Module):
         encoder = ENCODERS[encoder_type]
         self.mu_dim = x_dim if univariate else 1
         out_dim = (x_dim + self.mu_dim) * y_dim
-        self.context_encoder = encoder(context_dim, out_dim, **encoder_kwargs)
+        if encoder_type == "linear":
+            self.context_encoder = encoder(context_dim, out_dim)
+        else:
+            self.context_encoder = encoder(
+                context_dim, out_dim, width=width, layers=layers, link_fn=link_fn
+            )
 
     def forward(self, C):
         """
@@ -74,17 +79,15 @@ class SubtypeMetamodel(nn.Module):
 
     def __init__(
         self,
-        context_dim,
-        x_dim,
-        y_dim,
-        univariate=False,
-        num_archetypes=10,
-        encoder_type="mlp",
-        encoder_kwargs={
-            "width": 25,
-            "layers": 1,
-            "link_fn": LINK_FUNCTIONS["identity"],
-        },
+        context_dim: int,
+        x_dim: int,
+        y_dim: int,
+        univariate: bool = False,
+        num_archetypes: int = 10,
+        encoder_type: str = "mlp",
+        width: int = 25,
+        layers: int = 1,
+        link_fn: callable = LINK_FUNCTIONS["identity"],
     ):
         """
         context_dim (int): dimension of flattened context
@@ -96,7 +99,9 @@ class SubtypeMetamodel(nn.Module):
             of the standard multivariate problem
         num_archetypes (int: 10): number of atomic regression models in {Z}
         encoder_type (str: mlp): encoder module to use
-        encoder_kwargs (dict): encoder args and kwargs
+        width (int: 25): width of the MLP encoder
+        layers (int: 1): number of hidden layers in the MLP encoder
+        link_fn (callable: identity): link function to apply to the output of the encoder
         """
         super().__init__()
         self.context_dim = context_dim
@@ -105,7 +110,12 @@ class SubtypeMetamodel(nn.Module):
 
         encoder = ENCODERS[encoder_type]
         out_shape = (y_dim, x_dim * 2, 1) if univariate else (y_dim, x_dim + 1)
-        self.context_encoder = encoder(context_dim, num_archetypes, **encoder_kwargs)
+        if encoder_type == "linear":
+            self.context_encoder = encoder(context_dim, num_archetypes)
+        else:
+            self.context_encoder = encoder(
+                context_dim, num_archetypes, width=width, layers=layers, link_fn=link_fn
+                )
         self.explainer = Explainer(num_archetypes, out_shape)
 
     def forward(self, C):
@@ -133,17 +143,15 @@ class MultitaskMetamodel(nn.Module):
 
     def __init__(
         self,
-        context_dim,
-        x_dim,
-        y_dim,
-        univariate=False,
-        num_archetypes=10,
-        encoder_type="mlp",
-        encoder_kwargs={
-            "width": 25,
-            "layers": 1,
-            "link_fn": LINK_FUNCTIONS["identity"],
-        },
+        context_dim: int,
+        x_dim: int,
+        y_dim: int,
+        univariate: bool = False,
+        num_archetypes: int = 10,
+        encoder_type: str = "mlp",
+        width: int = 25,
+        layers: int = 1,
+        link_fn: callable = LINK_FUNCTIONS["identity"],
     ):
         """
         context_dim (int): dimension of flattened context
@@ -155,7 +163,9 @@ class MultitaskMetamodel(nn.Module):
             of the standard multivariate problem
         num_archetypes (int: 10): number of atomic regression models in {Z}
         encoder_type (str: mlp): encoder module to use
-        encoder_kwargs (dict): encoder args and kwargs
+        width (int: 25): width of the MLP encoder
+        layers (int: 1): number of hidden layers in the MLP encoder
+        link_fn (callable: identity): link function to apply to the output of the encoder
         """
         super().__init__()
         self.context_dim = context_dim
@@ -165,9 +175,12 @@ class MultitaskMetamodel(nn.Module):
         encoder = ENCODERS[encoder_type]
         beta_dim = 1 if univariate else x_dim
         task_dim = y_dim + x_dim if univariate else y_dim
-        self.context_encoder = encoder(
-            context_dim + task_dim, num_archetypes, **encoder_kwargs
-        )
+        if encoder_type == "linear":
+            self.context_encoder = encoder(context_dim + task_dim, num_archetypes)
+        else:
+            self.context_encoder = encoder(
+                context_dim + task_dim, num_archetypes, width=width, layers=layers, link_fn=link_fn
+            )
         self.explainer = Explainer(num_archetypes, (beta_dim + 1,))
 
     def forward(self, C, T):
@@ -198,24 +211,30 @@ class TasksplitMetamodel(nn.Module):
 
     def __init__(
         self,
-        context_dim,
-        x_dim,
-        y_dim,
-        univariate=False,
-        context_archetypes=10,
-        task_archetypes=10,
-        context_encoder_type="mlp",
-        context_encoder_kwargs={
-            "width": 25,
-            "layers": 1,
-            "link_fn": LINK_FUNCTIONS["softmax"],
-        },
-        task_encoder_type="mlp",
-        task_encoder_kwargs={
-            "width": 25,
-            "layers": 1,
-            "link_fn": LINK_FUNCTIONS["identity"],
-        },
+        context_dim: int,
+        x_dim: int,
+        y_dim: int,
+        univariate: bool = False,
+        context_archetypes: int = 10,
+        task_archetypes: int = 10,
+        context_encoder_type: str = "mlp",
+        # context_encoder_kwargs={
+        #     "width": 25,
+        #     "layers": 1,
+        #     "link_fn": LINK_FUNCTIONS["softmax"],
+        # },
+        context_width: int = 25,
+        context_layers: int = 1,
+        context_link_fn: callable = LINK_FUNCTIONS["softmax"],
+        task_encoder_type: str = "mlp",
+        # task_encoder_kwargs={
+        #     "width": 25,
+        #     "layers": 1,
+        #     "link_fn": LINK_FUNCTIONS["identity"],
+        # },
+        task_width: int = 25,
+        task_layers: int = 1,
+        task_link_fn: callable = LINK_FUNCTIONS["identity"],
     ):
         """
         context_dim (int): dimension of flattened context
@@ -228,9 +247,13 @@ class TasksplitMetamodel(nn.Module):
         context_archetypes (int: 10): number of atomic regression models in {Z_c}
         task_archetypes (int: 10): number of atomic regression models in {Z_t}
         context_encoder_type (str: mlp): context encoder module to use
-        context_encoder_kwargs (dict): context encoder args and kwargs
+        context_width (int: 25): width of the MLP context encoder
+        context_layers (int: 1): number of hidden layers in the MLP context encoder
+        context_link_fn (callable: softmax): link function to apply to the output of the context encoder
         task_encoder_type (str: mlp): task encoder module to use
-        task_encoder_kwargs (dict): task encoder args and kwargs
+        task_width (int: 25): width of the MLP task encoder
+        task_layers (int: 1): number of hidden layers in the MLP task encoder
+        task_link_fn (callable: identity): link function to apply to the output of the task encoder
         """
         super().__init__()
         self.context_dim = context_dim
@@ -242,10 +265,10 @@ class TasksplitMetamodel(nn.Module):
         beta_dim = 1 if univariate else x_dim
         task_dim = y_dim + x_dim if univariate else y_dim
         self.context_encoder = context_encoder(
-            context_dim, context_archetypes, **context_encoder_kwargs
+            context_dim, context_archetypes, width=context_width, layers=context_layers, link_fn=context_link_fn
         )
         self.task_encoder = task_encoder(
-            task_dim, task_archetypes, **task_encoder_kwargs
+            task_dim, task_archetypes, width=task_width, layers=task_layers, link_fn=task_link_fn
         )
         self.explainer = SoftSelect(
             (context_archetypes, task_archetypes), (beta_dim + 1,)

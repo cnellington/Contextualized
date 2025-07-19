@@ -395,6 +395,16 @@ class TestEasyRegression(unittest.TestCase):
         preds = model.predict(C, X)
         assert preds.shape == Y.shape
 
+    def test_linear_encoder_pass(self):
+        C = np.random.normal(0, 1, (100, 2))
+        X = np.random.normal(0, 1, (100, 2))
+        Y = np.random.normal(0, 1, 100)
+
+        try:
+            model = ContextualizedRegressor(encoder_type="linear")
+            model.fit(C, X, Y)
+        except Exception as e:
+            self.fail(f"Linear encoder crashed with exception: {e}")
 
 
 if __name__ == "__main__":
