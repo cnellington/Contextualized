@@ -161,7 +161,7 @@ class TestRegression(unittest.TestCase):
             self.c_dim,
             self.x_dim,
             self.y_dim,
-             width=25,
+            width=25,
             layers=2,
             encoder_link_fn=LINK_FUNCTIONS["softmax"],
             link_fn=LINK_FUNCTIONS["logistic"],
@@ -378,6 +378,7 @@ class TestRegression(unittest.TestCase):
         beta_preds, mu_preds = trainer.predict_params(model, dataloader)
         assert (mu_preds == 0).all()
 
+
 class TestLightningModulesInvalidParams(unittest.TestCase):
 
     def test_NaiveContextualizedRegression(self):
@@ -390,7 +391,7 @@ class TestLightningModulesInvalidParams(unittest.TestCase):
                 width=64,
                 layers=2,
                 encoder_link_fn=LINK_FUNCTIONS["softmax"],
-                new=True  # ❌ Invalid
+                new=True,  # ❌ Invalid
             )
 
     def test_ContextualizedRegression_task_param(self):
@@ -403,7 +404,7 @@ class TestLightningModulesInvalidParams(unittest.TestCase):
                 width=64,
                 layers=2,
                 encoder_link_fn=LINK_FUNCTIONS["softmax"],
-                task_link_fn=LINK_FUNCTIONS["identity"]  # ❌ Invalid
+                task_link_fn=LINK_FUNCTIONS["identity"],  # ❌ Invalid
             )
 
     def test_ContextualizedRegression_naive_with_num_archetypes(self):
@@ -417,7 +418,7 @@ class TestLightningModulesInvalidParams(unittest.TestCase):
                 layers=2,
                 encoder_link_fn=LINK_FUNCTIONS["softmax"],
                 metamodel_type="naive",
-                num_archetypes=10  # ❌ Invalid when metamodel_type is "naive"
+                num_archetypes=10,  # ❌ Invalid when metamodel_type is "naive"
             )
 
     def test_ContextualizedUnivariateRegression_context_archetypes(self):
@@ -430,7 +431,7 @@ class TestLightningModulesInvalidParams(unittest.TestCase):
                 width=64,
                 layers=2,
                 encoder_link_fn=LINK_FUNCTIONS["softmax"],
-                context_archetypes=5  # ❌ Invalid
+                context_archetypes=5,  # ❌ Invalid
             )
 
     def test_ContextualizedUnivariateRegression_naive_with_num_archetypes(self):
@@ -444,7 +445,7 @@ class TestLightningModulesInvalidParams(unittest.TestCase):
                 layers=2,
                 encoder_link_fn=LINK_FUNCTIONS["softmax"],
                 metamodel_type="naive",
-                num_archetypes=10  # ❌ Invalid when metamodel_type is "naive"
+                num_archetypes=10,  # ❌ Invalid when metamodel_type is "naive"
             )
 
     def test_MultitaskContextualizedRegression(self):
@@ -457,7 +458,7 @@ class TestLightningModulesInvalidParams(unittest.TestCase):
                 width=64,
                 layers=2,
                 encoder_link_fn=LINK_FUNCTIONS["softmax"],
-                context_encoder_type="mlp"  # ❌ Invalid
+                context_encoder_type="mlp",  # ❌ Invalid
             )
 
     def test_TasksplitContextualizedRegression(self):
@@ -477,7 +478,7 @@ class TestLightningModulesInvalidParams(unittest.TestCase):
                 task_width=25,
                 task_layers=2,
                 task_link_fn=LINK_FUNCTIONS["identity"],
-                encoder_type="mlp"  # ❌ Invalid
+                encoder_type="mlp",  # ❌ Invalid
             )
 
     def test_TasksplitContextualizedUnivariateRegression(self):
@@ -497,8 +498,9 @@ class TestLightningModulesInvalidParams(unittest.TestCase):
                 task_width=25,
                 task_layers=2,
                 task_link_fn=LINK_FUNCTIONS["identity"],
-                num_archetypes=10  # ❌ Invalid
+                num_archetypes=10,  # ❌ Invalid
             )
+
 
 if __name__ == "__main__":
     unittest.main()

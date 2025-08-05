@@ -134,10 +134,7 @@ def plot_lowdim_rep(
         order = np.argsort(tag_names)
         tag_names = np.array(tag_names)[order]
         tag = np.array([list(order).index(int(x)) for x in tag])
-        good_tags = [
-            np.sum(tag == i) > min_samples
-            for i in range(len(tag_names))
-        ]
+        good_tags = [np.sum(tag == i) > min_samples for i in range(len(tag_names))]
         tag_names = np.array(tag_names)[good_tags]
         good_idxs = np.array([good_tags[int(tag[i])] for i in range(len(tag))])
         tag = tag[good_idxs]
@@ -224,8 +221,6 @@ def plot_lowdim_rep(
             plt.legend(handles=[nan_legend], loc="best")
 
     if cbar_label is not None:
-        color_bar.ax.set_ylabel(
-            cbar_label, fontsize=cbar_fontsize
-        )
+        color_bar.ax.set_ylabel(cbar_label, fontsize=cbar_fontsize)
     if figname is not None:
         plt.savefig(f"{figname}.pdf", dpi=300, bbox_inches="tight")

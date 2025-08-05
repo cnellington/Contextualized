@@ -48,7 +48,6 @@ class ContextualizedRegressionBase(pl.LightningModule):
         context_dim: int,
         x_dim: int,
         y_dim: int,
-        univariate: bool = False,
         learning_rate: float = 1e-3,
         metamodel_type: str = "subtype",
         fit_intercept: bool = True,
@@ -72,7 +71,6 @@ class ContextualizedRegressionBase(pl.LightningModule):
             context_dim,
             x_dim,
             y_dim,
-            univariate=univariate,
             **kwargs,
         )
 
@@ -82,7 +80,6 @@ class ContextualizedRegressionBase(pl.LightningModule):
         context_dim: int,
         x_dim: int,
         y_dim: int,
-        univariate: bool = False,
         **kwargs,
     ):
         """
@@ -90,19 +87,10 @@ class ContextualizedRegressionBase(pl.LightningModule):
         :param context_dim: Dimension of the context vector
         :param x_dim: Dimension of the input features
         :param y_dim: Dimension of the output labels
-        :param univariate: Whether to use univariate regression (default is False)
         :param **kwargs: Additional keyword arguments for the metamodel
 
         """
         # builds the metamodel
-        # no tasksplit metamodel here
-        self.metamodel = SINGLE_TASK_METAMODELS[self.metamodel_type](
-            context_dim,
-            x_dim,
-            y_dim,
-            univariate=univariate,
-            **kwargs, 
-        )
 
     @abstractmethod
     def dataloader(self, C, X, Y, batch_size=32):
@@ -261,7 +249,6 @@ class NaiveContextualizedRegression(ContextualizedRegressionBase):
         context_dim: int,
         x_dim: int,
         y_dim: int,
-        univariate: bool = False,
         encoder_type: str = "mlp",
         width: int = 25,
         layers: int = 1,
@@ -272,7 +259,6 @@ class NaiveContextualizedRegression(ContextualizedRegressionBase):
         :param context_dim: Dimension of the context vector
         :param x_dim: Dimension of the input features
         :param y_dim: Dimension of the output labels
-        :param univariate: Whether to use univariate regression (default is False)
         :param encoder_type: Type of encoder to use (default is "mlp")
         :param width: Width of the encoder (default is 25)
         :param layers: Number of layers in the encoder (default is 1)
@@ -283,7 +269,7 @@ class NaiveContextualizedRegression(ContextualizedRegressionBase):
             context_dim,
             x_dim,
             y_dim,
-            univariate=univariate,
+            univariate=False,
             encoder_type=encoder_type,
             width=width,
             layers=layers,
@@ -364,7 +350,6 @@ class ContextualizedRegression(ContextualizedRegressionBase):
         context_dim: int,
         x_dim: int,
         y_dim: int,
-        univariate: bool = False,
         encoder_type: str = "mlp",
         width: int = 25,
         layers: int = 1,
@@ -376,7 +361,6 @@ class ContextualizedRegression(ContextualizedRegressionBase):
         :param context_dim: Dimension of the context vector
         :param x_dim: Dimension of the input features
         :param y_dim: Dimension of the output labels
-        :param univariate: Whether to use univariate regression (default is False)
         :param encoder_type: Type of encoder to use (default is "mlp")
         :param width: Width of the encoder (default is 25)
         :param layers: Number of layers in the encoder (default is 1)
@@ -388,7 +372,7 @@ class ContextualizedRegression(ContextualizedRegressionBase):
             context_dim,
             x_dim,
             y_dim,
-            univariate=univariate,
+            univariate=False,
             encoder_type=encoder_type,
             width=width,
             layers=layers,
@@ -469,13 +453,12 @@ class ContextualizedRegression(ContextualizedRegressionBase):
 
 class MultitaskContextualizedRegression(ContextualizedRegressionBase):
     """See MultitaskMetamodel"""
-    
+
     def _build_metamodel(
         self,
         context_dim: int,
         x_dim: int,
         y_dim: int,
-        univariate: bool = False,
         encoder_type: str = "mlp",
         width: int = 25,
         layers: int = 1,
@@ -487,7 +470,6 @@ class MultitaskContextualizedRegression(ContextualizedRegressionBase):
         :param context_dim: Dimension of the context vector
         :param x_dim: Dimension of the input features
         :param y_dim: Dimension of the output labels
-        :param univariate: Whether to use univariate regression (default is False)
         :param encoder_type: Type of encoder to use (default is "mlp")
         :param width: Width of the encoder (default is 25)
         :param layers: Number of layers in the encoder (default is 1)
@@ -499,12 +481,12 @@ class MultitaskContextualizedRegression(ContextualizedRegressionBase):
             context_dim,
             x_dim,
             y_dim,
-            univariate=univariate,
+            univariate=False,
             encoder_type=encoder_type,
             width=width,
             layers=layers,
             link_fn=encoder_link_fn,
-            num_archetypes=num_archetypes,    
+            num_archetypes=num_archetypes,
         )
 
     def _batch_loss(self, batch, batch_idx):
@@ -581,7 +563,6 @@ class TasksplitContextualizedRegression(ContextualizedRegressionBase):
         context_dim: int,
         x_dim: int,
         y_dim: int,
-        univariate: bool = False,
         context_archetypes: int = 10,
         task_archetypes: int = 10,
         context_encoder_type: str = "mlp",
@@ -591,14 +572,13 @@ class TasksplitContextualizedRegression(ContextualizedRegressionBase):
         task_encoder_type: str = "mlp",
         task_width: int = 25,
         task_layers: int = 1,
-        task_link_fn: callable = LINK_FUNCTIONS["identity"], 
+        task_link_fn: callable = LINK_FUNCTIONS["identity"],
     ):
         """
 
         :param context_dim: Dimension of the context vector
         :param x_dim: Dimension of the input features
         :param y_dim: Dimension of the output labels
-        :param univariate: Whether to use univariate regression (default is False)
         :param context_archetypes: Number of archetypes for the context (default is 10)
         :param task_archetypes: Number of archetypes for the task (default is 10)
         :param context_encoder_type: Type of encoder to use for the context (default is "mlp")
@@ -615,7 +595,7 @@ class TasksplitContextualizedRegression(ContextualizedRegressionBase):
             context_dim,
             x_dim,
             y_dim,
-            univariate=univariate,
+            univariate=False,
             context_archetypes=context_archetypes,
             task_archetypes=task_archetypes,
             context_encoder_type=context_encoder_type,
@@ -702,7 +682,6 @@ class ContextualizedUnivariateRegression(ContextualizedRegression):
         context_dim: int,
         x_dim: int,
         y_dim: int,
-        univariate: bool = False,
         encoder_type: str = "mlp",
         width: int = 25,
         layers: int = 1,
@@ -714,7 +693,6 @@ class ContextualizedUnivariateRegression(ContextualizedRegression):
         :param context_dim: Dimension of the context vector
         :param x_dim: Dimension of the input features
         :param y_dim: Dimension of the output labels
-        :param univariate: Whether to use univariate regression (default is False)
         :param encoder_type: Type of encoder to use (default is "mlp")
         :param width: Width of the encoder (default is 25)
         :param layers: Number of layers in the encoder (default is 1)
@@ -726,7 +704,7 @@ class ContextualizedUnivariateRegression(ContextualizedRegression):
             context_dim,
             x_dim,
             y_dim,
-            univariate=univariate,
+            univariate=True,
             encoder_type=encoder_type,
             width=width,
             layers=layers,
@@ -784,7 +762,6 @@ class TasksplitContextualizedUnivariateRegression(TasksplitContextualizedRegress
         context_dim: int,
         x_dim: int,
         y_dim: int,
-        univariate: bool = False,
         context_archetypes: int = 10,
         task_archetypes: int = 10,
         context_encoder_type: str = "mlp",
@@ -794,14 +771,13 @@ class TasksplitContextualizedUnivariateRegression(TasksplitContextualizedRegress
         task_encoder_type: str = "mlp",
         task_width: int = 25,
         task_layers: int = 1,
-        task_link_fn: callable = LINK_FUNCTIONS["identity"], 
+        task_link_fn: callable = LINK_FUNCTIONS["identity"],
     ):
         """
 
         :param context_dim: Dimension of the context vector
         :param x_dim: Dimension of the input features
         :param y_dim: Dimension of the output labels
-        :param univariate: Whether to use univariate regression (default is False)
         :param context_archetypes: Number of archetypes for the context (default is 10)
         :param task_archetypes: Number of archetypes for the task (default is 10)
         :param context_encoder_type: Type of encoder to use for the context (default is "mlp")
@@ -818,7 +794,7 @@ class TasksplitContextualizedUnivariateRegression(TasksplitContextualizedRegress
             context_dim,
             x_dim,
             y_dim,
-            univariate=univariate,
+            univariate=True,
             context_archetypes=context_archetypes,
             task_archetypes=task_archetypes,
             context_encoder_type=context_encoder_type,
@@ -910,19 +886,17 @@ class ContextualizedCorrelation(ContextualizedUnivariateRegression):
         self,
         context_dim: int,
         x_dim: int,
-        univariate: bool = False,
         encoder_type: str = "mlp",
         width: int = 25,
         layers: int = 1,
         link_fn: callable = LINK_FUNCTIONS["identity"],
         num_archetypes: int = 10,
-        **kwargs, # Allows for additional args to be passed to class ContextualizedRegressionBase
+        **kwargs,  # Allows for additional args to be passed to class ContextualizedRegressionBase
     ):
         super().__init__(
             context_dim=context_dim,
             x_dim=x_dim,
             y_dim=x_dim,
-            univariate=univariate,
             encoder_type=encoder_type,
             width=width,
             layers=layers,
@@ -958,7 +932,6 @@ class TasksplitContextualizedCorrelation(TasksplitContextualizedUnivariateRegres
         self,
         context_dim: int,
         x_dim: int,
-        univariate: bool = False,
         context_archetypes: int = 10,
         task_archetypes: int = 10,
         context_encoder_type: str = "mlp",
@@ -969,13 +942,12 @@ class TasksplitContextualizedCorrelation(TasksplitContextualizedUnivariateRegres
         task_width: int = 25,
         task_layers: int = 1,
         task_link_fn: callable = LINK_FUNCTIONS["identity"],
-        **kwargs, # Allows for additional args to be passed to class ContextualizedRegressionBase
+        **kwargs,  # Allows for additional args to be passed to class ContextualizedRegressionBase
     ):
         super().__init__(
             context_dim=context_dim,
             x_dim=x_dim,
             y_dim=x_dim,
-            univariate=univariate,
             context_archetypes=context_archetypes,
             task_archetypes=task_archetypes,
             context_encoder_type=context_encoder_type,
@@ -1012,24 +984,23 @@ class ContextualizedNeighborhoodSelection(ContextualizedRegression):
 
 
     """
+
     def __init__(
         self,
         context_dim: int,
         x_dim: int,
-        univariate: bool = False,
         encoder_type: str = "mlp",
         width: int = 25,
         layers: int = 1,
         link_fn: callable = LINK_FUNCTIONS["identity"],
         num_archetypes: int = 10,
         model_regularizer: callable = REGULARIZERS["l1"](1e-3, mu_ratio=0),
-        **kwargs, # Allows for additional args to be passed to class ContextualizedRegressionBase
+        **kwargs,  # Allows for additional args to be passed to class ContextualizedRegressionBase
     ):
         super().__init__(
             context_dim=context_dim,
             x_dim=x_dim,
             y_dim=x_dim,
-            univariate=univariate,
             encoder_type=encoder_type,
             width=width,
             layers=layers,
@@ -1081,19 +1052,17 @@ class ContextualizedMarkovGraph(ContextualizedRegression):
         self,
         context_dim: int,
         x_dim: int,
-        univariate: bool = False,
         encoder_type: str = "mlp",
         width: int = 25,
         layers: int = 1,
         link_fn: callable = LINK_FUNCTIONS["identity"],
         num_archetypes: int = 10,
-        **kwargs, # Allows for additional args to be passed to class ContextualizedRegressionBase
+        **kwargs,  # Allows for additional args to be passed to class ContextualizedRegressionBase
     ):
         super().__init__(
             context_dim=context_dim,
             x_dim=x_dim,
             y_dim=x_dim,
-            univariate=univariate,
             encoder_type=encoder_type,
             width=width,
             layers=layers,

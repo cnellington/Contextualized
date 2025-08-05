@@ -305,7 +305,6 @@ class SKLearnWrapper:
                 constructor_kwargs[kwarg] = kwargs.get(kwarg, default_val)
 
         maybe_add_constructor_kwarg("link_fn", LINK_FUNCTIONS["identity"])
-        maybe_add_constructor_kwarg("univariate", False)
         maybe_add_constructor_kwarg("encoder_type", self.default_encoder_type)
         maybe_add_constructor_kwarg("loss_fn", LOSSES["mse"])
         maybe_add_constructor_kwarg("width", self.default_encoder_width)

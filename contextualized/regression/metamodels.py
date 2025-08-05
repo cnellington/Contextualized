@@ -115,7 +115,7 @@ class SubtypeMetamodel(nn.Module):
         else:
             self.context_encoder = encoder(
                 context_dim, num_archetypes, width=width, layers=layers, link_fn=link_fn
-                )
+            )
         self.explainer = Explainer(num_archetypes, out_shape)
 
     def forward(self, C):
@@ -179,7 +179,11 @@ class MultitaskMetamodel(nn.Module):
             self.context_encoder = encoder(context_dim + task_dim, num_archetypes)
         else:
             self.context_encoder = encoder(
-                context_dim + task_dim, num_archetypes, width=width, layers=layers, link_fn=link_fn
+                context_dim + task_dim,
+                num_archetypes,
+                width=width,
+                layers=layers,
+                link_fn=link_fn,
             )
         self.explainer = Explainer(num_archetypes, (beta_dim + 1,))
 
@@ -255,10 +259,18 @@ class TasksplitMetamodel(nn.Module):
         beta_dim = 1 if univariate else x_dim
         task_dim = y_dim + x_dim if univariate else y_dim
         self.context_encoder = context_encoder(
-            context_dim, context_archetypes, width=context_width, layers=context_layers, link_fn=context_link_fn
+            context_dim,
+            context_archetypes,
+            width=context_width,
+            layers=context_layers,
+            link_fn=context_link_fn,
         )
         self.task_encoder = task_encoder(
-            task_dim, task_archetypes, width=task_width, layers=task_layers, link_fn=task_link_fn
+            task_dim,
+            task_archetypes,
+            width=task_width,
+            layers=task_layers,
+            link_fn=task_link_fn,
         )
         self.explainer = SoftSelect(
             (context_archetypes, task_archetypes), (beta_dim + 1,)
