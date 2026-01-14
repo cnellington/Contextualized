@@ -87,4 +87,3 @@ class MmapEdgeWriter(BasePredictionWriter):
         self.arr[n, yi, xi, 0] = beta
         self.arr[n, yi, xi, 1] = mu
 
-

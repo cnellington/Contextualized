@@ -7,10 +7,7 @@ from contextualized.regression import (
     ContextualizedRegression,
 )
 from contextualized.easy.wrappers import SKLearnWrapper
-from contextualized.regression import RegressionTrainer
-
-# TODO: Multitask metamodels
-# TODO: Task-specific link functions.
+from contextualized.regression.trainers import RegressionTrainer
 
 
 class ContextualizedRegressor(SKLearnWrapper):
@@ -35,11 +32,10 @@ class ContextualizedRegressor(SKLearnWrapper):
         elif self.num_archetypes > 0:
             constructor = ContextualizedRegression
         else:
-            print(
-                f"""
-                Was told to construct a ContextualizedRegressor with {self.num_archetypes}
-                archetypes, but this should be a non-negative integer."""
+            raise ValueError(
+                f"num_archetypes must be a non-negative integer, got {self.num_archetypes}."
             )
+
 
         extra_model_kwargs = ["base_param_predictor", "base_y_predictor", "y_dim"]
         extra_data_kwargs = ["Y_val"]
